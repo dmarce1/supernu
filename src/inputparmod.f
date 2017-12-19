@@ -23,6 +23,12 @@ c-- grid geometry and dimensions
       integer :: in_grd_igeom = 0 !geometry: 1=sph, 2=cyl, 3=car, 11=1Dsph
       integer :: in_ndim(3) = [1, 1, 1]  !number of x-direction cells
       logical :: in_isvelocity = .true.  !switch underlying grid between spatial+static to velocity+expanding
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     MODIFICATION BY LSU
+      logical :: in_ishydro = .true.
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 c
 c
 c-- read input structure file instead of specifying the stucture with input parameters
@@ -717,6 +723,10 @@ c     -------------------------------------!{{{
       use groupmod
       use gasmod
       use gridmod
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     MODIFICATION BY LSU
+      use hydromod
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       implicit none
       integer,intent(in) :: nmpi
 ************************************************************************
@@ -785,6 +795,10 @@ c
       grd_ny    = in_ndim(2)
       grd_nz    = in_ndim(3)
       grd_isvelocity = in_isvelocity
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     MODIFICATION BY LSU
+      hydro_ison = in_ishydro
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c!}}}
       end subroutine provide_inputpars
 c

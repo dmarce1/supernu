@@ -1,0 +1,113 @@
+diff -r d244a10db46e Makefile
+--- a/Makefile	Mon Feb 20 16:32:09 2017 -0700
++++ b/Makefile	Fri Dec 15 17:15:56 2017 -0700
+@@ -26,14 +26,14 @@
+   miscmod.o ionsmod.o ffxsmod.o bfxsmod.o bbxsmod.o \
+   inputparmod.o timestepmod.o groupmod.o gridmod.o gasmod.o inputstrmod.o \
+   particlemod.o timingmod.o countersmod.o manufacmod.o fluxmod.o totalsmod.o \
+-  transportmod.o sourcemod.o
+-
++  transportmod.o sourcemod.o hydromod.o
++  
+ FILES := banner.o \
+   particle_advance.o particle_advance_gamgrey.o fluxtally.o \
+   dealloc_all.o read_bbxs_data.o tau_update.o
+ 
+ LIBRARIES := TRANSPORT1/transport1.a TRANSPORT2/transport2.a TRANSPORT3/transport3.a \
+-  SOURCE/source.a GAS/gas.a GRID/grid.a MISC/misc.a OUTPUT/output.a
++  SOURCE/source.a GAS/gas.a GRID/grid.a MISC/misc.a OUTPUT/output.a HYDRO/hydro.a
+ SUBDIRS := $(dir $(LIBRARIES))
+ SUBCLEAN = $(addsuffix .clean, $(SUBDIRS))
+ 
+diff -r d244a10db46e dealloc_all.f
+--- a/dealloc_all.f	Mon Feb 20 16:32:09 2017 -0700
++++ b/dealloc_all.f	Fri Dec 15 17:15:56 2017 -0700
+@@ -13,6 +13,10 @@
+       use sourcemod
+       use randommod
+       use timestepmod
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     MODIFICATION BY LSU
++      use hydromod
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       implicit none
+ ************************************************************************
+ * deallocate all that was used till the end of the program. Any
+@@ -20,6 +24,10 @@
+ * with earlier.  This helps to catch memory leaks! (drr)
+ ************************************************************************
+ c-- ionsmod
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     MODIFICATION BY LSU
++      call hydromod_dealloc
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       call ions_dealloc
+       call gas_dealloc
+       call grid_dealloc
+diff -r d244a10db46e inputparmod.f
+--- a/inputparmod.f	Mon Feb 20 16:32:09 2017 -0700
++++ b/inputparmod.f	Fri Dec 15 17:15:56 2017 -0700
+@@ -23,6 +23,12 @@
+       integer :: in_grd_igeom = 0 !geometry: 1=sph, 2=cyl, 3=car, 11=1Dsph
+       integer :: in_ndim(3) = [1, 1, 1]  !number of x-direction cells
+       logical :: in_isvelocity = .true.  !switch underlying grid between spatial+static to velocity+expanding
++
++ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     MODIFICATION BY LSU
++      logical :: in_ishydro = .true.
++ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+ c
+ c
+ c-- read input structure file instead of specifying the stucture with input parameters
+@@ -717,6 +723,10 @@
+       use groupmod
+       use gasmod
+       use gridmod
++ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     MODIFICATION BY LSU
++      use hydromod
++ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       implicit none
+       integer,intent(in) :: nmpi
+ ************************************************************************
+@@ -785,6 +795,10 @@
+       grd_ny    = in_ndim(2)
+       grd_nz    = in_ndim(3)
+       grd_isvelocity = in_isvelocity
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     MODIFICATION BY LSU
++      hydro_ison = in_ishydro
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ c!}}}
+       end subroutine provide_inputpars
+ c
+diff -r d244a10db46e supernu.f90
+--- a/supernu.f90	Mon Feb 20 16:32:09 2017 -0700
++++ b/supernu.f90	Fri Dec 15 17:15:56 2017 -0700
+@@ -24,7 +24,10 @@
+   use ffxsmod, only:ffxs_read_data
+   use timingmod
+   use countersmod
+-
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++!     MODIFICATION BY LSU
++  use hydromod
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+   implicit none
+ !***********************************************************************
+ ! TODO and wishlist:
+@@ -94,6 +97,13 @@
+ !--
+ !-- setup remaining modules
+ !==========================
++
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++!     MODIFICATION BY LSU
++  call hydromod_init
++  call hydro_setup
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+   call timestepmod_init
+ 
+ !-- wlgrid (before grid setup)

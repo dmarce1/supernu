@@ -24,7 +24,10 @@ program supernu
   use ffxsmod, only:ffxs_read_data
   use timingmod
   use countersmod
-
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!     MODIFICATION BY LSU
+  use hydromod
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   implicit none
 !***********************************************************************
 ! TODO and wishlist:
@@ -94,6 +97,7 @@ program supernu
 !--
 !-- setup remaining modules
 !==========================
+
   call timestepmod_init
 
 !-- wlgrid (before grid setup)
@@ -103,6 +107,13 @@ program supernu
 !-- setup spatial grid
   call gridmod_init(lmpi0,grp_ng,str_nc,str_lvoid,icell1,ncell)
   call grid_setup
+
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!     MODIFICATION BY LSU
+  call hydromod_init
+  call hydro_setup
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 !-- setup gas
   call gasmod_init(lmpi0,icell1,ncell,grp_ng)
   call gas_setup

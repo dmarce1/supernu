@@ -26,14 +26,14 @@ MODULES := elemdatamod.o nucdatamod.o physconstmod.o randommod.o mpimod.o \
   miscmod.o ionsmod.o ffxsmod.o bfxsmod.o bbxsmod.o \
   inputparmod.o timestepmod.o groupmod.o gridmod.o gasmod.o inputstrmod.o \
   particlemod.o timingmod.o countersmod.o manufacmod.o fluxmod.o totalsmod.o \
-  transportmod.o sourcemod.o
-
+  transportmod.o sourcemod.o hydromod.o
+  
 FILES := banner.o \
   particle_advance.o particle_advance_gamgrey.o fluxtally.o \
   dealloc_all.o read_bbxs_data.o tau_update.o
 
 LIBRARIES := TRANSPORT1/transport1.a TRANSPORT2/transport2.a TRANSPORT3/transport3.a \
-  SOURCE/source.a GAS/gas.a GRID/grid.a MISC/misc.a OUTPUT/output.a
+  SOURCE/source.a GAS/gas.a GRID/grid.a MISC/misc.a OUTPUT/output.a HYDRO/hydro.a
 SUBDIRS := $(dir $(LIBRARIES))
 SUBCLEAN = $(addsuffix .clean, $(SUBDIRS))
 
