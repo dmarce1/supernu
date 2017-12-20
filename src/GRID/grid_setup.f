@@ -6,6 +6,10 @@ c     ---------------------
       use inputparmod
       use inputstrmod
       use physconstmod
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     HYDRO LSU
+      use hydromod
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       implicit none
 ************************************************************************
 * Setup the grid on the computational domain
@@ -122,6 +126,27 @@ c-- sanity check
 c
 c-- zero amplification-factor energy to begin with
       grd_eamp = 0d0
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c       HYDRO LSU
+        if( hydro_ison ) then
+          if( grd_isvelocity ) then
+            do i = 1, grd_nx
+            do j = 1, grd_ny
+            do k = 1, grd_nz
+              l = grd_icell(i,j,k)
+              grd_vx(l) = (grd_xarr(i+1) + grd_xarr(i))*0.5d0
+              grd_vy(l) = (grd_yarr(j+1) + grd_yarr(j))*0.5d0
+              grd_vz(l) = (grd_zarr(k+1) + grd_zarr(k))*0.5d0
+            enddo
+            enddo
+            enddo
+          else
+            grd_vx = 0.0d0
+            grd_vy = 0.0d0
+            grd_vz = 0.0d0
+          endif
+        endif
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c-- read preset temperature profiles
       inquire(file='input.temp',exist=lexist)

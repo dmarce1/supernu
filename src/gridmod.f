@@ -21,6 +21,12 @@ c
       real*8,allocatable :: grd_xarr(:)  !(nx+1), left cell edge values
       real*8,allocatable :: grd_yarr(:)  !(ny+1), left cell edge values
       real*8,allocatable :: grd_zarr(:)  !(nz+1), left cell edge values
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c        HYDRO LSU
+      real*8,allocatable :: grd_vx(:)
+      real*8,allocatable :: grd_vy(:)
+      real*8,allocatable :: grd_vz(:)
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c-- maximum radial grid velocity
       real*8 :: grd_rout=0d0   !particle flux edge radius
@@ -127,6 +133,12 @@ c
       allocate(grd_xarr(grd_nx+1))
       allocate(grd_yarr(grd_ny+1))
       allocate(grd_zarr(grd_nz+1))
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c        HYDRO LSU
+      allocate(grd_vx(grd_ncell))
+      allocate(grd_vy(grd_ncell))
+      allocate(grd_vz(grd_ncell))
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c-- polar
       if(grd_igeom==1) allocate(grd_yacos(grd_ny+1))
 c
@@ -208,6 +220,12 @@ c-- ndim=4 alloc
       deallocate(grd_emitprob)
 c-- ndim=4 alloc
       deallocate(grd_cap)!}}}
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c        HYDRO LSU
+      deallocate(grd_vx)
+      deallocate(grd_vy)
+      deallocate(grd_vz)
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       end subroutine grid_dealloc
 c
       end module gridmod

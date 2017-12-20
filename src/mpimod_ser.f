@@ -71,7 +71,106 @@ c
       subroutine allreduce_gammaenergy
       end subroutine allreduce_gammaenergy
 c
-c
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c      HYDRO LSU
+      subroutine gather_hydro
+      use gridmod
+      use hydromod
+      use gasmod
+      use physconstmod
+      implicit none
+
+      integer :: i, j, k, l, f
+      integer :: i0, j0, k0, f0
+      real :: eint
+
+      do i = hydro_bw, hydro_nx - hydro_bw
+      do j = hydro_bw, hydro_ny - hydro_bw
+      do k = hydro_bw, hydro_nz - hydro_bw
+         i0 = i - hydro_bw
+         j0 = j - hydro_bw
+         k0 = k - hydro_bw
+         l = grd_icell(i0, j0, k0)
+         hydro_state(i,j,k,rho_i) = gas_rho(l)
+         hydro_state(i,j,k,px_i) = grd_vx(l) * gas_rho(l)
+         hydro_state(i,j,k,py_i) = grd_vy(l) * gas_rho(l)
+         hydro_state(i,j,k,pz_i) = grd_vz(l) * gas_rho(l)
+         eint =  1.5d0*pc_kb*(1d0+gas_nelec(l))
+     &              * gas_natom(l) / gas_vol(l) / grd_tempinv(l);
+         hydro_state(i,j,k,tau_i) = eint**(1.0d0 / hydro_gamma)
+         hydro_state(i,j,k,egas_i) = eint +
+     &   0.5d0*(grd_vx(l)**2 + grd_vy(l)**2 + grd_vz(l)**2) * gas_rho(l)
+         f = frac_i
+         do f0 = -2*gas_nchain, -1
+           hydro_state(i,j,k,f) =
+     &               gas_natom1fr(f0,l) / gas_vol(l)
+           f = f + 1
+         enddo
+         do f0 = 1, gas_nelem
+           hydro_state(i,j,k,f) =
+     &               gas_natom1fr(f0,l) / gas_vol(l)
+           f = f + 1
+         enddo
+      enddo
+      enddo
+      enddo
+
+      end subroutine gather_hydro
+
+
+      subroutine scatter_hydro
+      use gridmod
+      use hydromod
+      use gasmod
+      use physconstmod
+      use elemdatamod
+      implicit none
+
+      integer :: i, j, k, l, f
+      integer :: i0, j0, k0, f0
+      real :: eint, nnuc
+
+      do i = hydro_bw, hydro_nx - hydro_bw
+      do j = hydro_bw, hydro_ny - hydro_bw
+      do k = hydro_bw, hydro_nz - hydro_bw
+         i0 = i - hydro_bw
+         j0 = j - hydro_bw
+         k0 = k - hydro_bw
+         l = grd_icell(i0, j0, k0)
+
+         gas_rho(l) = hydro_state(i,j,k,rho_i)
+         grd_vx(l) = hydro_state(i,j,k,px_i) / gas_rho(l)
+         grd_vy(l) = hydro_state(i,j,k,py_i) / gas_rho(l)
+         grd_vz(l) = hydro_state(i,j,k,pz_i) / gas_rho(l)
+         eint = hydro_state(i,j,k,tau_i)**(hydro_gamma)
+
+         f = frac_i
+         do f0 = -2*gas_nchain, -1
+           gas_natom1fr(f0,l) = hydro_state(i,j,k,f) * gas_vol(l)
+           f = f + 1
+         enddo
+         do f0 = 1, gas_nelem
+           gas_natom1fr(f0,l) = hydro_state(i,j,k,f) * gas_vol(l)
+           f = f + 1
+         enddo
+         gas_natom(l) = sum(gas_natom1fr(1:gas_nelem,l))
+         gas_nelec(l) = 0.0d0
+         nnuc = 0.0d0
+         do f = 1, gas_nelem
+           gas_nelec(l) = gas_nelec(l) + f * gas_natom1fr(f,l)
+           nnuc = nnuc + elem_data(f)%m * gas_natom1fr(f,l)
+         enddo
+         gas_ye(l) = gas_nelec(l) / nnuc
+         gas_nelec(l) = gas_nelec(l) / gas_natom(l)
+         gas_bcoef(l) = 1.5d0*pc_kb*(1d0+gas_nelec(l))
+     &              * gas_natom(l) / gas_vol(l)
+         grd_tempinv(l) =  gas_bcoef(l) / eint
+      enddo
+      enddo
+      enddo
+
+      end subroutine scatter_hydro
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       subroutine bcast_nonpermanent
       use gridmod
       use gasmod

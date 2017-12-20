@@ -6,20 +6,19 @@ c     --------------
       implicit none
 c
       logical :: hydro_ison = .true.
+
+      real, parameter :: hydro_gamma = 5.0d0 / 3.0d0
 c
-      integer, parameter :: px_i = 0
-      integer, parameter :: py_i = 1
-      integer, parameter :: pz_i = 2
-      integer, parameter :: tau_i = 3
-      integer, parameter :: egas_i = 4
-      integer, parameter :: stable_i = 5
-      integer, parameter :: frac_i = 6
+      integer, parameter :: rho_i = 1
+      integer, parameter :: px_i = 2
+      integer, parameter :: py_i = 3
+      integer, parameter :: pz_i = 4
+      integer, parameter :: tau_i = 5
+      integer, parameter :: egas_i = 6
+      integer, parameter :: frac_i = 7
       integer, parameter :: nfracs = 2 * gas_nchain + gas_nelem
-      integer, parameter :: hydro_nf = 5 + nfracs
+      integer, parameter :: hydro_nf = 6 + nfracs
       integer :: hydro_nx, hydro_ny, hydro_nz, hydro_bw
-      integer :: this_nx, this_ny, this_nz
-      integer :: this_xb, this_yb, this_zb
-      integer :: this_xe, this_ye, this_ze
 
       real*8, allocatable :: hydro_state(:,:,:,:)
 
@@ -30,8 +29,6 @@ c
       subroutine hydromod_init
       use gridmod
       implicit none
-      INCLUDE 'mpif.h'
-      use mpimod
 
       hydro_bw = 1
       hydro_nx = grd_nx + 2 * hydro_bw

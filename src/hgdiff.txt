@@ -1,6 +1,48 @@
+diff -r d244a10db46e GRID/grid_setup.f
+--- a/GRID/grid_setup.f	Mon Feb 20 16:32:09 2017 -0700
++++ b/GRID/grid_setup.f	Wed Dec 20 12:51:59 2017 -0600
+@@ -6,6 +6,10 @@
+       use inputparmod
+       use inputstrmod
+       use physconstmod
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     HYDRO LSU
++      use hydromod
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       implicit none
+ ************************************************************************
+ * Setup the grid on the computational domain
+@@ -122,6 +126,27 @@
+ c
+ c-- zero amplification-factor energy to begin with
+       grd_eamp = 0d0
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c       HYDRO LSU
++        if( hydro_ison ) then
++          if( grd_isvelocity ) then
++            do i = 1, grd_nx
++            do j = 1, grd_ny
++            do k = 1, grd_nz
++              l = grd_icell(i,j,k)
++              grd_vx(l) = (grd_xarr(i+1) + grd_xarr(i))*0.5d0
++              grd_vy(l) = (grd_yarr(j+1) + grd_yarr(j))*0.5d0
++              grd_vz(l) = (grd_zarr(k+1) + grd_zarr(k))*0.5d0
++            enddo
++            enddo
++            enddo
++          else
++            grd_vx = 0.0d0
++            grd_vy = 0.0d0
++            grd_vz = 0.0d0
++          endif
++        endif
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ c
+ c-- read preset temperature profiles
+       inquire(file='input.temp',exist=lexist)
 diff -r d244a10db46e Makefile
 --- a/Makefile	Mon Feb 20 16:32:09 2017 -0700
-+++ b/Makefile	Fri Dec 15 17:15:56 2017 -0700
++++ b/Makefile	Wed Dec 20 12:51:59 2017 -0600
 @@ -26,14 +26,14 @@
    miscmod.o ionsmod.o ffxsmod.o bfxsmod.o bbxsmod.o \
    inputparmod.o timestepmod.o groupmod.o gridmod.o gasmod.o inputstrmod.o \
@@ -21,7 +63,7 @@ diff -r d244a10db46e Makefile
  
 diff -r d244a10db46e dealloc_all.f
 --- a/dealloc_all.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/dealloc_all.f	Fri Dec 15 17:15:56 2017 -0700
++++ b/dealloc_all.f	Wed Dec 20 12:51:59 2017 -0600
 @@ -13,6 +13,10 @@
        use sourcemod
        use randommod
@@ -44,9 +86,51 @@ diff -r d244a10db46e dealloc_all.f
        call ions_dealloc
        call gas_dealloc
        call grid_dealloc
+diff -r d244a10db46e gridmod.f
+--- a/gridmod.f	Mon Feb 20 16:32:09 2017 -0700
++++ b/gridmod.f	Wed Dec 20 12:51:59 2017 -0600
+@@ -21,6 +21,12 @@
+       real*8,allocatable :: grd_xarr(:)  !(nx+1), left cell edge values
+       real*8,allocatable :: grd_yarr(:)  !(ny+1), left cell edge values
+       real*8,allocatable :: grd_zarr(:)  !(nz+1), left cell edge values
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c        HYDRO LSU
++      real*8,allocatable :: grd_vx(:)
++      real*8,allocatable :: grd_vy(:)
++      real*8,allocatable :: grd_vz(:)
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ c
+ c-- maximum radial grid velocity
+       real*8 :: grd_rout=0d0   !particle flux edge radius
+@@ -127,6 +133,12 @@
+       allocate(grd_xarr(grd_nx+1))
+       allocate(grd_yarr(grd_ny+1))
+       allocate(grd_zarr(grd_nz+1))
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c        HYDRO LSU
++      allocate(grd_vx(grd_ncell))
++      allocate(grd_vy(grd_ncell))
++      allocate(grd_vz(grd_ncell))
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ c-- polar
+       if(grd_igeom==1) allocate(grd_yacos(grd_ny+1))
+ c
+@@ -208,6 +220,12 @@
+       deallocate(grd_emitprob)
+ c-- ndim=4 alloc
+       deallocate(grd_cap)!}}}
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c        HYDRO LSU
++      deallocate(grd_vx)
++      deallocate(grd_vy)
++      deallocate(grd_vz)
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       end subroutine grid_dealloc
+ c
+       end module gridmod
 diff -r d244a10db46e inputparmod.f
 --- a/inputparmod.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/inputparmod.f	Fri Dec 15 17:15:56 2017 -0700
++++ b/inputparmod.f	Wed Dec 20 12:51:59 2017 -0600
 @@ -23,6 +23,12 @@
        integer :: in_grd_igeom = 0 !geometry: 1=sph, 2=cyl, 3=car, 11=1Dsph
        integer :: in_ndim(3) = [1, 1, 1]  !number of x-direction cells
@@ -82,9 +166,120 @@ diff -r d244a10db46e inputparmod.f
  c!}}}
        end subroutine provide_inputpars
  c
+diff -r d244a10db46e mpimod_ser.f
+--- a/mpimod_ser.f	Mon Feb 20 16:32:09 2017 -0700
++++ b/mpimod_ser.f	Wed Dec 20 12:51:59 2017 -0600
+@@ -71,7 +71,106 @@
+       subroutine allreduce_gammaenergy
+       end subroutine allreduce_gammaenergy
+ c
+-c
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c      HYDRO LSU
++      subroutine gather_hydro
++      use gridmod
++      use hydromod
++      use gasmod
++      use physconstmod
++      implicit none
++
++      integer :: i, j, k, l, f
++      integer :: i0, j0, k0, f0
++      real :: eint
++
++      do i = hydro_bw, hydro_nx - hydro_bw
++      do j = hydro_bw, hydro_ny - hydro_bw
++      do k = hydro_bw, hydro_nz - hydro_bw
++         i0 = i - hydro_bw
++         j0 = j - hydro_bw
++         k0 = k - hydro_bw
++         l = grd_icell(i0, j0, k0)
++         hydro_state(i,j,k,rho_i) = gas_rho(l)
++         hydro_state(i,j,k,px_i) = grd_vx(l) * gas_rho(l)
++         hydro_state(i,j,k,py_i) = grd_vy(l) * gas_rho(l)
++         hydro_state(i,j,k,pz_i) = grd_vz(l) * gas_rho(l)
++         eint =  1.5d0*pc_kb*(1d0+gas_nelec(l))
++     &              * gas_natom(l) / gas_vol(l) / grd_tempinv(l);
++         hydro_state(i,j,k,tau_i) = eint**(1.0d0 / hydro_gamma)
++         hydro_state(i,j,k,egas_i) = eint +
++     &   0.5d0*(grd_vx(l)**2 + grd_vy(l)**2 + grd_vz(l)**2) * gas_rho(l)
++         f = frac_i
++         do f0 = -2*gas_nchain, -1
++           hydro_state(i,j,k,f) =
++     &               gas_natom1fr(f0,l) / gas_vol(l)
++           f = f + 1
++         enddo
++         do f0 = 1, gas_nelem
++           hydro_state(i,j,k,f) =
++     &               gas_natom1fr(f0,l) / gas_vol(l)
++           f = f + 1
++         enddo
++      enddo
++      enddo
++      enddo
++
++      end subroutine gather_hydro
++
++
++      subroutine scatter_hydro
++      use gridmod
++      use hydromod
++      use gasmod
++      use physconstmod
++      use elemdatamod
++      implicit none
++
++      integer :: i, j, k, l, f
++      integer :: i0, j0, k0, f0
++      real :: eint, nnuc
++
++      do i = hydro_bw, hydro_nx - hydro_bw
++      do j = hydro_bw, hydro_ny - hydro_bw
++      do k = hydro_bw, hydro_nz - hydro_bw
++         i0 = i - hydro_bw
++         j0 = j - hydro_bw
++         k0 = k - hydro_bw
++         l = grd_icell(i0, j0, k0)
++
++         gas_rho(l) = hydro_state(i,j,k,rho_i)
++         grd_vx(l) = hydro_state(i,j,k,px_i) / gas_rho(l)
++         grd_vy(l) = hydro_state(i,j,k,py_i) / gas_rho(l)
++         grd_vz(l) = hydro_state(i,j,k,pz_i) / gas_rho(l)
++         eint = hydro_state(i,j,k,tau_i)**(hydro_gamma)
++
++         f = frac_i
++         do f0 = -2*gas_nchain, -1
++           gas_natom1fr(f0,l) = hydro_state(i,j,k,f) * gas_vol(l)
++           f = f + 1
++         enddo
++         do f0 = 1, gas_nelem
++           gas_natom1fr(f0,l) = hydro_state(i,j,k,f) * gas_vol(l)
++           f = f + 1
++         enddo
++         gas_natom(l) = sum(gas_natom1fr(1:gas_nelem,l))
++         gas_nelec(l) = 0.0d0
++         nnuc = 0.0d0
++         do f = 1, gas_nelem
++           gas_nelec(l) = gas_nelec(l) + f * gas_natom1fr(f,l)
++           nnuc = nnuc + elem_data(f)%m * gas_natom1fr(f,l)
++         enddo
++         gas_ye(l) = gas_nelec(l) / nnuc
++         gas_nelec(l) = gas_nelec(l) / gas_natom(l)
++         gas_bcoef(l) = 1.5d0*pc_kb*(1d0+gas_nelec(l))
++     &              * gas_natom(l) / gas_vol(l)
++         grd_tempinv(l) =  gas_bcoef(l) / eint
++      enddo
++      enddo
++      enddo
++
++      end subroutine scatter_hydro
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       subroutine bcast_nonpermanent
+       use gridmod
+       use gasmod
 diff -r d244a10db46e supernu.f90
 --- a/supernu.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/supernu.f90	Fri Dec 15 17:15:56 2017 -0700
++++ b/supernu.f90	Wed Dec 20 12:51:59 2017 -0600
 @@ -24,7 +24,10 @@
    use ffxsmod, only:ffxs_read_data
    use timingmod
@@ -97,10 +292,18 @@ diff -r d244a10db46e supernu.f90
    implicit none
  !***********************************************************************
  ! TODO and wishlist:
-@@ -94,6 +97,13 @@
+@@ -94,6 +97,7 @@
  !--
  !-- setup remaining modules
  !==========================
++
+   call timestepmod_init
+ 
+ !-- wlgrid (before grid setup)
+@@ -103,6 +107,13 @@
+ !-- setup spatial grid
+   call gridmod_init(lmpi0,grp_ng,str_nc,str_lvoid,icell1,ncell)
+   call grid_setup
 +
 +!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 +!     MODIFICATION BY LSU
@@ -108,6 +311,6 @@ diff -r d244a10db46e supernu.f90
 +  call hydro_setup
 +!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 +
-   call timestepmod_init
- 
- !-- wlgrid (before grid setup)
+ !-- setup gas
+   call gasmod_init(lmpi0,icell1,ncell,grp_ng)
+   call gas_setup

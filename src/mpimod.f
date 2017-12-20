@@ -1,1 +1,1 @@
-mpimod_mpi.f
+mpimod_ser.f
