@@ -12,6 +12,10 @@ c     -------------------------
       use gasmod
       use inputparmod
       use timingmod
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     HYDRO LSU
+      use hydromod
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       implicit none
       integer,intent(in) :: it
 ************************************************************************
@@ -36,7 +40,6 @@ c-- previous values
 !     real*8 :: hlparr(grd_nx),hlparrdd(gas_ncell)
 c-- timing
       real*8 :: t0,t1
-c
 c-- begin
       t0 = t_time()
 c
@@ -109,6 +112,14 @@ c-- converge more quickly.
 !}}}
 c
 c
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     HYDRO LSU
+      if( grd_hydro_on ) then
+        call hydro_update(tsp_t, tsp_t + tsp_dt)
+      endif
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 c-- update volume
 c========================================
       i = 0
@@ -120,7 +131,21 @@ c
 c
 c-- update density, start temperature derivative
 c===============================================
-      gas_rho = gas_mass/gas_vol
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     HYDRO LSU
+      if( grd_hydro_on ) then
+        gas_mass = gas_rho * gas_vol
+      else
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+        gas_rho = gas_mass/gas_vol
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     HYDRO LSU
+      endif
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 c-- temperature
       gas_ur = pc_acoef*gas_temp**4
 c

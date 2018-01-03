@@ -5,8 +5,6 @@ c     --------------
       use gasmod
       implicit none
 c
-      logical :: hydro_ison = .true.
-
       real, parameter :: hydro_gamma = 5.0d0 / 3.0d0
 c
       integer, parameter :: rho_i = 1

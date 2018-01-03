@@ -25,8 +25,9 @@ c-- grid geometry and dimensions
       logical :: in_isvelocity = .true.  !switch underlying grid between spatial+static to velocity+expanding
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c     MODIFICATION BY LSU
-      logical :: in_ishydro = .true.
+c     HYDRO LSU
+      logical :: in_hydro_on = .true.
+      logical :: in_radiation_on = .true.
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 c
@@ -797,7 +798,8 @@ c
       grd_isvelocity = in_isvelocity
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c     MODIFICATION BY LSU
-      hydro_ison = in_ishydro
+      grd_hydro_on = in_hydro_on
+      grd_radiation_on = in_radiation_on
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c!}}}
       end subroutine provide_inputpars

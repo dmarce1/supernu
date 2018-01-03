@@ -23,6 +23,8 @@ c
       real*8,allocatable :: grd_zarr(:)  !(nz+1), left cell edge values
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c        HYDRO LSU
+      logical :: grd_hydro_on = .false.
+      logical :: grd_radiation_on = .true.
       real*8,allocatable :: grd_vx(:)
       real*8,allocatable :: grd_vy(:)
       real*8,allocatable :: grd_vz(:)

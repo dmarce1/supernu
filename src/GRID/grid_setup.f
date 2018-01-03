@@ -128,7 +128,7 @@ c-- zero amplification-factor energy to begin with
       grd_eamp = 0d0
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c       HYDRO LSU
-        if( hydro_ison ) then
+        if( grd_hydro_on ) then
           if( grd_isvelocity ) then
             do i = 1, grd_nx
             do j = 1, grd_ny
