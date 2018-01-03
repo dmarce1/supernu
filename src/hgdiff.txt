@@ -1,6 +1,6 @@
 diff -r d244a10db46e GAS/gas_update.f
 --- a/GAS/gas_update.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/GAS/gas_update.f	Wed Jan 03 11:03:14 2018 -0600
++++ b/GAS/gas_update.f	Wed Jan 03 11:41:54 2018 -0600
 @@ -12,6 +12,10 @@
        use gasmod
        use inputparmod
@@ -60,7 +60,7 @@ diff -r d244a10db46e GAS/gas_update.f
  c
 diff -r d244a10db46e GRID/grid_setup.f
 --- a/GRID/grid_setup.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/GRID/grid_setup.f	Wed Jan 03 11:03:14 2018 -0600
++++ b/GRID/grid_setup.f	Wed Jan 03 11:41:54 2018 -0600
 @@ -6,6 +6,10 @@
        use inputparmod
        use inputstrmod
@@ -102,7 +102,7 @@ diff -r d244a10db46e GRID/grid_setup.f
        inquire(file='input.temp',exist=lexist)
 diff -r d244a10db46e Makefile
 --- a/Makefile	Mon Feb 20 16:32:09 2017 -0700
-+++ b/Makefile	Wed Jan 03 11:03:14 2018 -0600
++++ b/Makefile	Wed Jan 03 11:41:54 2018 -0600
 @@ -26,14 +26,14 @@
    miscmod.o ionsmod.o ffxsmod.o bfxsmod.o bbxsmod.o \
    inputparmod.o timestepmod.o groupmod.o gridmod.o gasmod.o inputstrmod.o \
@@ -123,7 +123,7 @@ diff -r d244a10db46e Makefile
  
 diff -r d244a10db46e dealloc_all.f
 --- a/dealloc_all.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/dealloc_all.f	Wed Jan 03 11:03:14 2018 -0600
++++ b/dealloc_all.f	Wed Jan 03 11:41:54 2018 -0600
 @@ -13,6 +13,10 @@
        use sourcemod
        use randommod
@@ -148,7 +148,7 @@ diff -r d244a10db46e dealloc_all.f
        call grid_dealloc
 diff -r d244a10db46e gridmod.f
 --- a/gridmod.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/gridmod.f	Wed Jan 03 11:03:14 2018 -0600
++++ b/gridmod.f	Wed Jan 03 11:41:54 2018 -0600
 @@ -21,6 +21,14 @@
        real*8,allocatable :: grd_xarr(:)  !(nx+1), left cell edge values
        real*8,allocatable :: grd_yarr(:)  !(ny+1), left cell edge values
@@ -192,7 +192,7 @@ diff -r d244a10db46e gridmod.f
        end module gridmod
 diff -r d244a10db46e inputparmod.f
 --- a/inputparmod.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/inputparmod.f	Wed Jan 03 11:03:14 2018 -0600
++++ b/inputparmod.f	Wed Jan 03 11:41:54 2018 -0600
 @@ -23,6 +23,13 @@
        integer :: in_grd_igeom = 0 !geometry: 1=sph, 2=cyl, 3=car, 11=1Dsph
        integer :: in_ndim(3) = [1, 1, 1]  !number of x-direction cells
@@ -232,7 +232,7 @@ diff -r d244a10db46e inputparmod.f
  c
 diff -r d244a10db46e mpimod_ser.f
 --- a/mpimod_ser.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/mpimod_ser.f	Wed Jan 03 11:03:14 2018 -0600
++++ b/mpimod_ser.f	Wed Jan 03 11:41:54 2018 -0600
 @@ -71,7 +71,106 @@
        subroutine allreduce_gammaenergy
        end subroutine allreduce_gammaenergy
@@ -343,7 +343,7 @@ diff -r d244a10db46e mpimod_ser.f
        use gasmod
 diff -r d244a10db46e supernu.f90
 --- a/supernu.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/supernu.f90	Wed Jan 03 11:03:14 2018 -0600
++++ b/supernu.f90	Wed Jan 03 11:41:54 2018 -0600
 @@ -24,7 +24,10 @@
    use ffxsmod, only:ffxs_read_data
    use timingmod

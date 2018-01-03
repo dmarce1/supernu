@@ -1,8 +1,6 @@
 
 
 
-
-
       subroutine hydro_update( t0, t1 )
       use hydromod
       use gridmod
@@ -119,23 +117,73 @@ c     Main loop - loop until desired time is reached
         U = hydro_state
 
 c     Boundaries
-c     TODO: NEEDS COORD SYS SPECIALIZATION, THIS IS FOR CARTESIAN ONLY
         do i = 1, hydro_bw
-          U(i, :, :, :) = U(hydro_bw + 1, :, :, :)
-          U(:, i, :, :) = U(:, hydro_bw + 1, :, :)
-          U(:, :, i, :) = U(:, :, hydro_bw + 1, :)
-          U(hydro_nx - i + 1, :, :, :) = U(hydro_nx - hydro_bw, :, :, :)
-          U(:, hydro_ny - i + 1, :, :) = U(:, hydro_ny - hydro_bw, :, :)
-          U(:, :, hydro_nz - i + 1, :) = U(:, :, hydro_nz - hydro_bw, :)
-          U(i, :, :, px_i) = min( U(i, :, :, px_i), 0.0d0 )
-          U(:, i, :, py_i) = min( U(i, :, :, py_i), 0.0d0 )
-          U(:, :, i, pz_i) = min( U(i, :, :, pz_i), 0.0d0 )
-          U(hydro_nx - i + 1, :, :, px_i) =
-     &      max( U(hydro_nx - i + 1, :, :, px_i), 0.d0 )
-          U(:, hydro_ny - i + 1, :, py_i) =
-     &      max( U(:, hydro_ny - i + 1, :, py_i), 0.0d0 )
-          U(:, :, hydro_nz - i + 1, pz_i) =
-     &      max( U(:, :, hydro_nz - i + 1, pz_i), 0.0d0 )
+          select case( grd_igeom )
+
+c     Spherical
+            case(1,11)
+c     Radial singularity at center and outflow at edge
+              do j = 1, hydro_ny
+                k = mod(j + (hydro_ny-2*hydro_bw) / 2 - 1, hydro_ny) + 1
+                U(i, :, j, :) = U(2 * hydro_bw - i + 1, :, k, :)
+                U(i, :, j, px_i) = -U(i, :, k, px_i)
+              enddo
+              U(hydro_nx - i + 1, :, :, :) = U(hydro_nx-hydro_bw,:,:,:)
+              U(hydro_nx - i + 1, :, :, px_i) =
+     &          max( U(hydro_nx - i + 1, :, :, px_i), 0.d0 )
+c     Azimuthal periodic
+              U(:, i, :, :) = U(:, hydro_ny - hydro_bw - 1 + i, :, :)
+              U(:, hydro_ny - i + 1, :, :) = U(:, hydro_bw + i, :, :)
+c     Theta direction
+              do j = 1, hydro_ny
+                k = mod(j + (hydro_ny-2*hydro_bw) / 2 - 1, hydro_ny) + 1
+                U(:, j, i, :) = U(:, k, 2 * hydro_bw - i + 1, :)
+                U(:, j, i, pz_i) = -U(:, k, i, pz_i)
+                U(:,j,hydro_nz-i+1,:) = U(:,k,hydro_nz+i-hydro_bw-1,:)
+                U(:,j,hydro_nz-i+1,pz_i) =
+     &                              -U(:,k,hydro_nz+i-hydro_bw-1,pz_i)
+              enddo
+
+c     Cylindrical
+            case(2)
+c     Radial singularity at center and outflow at edge
+              do j = 1, hydro_ny
+                k = mod(j + (hydro_ny-2*hydro_bw) / 2 - 1, hydro_ny) + 1
+                U(i, j, :, :) = U(2 * hydro_bw - i + 1, k, :, 1:)
+                U(i, j, :, px_i) = -U(i, k, :, px_i)
+              enddo
+              U(hydro_nx - i + 1, :, :, :) = U(hydro_nx-hydro_bw,:,:,:)
+              U(hydro_nx - i + 1, :, :, px_i) =
+     &          max( U(hydro_nx - i + 1, :, :, px_i), 0.d0 )
+c     Azimuthal periodic
+              U(:, i, :, :) = U(:, hydro_ny - hydro_bw - 1 + i, :, :)
+              U(:, hydro_ny - i + 1, :, :) = U(:, hydro_bw + i, :, :)
+c     Vertical outflow both directions
+              U(:, :, i, :) = U(:, :, hydro_bw + 1, :)
+              U(:, :, i, pz_i) = min( U(:, :, i, pz_i), 0.0d0 )
+              U(:, :, hydro_nz - i + 1, :) = U(:,:,hydro_nz-hydro_bw,:)
+              U(:, :, hydro_nz - i + 1, pz_i) =
+     &          max( U(:, :, hydro_nz - i + 1, pz_i), 0.0d0 )
+
+c     Cartesian
+            case(3)
+c     All dims are outflow
+              U(i, :, :, :) = U(hydro_bw + 1, :, :, :)
+              U(hydro_nx - i + 1, :, :, :) = U(hydro_nx-hydro_bw,:,:,:)
+              U(:, i, :, :) = U(:, hydro_bw + 1, :, :)
+              U(:, hydro_ny - i + 1, :, :) = U(:,hydro_ny-hydro_bw,:,:)
+              U(:, :, i, :) = U(:, :, hydro_bw + 1, :)
+              U(:, :, hydro_nz - i + 1, :) = U(:,:,hydro_nz-hydro_bw,:)
+              U(i, :, :, px_i) = min( U(i, :, :, px_i), 0.0d0 )
+              U(:, i, :, py_i) = min( U(:, i, :, py_i), 0.0d0 )
+              U(:, :, i, pz_i) = min( U(:, :, i, pz_i), 0.0d0 )
+              U(hydro_nx - i + 1, :, :, px_i) =
+     &          max( U(hydro_nx - i + 1, :, :, px_i), 0.d0 )
+              U(:, hydro_ny - i + 1, :, py_i) =
+     &          max( U(:, hydro_ny - i + 1, :, py_i), 0.0d0 )
+              U(:, :, hydro_nz - i + 1, pz_i) =
+     &          max( U(:, :, hydro_nz - i + 1, pz_i), 0.0d0 )
+          end select
         enddo
 
 c     Compute contribution to dudt in each flux direction
