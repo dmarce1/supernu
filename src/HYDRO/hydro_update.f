@@ -79,28 +79,19 @@ c     Get face X from grd_?arr
 
       do i = 0, bw-1
         if( dimused(1) ) then
-          Xf(bw-i,:,:,1) =
-     &      2.0d0*Xf(bw-i+2,:,:,1) -
-     &            Xf(bw-i+1,:,:,1)
+          Xf(bw-i,:,:,1) = 2.0d0*Xf(bw-i+2,:,:,1) - Xf(bw-i+1,:,:,1)
           Xf(nx-bw+i+1,:,:,1) =
-     &      2.0d0*Xf(nx-bw+i  ,:,:,1) -
-     &            Xf(nx-bw+i-1,:,:,1)
+     &      2.0d0*Xf(nx-bw+i,:,:,1) - Xf(nx-bw+i-1,:,:,1)
         endif
         if( dimused(2) ) then
-          Xf(:,bw-i,:,2) =
-     &      2.0d0*Xf(:,bw-i+2,:,2) -
-     &            Xf(:,bw-i+1,:,2)
+          Xf(:,bw-i,:,2) = 2.0d0*Xf(:,bw-i+2,:,2) - Xf(:,bw-i+1,:,2)
           Xf(:,ny-bw+i+1,:,2) =
-     &      2.0d0*Xf(:,ny-bw+i  ,:,2) -
-     &            Xf(:,ny-bw+i-1,:,2)
+     &      2.0d0*Xf(:,ny-bw+i,:,2) - Xf(:,ny-bw+i-1,:,2)
         endif
         if( dimused(3) ) then
-          Xf(:,:,bw-i,3) =
-     &      2.0d0*Xf(:,:,bw-i+2,3) -
-     &            Xf(:,:,bw-i+1,3)
+          Xf(:,:,bw-i,3) = 2.0d0*Xf(:,:,bw-i+2,3) - Xf(:,:,bw-i+1,3)
           Xf(:,:,nz-bw+i+1,3) =
-     &      2.0d0*Xf(:,:,nz-bw+i  ,3) -
-     &            Xf(:,:,nz-bw+i-1,3)
+     &      2.0d0*Xf(:,:,nz-bw+i,3) - Xf(:,:,nz-bw+i-1,3)
         endif
       enddo
 
@@ -124,24 +115,18 @@ c     Select dimensions where grid is in velocity space
 c     Compute cell centered X and dX from face X
 
       if( dimused(1) ) then
-        X(1:nx-1,:,:,1) =
-     &    (Xf(2:nx,:,:,1) + Xf(1:nx-1,:,:,1))*0.5d0
-        dX(1:nx-1,:,:,1) =
-     &    (Xf(2:nx,:,:,1) - Xf(1:nx-1,:,:,1))
+        X(1:nx-1,:,:,1) = (Xf(2:nx,:,:,1) + Xf(1:nx-1,:,:,1))*0.5d0
+        dX(1:nx-1,:,:,1) = Xf(2:nx,:,:,1) - Xf(1:nx-1,:,:,1)
       endif
 
       if( dimused(2) ) then
-        X(:,1:ny-1,:,2) =
-     &    (Xf(:,2:ny,:,2) + Xf(:,1:ny-1,:,2))*0.5d0
-        dX(:,1:ny-1,:,2) =
-     &    (Xf(:,2:ny,:,2) - Xf(:,1:ny-1,:,2))
+        X(:,1:ny-1,:,2) = (Xf(:,2:ny,:,2) + Xf(:,1:ny-1,:,2))*0.5d0
+        dX(:,1:ny-1,:,2) = Xf(:,2:ny,:,2) - Xf(:,1:ny-1,:,2)
       endif
 
       if( dimused(3) ) then
-        X(:,:,1:nz-1,3) =
-     &    (Xf(:,:,2:nz,3) + Xf(:,:,1:nz-1,3))*0.5d0
-        dX(:,:,1:nz-1,3) =
-     &    (Xf(:,:,2:nz,3) - Xf(:,:,1:nz-1,3))
+        X(:,:,1:nz-1,3) = (Xf(:,:,2:nz,3) + Xf(:,:,1:nz-1,3))*0.5d0
+        dX(:,:,1:nz-1,3) = Xf(:,:,2:nz,3) - Xf(:,:,1:nz-1,3)
       endif
 
 c     Compute geometrical scale, face area, and inverse cell volumes
@@ -183,10 +168,10 @@ c     Spherical
 c     Radial singularity at center and outflow at edge
               do j = 1, ny
                 k = mod(j + (ny-2*bw) / 2 - 1, ny) + 1
-                U(i, :, j, :) = U(2 * bw - i + 1, :, k, :)
-                U(i, :, j, px_i) = -U(i, :, k, px_i)
+                U(i,:,j,:) = U(2 * bw - i + 1,:,k,:)
+                U(i,:,j,px_i) = -U(i,:,k,px_i)
               enddo
-              U(nx - i + 1, :, :, :) = U(nx-bw,:,:,:)
+              U(nx - i + 1,:, :, :) = U(nx-bw,:,:,:)
               U(nx - i + 1, :, :, px_i) =
      &          max( U(nx - i + 1, :, :, px_i), 0.d0 )
 
@@ -200,8 +185,7 @@ c     Theta direction
                   U(:, j, i, :) = U(:, k, 2 * bw - i + 1, :)
                   U(:, j, i, pz_i) = -U(:, k, i, pz_i)
                   U(:,j,nz-i+1,:) = U(:,k,nz+i-bw-1,:)
-                  U(:,j,nz-i+1,pz_i) =
-     &                              -U(:,k,nz+i-bw-1,pz_i)
+                  U(:,j,nz-i+1,pz_i) = -U(:,k,nz+i-bw-1,pz_i)
                 enddo
               endif
 
@@ -210,40 +194,36 @@ c     Cylindrical
 c     Radial singularity at center and outflow at edge
               do j = 1, ny
                 k = mod(j + (ny-2*bw) / 2 - 1, ny) + 1
-                U(i, j, :, :) = U(2 * bw - i + 1, k, :, 1:)
-                U(i, j, :, px_i) = -U(i, k, :, px_i)
+                U(i,j,:,:) = U(2*bw-i+1,k,:,:)
+                U(i,j,:,px_i) = -U(i,k,:,px_i)
               enddo
-              U(nx - i + 1, :, :, :) = U(nx-bw,:,:,:)
-              U(nx - i + 1, :, :, px_i) =
-     &          max( U(nx - i + 1, :, :, px_i), 0.d0 )
+              U(nx-i+1,:,:,:) = U(nx-bw,:,:,:)
+              U(nx-i+1,:,:,px_i) =
+     &          max( U(nx - i + 1, :,:,px_i), 0.d0 )
 c     Azimuthal periodic
-              U(:, i, :, :) = U(:, ny - bw - 1 + i, :, :)
-              U(:, ny - i + 1, :, :) = U(:, bw + i, :, :)
+              U(:,i,:,:) = U(:,ny-bw-1+i,:,:)
+              U(:,ny-i+1,:,:) = U(:,bw+i,:,:)
 c     Vertical outflow both directions
-              U(:, :, i, :) = U(:, :, bw + 1, :)
-              U(:, :, i, pz_i) = min( U(:, :, i, pz_i), 0.0d0 )
-              U(:, :, nz - i + 1, :) = U(:,:,nz-bw,:)
-              U(:, :, nz - i + 1, pz_i) =
-     &          max( U(:, :, nz - i + 1, pz_i), 0.0d0 )
+              U(:,:,i,:) = U(:,:,bw+1,:)
+              U(:,:,i,pz_i) = min( U(:,:,i,pz_i), 0.0d0 )
+              U(:,:,nz-i+1,:) = U(:,:,nz-bw,:)
+              U(:,:,nz-i+1,pz_i) = max( U(:,:,nz-i+1,pz_i), 0.0d0 )
 
 c     Cartesian
             case(3)
 c     All dims are outflow
-              U(i, :, :, :) = U(bw + 1, :, :, :)
-              U(nx - i + 1, :, :, :) = U(nx-bw,:,:,:)
-              U(:, i, :, :) = U(:, bw + 1, :, :)
-              U(:, ny - i + 1, :, :) = U(:,ny-bw,:,:)
-              U(:, :, i, :) = U(:, :, bw + 1, :)
-              U(:, :, nz - i + 1, :) = U(:,:,nz-bw,:)
-              U(i, :, :, px_i) = min( U(i, :, :, px_i), 0.0d0 )
-              U(:, i, :, py_i) = min( U(:, i, :, py_i), 0.0d0 )
-              U(:, :, i, pz_i) = min( U(:, :, i, pz_i), 0.0d0 )
-              U(nx - i + 1, :, :, px_i) =
-     &          max( U(nx - i + 1, :, :, px_i), 0.d0 )
-              U(:, ny - i + 1, :, py_i) =
-     &          max( U(:, ny - i + 1, :, py_i), 0.0d0 )
-              U(:, :, nz - i + 1, pz_i) =
-     &          max( U(:, :, nz - i + 1, pz_i), 0.0d0 )
+              U(i,:,:,:) = U(bw + 1,:,:,:)
+              U(nx-i+1,:,:,:) = U(nx-bw,:,:,:)
+              U(:,i,:,:) = U(:,bw+1,:,:)
+              U(:,ny-i+1,:,:) = U(:,ny-bw,:,:)
+              U(:,:,i,:) = U(:,:,bw+1,:)
+              U(:,:,nz-i+1,:) = U(:,:,nz-bw,:)
+              U(i,:,:,px_i) = min( U(i,:,:,px_i), 0.0d0 )
+              U(:,i,:,py_i) = min( U(:,i,:,py_i), 0.0d0 )
+              U(:,:,i,pz_i) = min( U(:,:,i,pz_i), 0.0d0 )
+              U(nx-i+1,:,:,px_i) = max( U(nx-i+1,:,:,px_i), 0.0d0 )
+              U(:,ny-i+1,:,py_i) = max( U(:,ny-i+1,:,py_i), 0.0d0 )
+              U(:,:,nz-i+1,pz_i) = max( U(:,:,nz-i+1,pz_i), 0.0d0 )
           end select
         enddo
 
@@ -270,10 +250,10 @@ c     Compute face kinetic and internal energies and velocities
               kinL = 0.5d0 * UL(:,:,:,px_i)**2 / UL(:,:,:,rho_i)
               kinR = 0.5d0 * UR(:,:,:,px_i)**2 / UR(:,:,:,rho_i)
             else
-              kinL = 0.5d0*(UL(:,:,:,px_i)**2+UL(:,:,:,py_i)**2
-     &                  +UL(:,:,:,pz_i)**2) / UL(:,:,:,rho_i)
-              kinR = 0.5d0*(UR(:,:,:,px_i)**2+UR(:,:,:,py_i)**2
-     &                  +UR(:,:,:,pz_i)**2) / UR(:,:,:,rho_i)
+              kinL = 0.5d0*(UL(:,:,:,px_i)**2 + UL(:,:,:,py_i)**2
+     &                  + UL(:,:,:,pz_i)**2) / UL(:,:,:,rho_i)
+              kinR = 0.5d0*(UR(:,:,:,px_i)**2 + UR(:,:,:,py_i)**2
+     &                  + UR(:,:,:,pz_i)**2) / UR(:,:,:,rho_i)
             endif
             einL = UL(:,:,:,egas_i) - kinL
             einR = UR(:,:,:,egas_i) - kinR
