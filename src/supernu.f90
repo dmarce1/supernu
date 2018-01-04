@@ -158,9 +158,17 @@ program supernu
      write(6,'(1x,a5,a9,1x,a5,a10,4(a7,1x),a7)') 'it','t[day]','itflx','e_err','nsrc','ncens','nflux','nflxbuf','usage'
   endif
 !
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!     HYDRO LSU
+  tsp_itrestart = max(1,tsp_itrestart)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   do it=tsp_itrestart,tsp_nt
      t_timelin(1) = t_time() !timeline
 !-- allow negative and zero it for temperature initialization purposes
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!     HYDRO LSU
+     it_gt_0 = it .gt. 0
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      tsp_it = max(it,1)
 
 !-- Update tsp_t etc

@@ -13,6 +13,10 @@ module timestepmod
   real*8,allocatable :: tsp_tpreset(:)  !store preset time steps from input.tsp_time
   real*8 :: tsp_tcenter,tsp_tfirst,tsp_tlast
   real*8 :: tsp_dt,tsp_dtinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!     HYDRO LSU
+  logical :: it_gt_0
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
   private read_timestep_preset
 
@@ -40,6 +44,10 @@ module timestepmod
     allocate(tsp_tarr(tsp_nt+1))
     tsp_tarr(1) = tsp_t
 !!}}}
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!     HYDRO LSU
+    it_gt_0 = .false.
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   end subroutine timestepmod_init
 
 

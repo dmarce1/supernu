@@ -9,7 +9,7 @@
 !-- time step
  in_tsp_nt = 10
  in_tsp_tfirst = 1.0
- in_tsp_tlast = 10.0
+ in_tsp_tlast = 2.0
  
  in_grp_ng = 100
  in_src_ns = 1

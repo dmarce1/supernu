@@ -130,7 +130,7 @@ c===============================================
 
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c     HYDRO LSU
-      if( grd_hydro_on ) then
+      if( grd_hydro_on .and. it_gt_0 ) then
         call hydro_update(tsp_t, tsp_t + tsp_dt)
         gas_mass = gas_rho * gas_vol
       endif
@@ -142,36 +142,48 @@ c
 c-- sanity check temperatures
       if(any(gas_temp/=gas_temp)) stop 'gas_temp NaN'
       if(any(gas_temp<=0d0)) stop 'gas_temp<=0'
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     HYDRO LSU
+      if( in_radiation_on ) then
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 c
 c
 c
 c-- compute the starting tempurature derivative in the fleck factor
-      if(lfirst .or. in_opacanaltype/='none') then
+        if(lfirst .or. in_opacanaltype/='none') then
 c-- temporarily change!{{{
-       gas_temp = dtempfrac*gas_temp
-       if(in_opacanaltype=='none') then
-        if(.not.in_noeos) call eos_update(.false.)
-       endif
+         gas_temp = dtempfrac*gas_temp
+         if(in_opacanaltype=='none') then
+          if(.not.in_noeos) call eos_update(.false.)
+         endif
 c
-       if(in_opacanaltype/='none') then
-        call analytic_opacity
-       else
-        call physical_opacity
-       endif
-       call opacity_planckmean
+         if(in_opacanaltype/='none') then
+          call analytic_opacity
+         else
+          call physical_opacity
+         endif
+         call opacity_planckmean
 c
 c-- save
-       if(.not.allocated(tempalt)) then
-        allocate(tempalt(gas_ncell))
-        allocate(capgreyalt(gas_ncell))
-       endif
-       tempalt = gas_temp
-       capgreyalt = gas_capgrey/gas_rho !per gram
+         if(.not.allocated(tempalt)) then
+          allocate(tempalt(gas_ncell))
+          allocate(capgreyalt(gas_ncell))
+         endif
+         tempalt = gas_temp
+         capgreyalt = gas_capgrey/gas_rho !per gram
 c
 c-- change back
-       gas_temp = gas_temp/dtempfrac
+         gas_temp = gas_temp/dtempfrac
 !}}}
+        endif
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     HYDRO LSU
       endif
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 c
 c
 c
@@ -200,81 +212,95 @@ c-- add initial thermal input to dd_eext
        tot_emat = sum(gas_bcoef*gas_temp*gas_vol)
        tot_eext = tot_eext + tot_emat  !was initialized either in totalsmod or in totals_startup
       endif      
+
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     HYDRO LSU
+      if( in_radiation_on ) then
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 c
 c
 c
 c-- calculate opacities
 c======================
 c-- gamma opacity
-      gas_capgam = in_opcapgam*gas_ye*gas_rho
+        gas_capgam = in_opcapgam*gas_ye*gas_rho
 c
 c
 c-- simple analytical group/grey opacities: Planck and Rosseland 
-      if(in_opacanaltype/='none') then
-       call analytic_opacity
-      else
+        if(in_opacanaltype/='none') then
+         call analytic_opacity
+        else
 c-- calculate physical opacities
 c-- test existence of input.opac file
-       inquire(file='input.opac',exist=lexist)
-       if(.not.lexist) then
+         inquire(file='input.opac',exist=lexist)
+         if(.not.lexist) then
 c-- calculate opacities
-        call physical_opacity
-       else
+          call physical_opacity
+         else
 c-- read in opacities
-        open(4,file='input.opac',status='old',iostat=istat)!{{{
-        if(istat/=0) stop 'read_opac: no file: input.opac'
+          open(4,file='input.opac',status='old',iostat=istat)!{{{
+          if(istat/=0) stop 'read_opac: no file: input.opac'
 c-- read header
-        read(4,*,iostat=istat)
-        if(istat/=0) stop 'read_opac: file empty: input.opac'
+          read(4,*,iostat=istat)
+          if(istat/=0) stop 'read_opac: file empty: input.opac'
 c-- read each cell individually
-        do j=1,tsp_it
+          do j=1,tsp_it
 c-- skip delimiter
          read(4,*,iostat=istat)
-         if(istat/=0) stop 'read_opac: delimiter error: input.opac'
+           if(istat/=0) stop 'read_opac: delimiter error: input.opac'
 c-- read data
-         do i=1,gas_ncell
-          read(4,*,iostat=istat) help,gas_sig(i),gas_cap(:,i)
-          if(istat/=0) stop 'read_opac: body error: input.opac'
-         enddo !i
-        enddo !j
-        close(4)
-        write(6,*) 'read_opac: read successfully'
+           do i=1,gas_ncell
+            read(4,*,iostat=istat) help,gas_sig(i),gas_cap(:,i)
+            if(istat/=0) stop 'read_opac: body error: input.opac'
+           enddo !i
+          enddo !j
+          close(4)
+          write(6,*) 'read_opac: read successfully'
 !}}}
-       endif
-      endif
-      call opacity_planckmean
+         endif
+        endif
+        call opacity_planckmean
 c
 c
 c-- write out opacities
 c----------------------
-      if(trim(in_io_opacdump)=='off') then !{{{
-c-- donothing
-      else
-       open(4,file='output.opac',status='unknown',position='append')
-      endif !off
+        if(trim(in_io_opacdump)=='off') then !{{{
+c-- don othing
+       else
+         open(4,file='output.opac',status='unknown',position='append')
+        endif !off
 c
 c-- write opacity grid
-      inquire(4,opened=do_output)
-      if(do_output) then
+        inquire(4,opened=do_output)
+        if(do_output) then
 c-- header
-       if(tsp_it==1) write(4,'("#",3i8)') gas_ncell,tsp_nt
-       write(4,'("#",3i8)') tsp_it
+         if(tsp_it==1) write(4,'("#",3i8)') gas_ncell,tsp_nt
+         write(4,'("#",3i8)') tsp_it
 c-- body
-       do i=1,gas_ncell
-        write(4,'(1p,9999e12.4)') gas_temp(i),gas_sig(i),gas_cap(:,i)
-       enddo
+         do i=1,gas_ncell
+          write(4,'(1p,9999e12.4)') gas_temp(i),gas_sig(i),gas_cap(:,i)
+         enddo
 c-- close file
-       close(4)
-      endif !do_output !}}}
+        close(4)
+        endif !do_output !}}}
 c
 c
 c-- Calculating Fleck factor, leakage opacities
-      call fleck_factor(tempalt,capgreyalt)
+        call fleck_factor(tempalt,capgreyalt)
 c
 c
 c-- save previous values for gentile-fleck factor calculation in next iter
-      tempalt = gas_temp
-      capgreyalt = gas_capgrey/gas_rho
+        tempalt = gas_temp
+        capgreyalt = gas_capgrey/gas_rho
+
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     HYDRO LSU
+      endif
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 c
       lfirst = .false.
 c

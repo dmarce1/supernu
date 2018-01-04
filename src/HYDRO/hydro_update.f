@@ -51,6 +51,7 @@
       call gather_hydro
       t = t0
 
+
 c     Find out which dimensions are in use
       dimused(1) = grd_nx .gt. 1
       if( grd_igeom .eq. 11 ) then
@@ -134,30 +135,32 @@ c     Compute geometrical scale, face area, and inverse cell volumes
 c     (in units of dX)
       select case( grd_igeom )
         case(1,11)
-         scle(:,:,:,1) = 1.0d0
-         area(:,:,:,1) = Xf(:,:,:,1)**2 * sin(Xf(:,:,:,2))
-         if( grd_igeom .ne. 11 ) then
-           scle(:,:,:,2) = X(:,:,:,1)
-           area(:,:,:,2) = Xf(:,:,:,1)
-           scle(:,:,:,3) = X(:,:,:,1) * sin(X(:,:,:,2))
-           area(:,:,:,3) = Xf(:,:,:,1) * sin(Xf(:,:,:,2))
-         endif
+          scle(:,:,:,1) = 1.0d0
+          scle(:,:,:,2) = X(:,:,:,1)
+          area(:,:,:,2) = Xf(:,:,:,1)
+          if( grd_igeom .eq. 1 ) then
+            area(:,:,:,1) = Xf(:,:,:,1)**2 * sin(Xf(:,:,:,2))
+            scle(:,:,:,3) = X(:,:,:,1) * sin(X(:,:,:,2))
+            area(:,:,:,3) = Xf(:,:,:,1) * sin(Xf(:,:,:,2))
+          else
+            area(:,:,:,1) = Xf(:,:,:,1)**2
+            scle(:,:,:,3) = X(:,:,:,1)
+            area(:,:,:,3) = Xf(:,:,:,1)
+          endif
         case(2)
-         scle(:,:,:,(/1,3/)) = 1.0d0
-         scle(:,:,:,2) = X(:,:,:,1)
-         area(:,:,:,1) = Xf(:,:,:,1)
-         area(:,:,:,2) = 1.0d0
-         area(:,:,:,3) = Xf(:,:,:,1)
+          scle(:,:,:,(/1,3/)) = 1.0d0
+          scle(:,:,:,2) = X(:,:,:,1)
+          area(:,:,:,1) = Xf(:,:,:,1)
+          area(:,:,:,2) = 1.0d0
+          area(:,:,:,3) = Xf(:,:,:,1)
         case(3)
-         scle = 1.0d0
-         area = 1.0d0
+          scle = 1.0d0
+          area = 1.0d0
       end select
 
-      if( grd_igeom .ne. 11 ) then
-        volinv(:,:,:) = 1.0d0 / product(scle)
-      else
-        volinv(:,:,:) = 1.0d0 / (scle(:,:,:,1))
-      endif
+      volinv(:,:,:) = 1.0d0         / scle(:,:,:,1)
+      volinv(:,:,:) = volinv(:,:,:) / scle(:,:,:,2)
+      volinv(:,:,:) = volinv(:,:,:) / scle(:,:,:,3)
 
       done = .false.
 c     Main loop - loop until desired time is reached
@@ -373,14 +376,18 @@ c     Add flux contribution to dudt
         enddo
 
 
-c      do i = xb,xe
-c      do j = yb,ye
-c      do k = zb,ze
-c         write(*,*) i,j,k,volinv(i,j,k)
-c      end do
-c      end do
-c      end do
-c      call abort()
+
+c      if( t0 .gt. 1.0d0 ) then
+c        do i = xb,xe
+c        do j = yb,ye
+c        do k = zb,ze
+c          write(*,*) i,j,k,U(i,j,k,px_i)/U(i,j,k,rho_i),
+c     &                       U(i,j,k,px_i),U(i,j,k,rho_i)
+c        end do
+c        end do
+c        end do
+c        call abort()
+c      endif
 
 c       Geometrical source terms
         if( grd_igeom .ne. 11 ) then
@@ -429,7 +436,6 @@ c     Upate X, Xf, and dX for moving grids
         enddo
 
         t = t + dt
-
         write(*,*) t, t1, dt, dtinv_max
 
 
