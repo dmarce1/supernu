@@ -203,7 +203,12 @@ c-- runtime parameter namelist
 !io
      & in_io_grabstdout,
      & in_io_nogriddump,in_io_dogrdtally,
-     & in_io_opacdump,in_io_pdensdump
+     & in_io_opacdump,in_io_pdensdump,
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     HYDRO LSU
+     & in_hydro_on, in_radiation_on
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 c
 c-- pointers
 c

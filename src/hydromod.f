@@ -5,7 +5,7 @@ c     --------------
       use gasmod
       implicit none
 c
-      real, parameter :: hydro_gamma = 5.0d0 / 3.0d0
+      real*8, parameter :: hydro_gamma = 5.0d0 / 3.0d0
 c
       integer, parameter :: rho_i = 1
       integer, parameter :: px_i = 2

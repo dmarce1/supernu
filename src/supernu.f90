@@ -174,6 +174,11 @@ program supernu
      call grid_update(tsp_t)
      call gas_update(it)
 
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!     MODIFICATION BY LSU
+     if( in_radiation_on ) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 !-- source energy: gamma and material
      call sourceenergy
 
@@ -248,6 +253,11 @@ program supernu
      call temperature_update
      call reduce_gastemp !MPI  !for output
 
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!     MODIFICATION BY LSU
+     endif !( in_radiation_on ) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 !-- output
      if(lmpi0) then
 !-- total energy startup values and energy conservation
@@ -271,6 +281,7 @@ program supernu
               ct_nnonvacant(2)/dble(prt_npartmax)
         endif
      endif !impi
+
 
 !-- write timestep timing to file
      call timing_cycle(impi,it<=0)

@@ -3,10 +3,11 @@
 FC = mpif90
 
 #-- opt or debug
-FCFLAGS = -O3 
+#FCFLAGS = -O3 
 #FCFLAGS = -g -O0 -Wall -fcheck=all
 #-- gfortran 4.4.3 debug flags:
-#FCFLAGS = -g -O0 -Wall -fbounds-check -fbacktrace
+FCFLAGS = -g -O0 -Wall -fbounds-check -fbacktrace -fstack-protector-all
+
 
 #-- additional flags
 FCFLAGS += -m64 -msse3

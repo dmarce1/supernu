@@ -82,11 +82,11 @@ c      HYDRO LSU
 
       integer :: i, j, k, l, f
       integer :: i0, j0, k0, f0
-      real :: eint
+      real*8 :: eint
 
-      do i = hydro_bw, hydro_nx - hydro_bw
-      do j = hydro_bw, hydro_ny - hydro_bw
-      do k = hydro_bw, hydro_nz - hydro_bw
+      do i = hydro_bw+1, hydro_nx - hydro_bw
+      do j = hydro_bw+1, hydro_ny - hydro_bw
+      do k = hydro_bw+1, hydro_nz - hydro_bw
          i0 = i - hydro_bw
          j0 = j - hydro_bw
          k0 = k - hydro_bw
@@ -128,11 +128,11 @@ c      HYDRO LSU
 
       integer :: i, j, k, l, f
       integer :: i0, j0, k0, f0
-      real :: eint, nnuc
+      real*8 :: eint, nnuc
 
-      do i = hydro_bw, hydro_nx - hydro_bw
-      do j = hydro_bw, hydro_ny - hydro_bw
-      do k = hydro_bw, hydro_nz - hydro_bw
+      do i = hydro_bw+1, hydro_nx - hydro_bw
+      do j = hydro_bw+1, hydro_ny - hydro_bw
+      do k = hydro_bw+1, hydro_nz - hydro_bw
          i0 = i - hydro_bw
          j0 = j - hydro_bw
          k0 = k - hydro_bw

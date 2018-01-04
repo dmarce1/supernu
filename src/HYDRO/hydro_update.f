@@ -6,57 +6,58 @@
       use gridmod
       use mpimod
       implicit none
-      real, intent(in) :: t0, t1
+      real(8), intent(in) :: t0, t1
 
-      real :: t, dt, avg, dif
-      real :: tinv_max
+      real(8) :: t, dt
+      real(8) :: tinv_max
 
       integer :: dm, dm_max
       integer :: i, j, k
 
-      real :: U(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
-      real :: P(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
-      real :: dU(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
-      real :: UR(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
-      real :: UL(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
-      real :: Fv(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
-      real :: Fs(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
-      real :: A(hydro_nx,hydro_ny,hydro_nz)
-      real :: scle(hydro_nx,hydro_ny,hydro_nz,3)
-      real :: area(hydro_nx,hydro_ny,hydro_nz,3)
-      real :: volinv(hydro_nx,hydro_ny,hydro_nz)
-      real :: X(hydro_nx,hydro_ny,hydro_nz,3)
-      real :: Xf(hydro_nx,hydro_ny,hydro_nz,3)
-      real :: dX(hydro_nx,hydro_ny,hydro_nz,3)
-      real :: kinR(hydro_nx,hydro_ny,hydro_nz)
-      real :: kinL(hydro_nx,hydro_ny,hydro_nz)
-      real :: velR(hydro_nx,hydro_ny,hydro_nz)
-      real :: velL(hydro_nx,hydro_ny,hydro_nz)
-      real :: einR(hydro_nx,hydro_ny,hydro_nz)
-      real :: einL(hydro_nx,hydro_ny,hydro_nz)
-      real :: tmp(hydro_nx,hydro_ny,hydro_nz)
+      real(8) :: U(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
+      real(8) :: dU(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
+      real(8) :: UR(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
+      real(8) :: UL(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
+      real(8) :: Fv(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
+      real(8) :: Fs(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
+      real(8) :: A(hydro_nx,hydro_ny,hydro_nz)
+      real(8) :: scle(hydro_nx,hydro_ny,hydro_nz,3)
+      real(8) :: area(hydro_nx,hydro_ny,hydro_nz,3)
+      real(8) :: volinv(hydro_nx,hydro_ny,hydro_nz)
+      real(8) :: X(hydro_nx,hydro_ny,hydro_nz,3)
+      real(8) :: Xf(hydro_nx,hydro_ny,hydro_nz,3)
+      real(8) :: dX(hydro_nx,hydro_ny,hydro_nz,3)
+      real(8) :: kinR(hydro_nx,hydro_ny,hydro_nz)
+      real(8) :: kinL(hydro_nx,hydro_ny,hydro_nz)
+      real(8) :: velR(hydro_nx,hydro_ny,hydro_nz)
+      real(8) :: velL(hydro_nx,hydro_ny,hydro_nz)
+      real(8) :: einR(hydro_nx,hydro_ny,hydro_nz)
+      real(8) :: einL(hydro_nx,hydro_ny,hydro_nz)
+      real(8) :: tmp(hydro_nx,hydro_ny,hydro_nz)
       logical :: veldim(3)
 
       call gather_hydro
       t = t0
 
 c     Get face X from grd_?arr
-      do i = 1, hydro_nx
-      do j = 1, hydro_ny
-      do k = 1, hydro_nz
-        Xf(i,j,k,1) = grd_xarr(i)
-        Xf(i,j,k,2) = grd_yarr(j)
-        Xf(i,j,k,3) = grd_zarr(k)
+      do i = 1+hydro_bw, hydro_nx-hydro_bw+1
+      do j = 1+hydro_bw, hydro_ny-hydro_bw+1
+      do k = 1+hydro_bw, hydro_nz-hydro_bw+1
+        Xf(i,j,k,1) = grd_xarr(i-hydro_bw)
+        if( grd_igeom .ne. 11 ) then
+          Xf(i,j,k,2) = grd_yarr(j-hydro_bw)
+          Xf(i,j,k,3) = grd_zarr(k-hydro_bw)
+        endif
       enddo
       enddo
       enddo
 
 c     Select dimensions where grid is in velocity space
       select case( grd_igeom )
-        case(11 : 1)
+        case(11 , 1)
           veldim(1) = .true. .and. grd_isvelocity
           veldim(2:3) = .false.
-          Xf(:,:,:,1) = Xf(:,:,:,1)* t
+          Xf(:,:,:,1) = Xf(:,:,:,1) * t
         case(2)
           veldim((/1,3/)) = .true. .and. grd_isvelocity
           veldim(2) = .false.
@@ -69,16 +70,18 @@ c     Select dimensions where grid is in velocity space
 c     Compute cell centered X and dX from face X
       X(1:hydro_nx-1,:,:,1) =
      &  (Xf(2:hydro_nx,:,:,1) + Xf(1:hydro_nx-1,:,:,1))*0.5d0
-      X(:,1:hydro_ny-1,:,2) =
-     &  (Xf(:,2:hydro_ny,:,2) + Xf(:,1:hydro_ny-1,:,2))*0.5d0
-      X(:,:,1:hydro_nz-1,3) =
-     &  (Xf(:,:,2:hydro_nz,3) + Xf(:,:,1:hydro_nz-1,3))*0.5d0
       dX(1:hydro_nx-1,:,:,1) =
      &  (Xf(2:hydro_nx,:,:,1) - Xf(1:hydro_nx-1,:,:,1))
-      dX(:,1:hydro_ny-1,:,2) =
-     &  (Xf(:,2:hydro_ny,:,2) - Xf(:,1:hydro_ny-1,:,2))
-      dX(:,:,1:hydro_nz-1,3) =
-     &  (Xf(:,:,2:hydro_nz,3) - Xf(:,:,1:hydro_nz-1,3))
+      if( grd_igeom .ne. 11 ) then
+        X(:,1:hydro_ny-1,:,2) =
+     &    (Xf(:,2:hydro_ny,:,2) + Xf(:,1:hydro_ny-1,:,2))*0.5d0
+        dX(:,1:hydro_ny-1,:,2) =
+     &    (Xf(:,2:hydro_ny,:,2) - Xf(:,1:hydro_ny-1,:,2))
+        X(:,:,1:hydro_nz-1,3) =
+     &    (Xf(:,:,2:hydro_nz,3) + Xf(:,:,1:hydro_nz-1,3))*0.5d0
+        dX(:,:,1:hydro_nz-1,3) =
+     &    (Xf(:,:,2:hydro_nz,3) - Xf(:,:,1:hydro_nz-1,3))
+      endif
 
 c     Special case of 1D spherical
       if( grd_igeom .eq. 11 ) then
@@ -92,11 +95,13 @@ c     (in units of dX)
       select case( grd_igeom )
         case(1,11)
          scle(:,:,:,1) = 1.0d0
-         scle(:,:,:,2) = X(:,:,:,1)
-         scle(:,:,:,3) = X(:,:,:,1) * sin(X(:,:,:,2))
          area(:,:,:,1) = Xf(:,:,:,1)**2 * sin(Xf(:,:,:,2))
-         area(:,:,:,2) = Xf(:,:,:,1)
-         area(:,:,:,3) = Xf(:,:,:,1) * sin(Xf(:,:,:,2))
+         if( grd_igeom .ne. 11 ) then
+           scle(:,:,:,2) = X(:,:,:,1)
+           area(:,:,:,2) = Xf(:,:,:,1)
+           scle(:,:,:,3) = X(:,:,:,1) * sin(X(:,:,:,2))
+           area(:,:,:,3) = Xf(:,:,:,1) * sin(Xf(:,:,:,2))
+         endif
         case(2)
          scle(:,:,:,(/1,3/)) = 1.0d0
          scle(:,:,:,2) = X(:,:,:,1)
@@ -111,7 +116,6 @@ c     (in units of dX)
 
 c     Main loop - loop until desired time is reached
       do while (t .lt. t1)
-
         dU = 0.0d0
         tinv_max = 0.0d0
         U = hydro_state
@@ -131,18 +135,21 @@ c     Radial singularity at center and outflow at edge
               U(hydro_nx - i + 1, :, :, :) = U(hydro_nx-hydro_bw,:,:,:)
               U(hydro_nx - i + 1, :, :, px_i) =
      &          max( U(hydro_nx - i + 1, :, :, px_i), 0.d0 )
+
+              if( grd_igeom .ne. 11 ) then
 c     Azimuthal periodic
-              U(:, i, :, :) = U(:, hydro_ny - hydro_bw - 1 + i, :, :)
-              U(:, hydro_ny - i + 1, :, :) = U(:, hydro_bw + i, :, :)
+                U(:, i, :, :) = U(:, hydro_ny - hydro_bw - 1 + i, :, :)
+                U(:, hydro_ny - i + 1, :, :) = U(:, hydro_bw + i, :, :)
 c     Theta direction
-              do j = 1, hydro_ny
-                k = mod(j + (hydro_ny-2*hydro_bw) / 2 - 1, hydro_ny) + 1
-                U(:, j, i, :) = U(:, k, 2 * hydro_bw - i + 1, :)
-                U(:, j, i, pz_i) = -U(:, k, i, pz_i)
-                U(:,j,hydro_nz-i+1,:) = U(:,k,hydro_nz+i-hydro_bw-1,:)
-                U(:,j,hydro_nz-i+1,pz_i) =
+                do j = 1, hydro_ny
+                  k = mod(j + (hydro_ny-2*hydro_bw)/2-1, hydro_ny) + 1
+                  U(:, j, i, :) = U(:, k, 2 * hydro_bw - i + 1, :)
+                  U(:, j, i, pz_i) = -U(:, k, i, pz_i)
+                  U(:,j,hydro_nz-i+1,:) = U(:,k,hydro_nz+i-hydro_bw-1,:)
+                  U(:,j,hydro_nz-i+1,pz_i) =
      &                              -U(:,k,hydro_nz+i-hydro_bw-1,pz_i)
-              enddo
+                enddo
+              endif
 
 c     Cylindrical
             case(2)
@@ -203,10 +210,15 @@ c     TODO: HIGHER ORDER RECONSTRUCTIONS
             end select
           endif
 c     Compute face kinetic and internal energies and velocities
-          kinL = (UL(:,:,:,px_i)**2+UL(:,:,:,py_i)**2+UL(:,:,:,pz_i)**2)
-     &                / UL(:,:,:,rho_i)
-          kinR = (UR(:,:,:,px_i)**2+UR(:,:,:,py_i)**2+UR(:,:,:,pz_i)**2)
-     &                / UR(:,:,:,rho_i)
+          if( grd_igeom .eq. 11 ) then
+            kinL = 0.5d0 * UL(:,:,:,px_i)**2 / UL(:,:,:,rho_i)
+            kinR = 0.5d0 * UR(:,:,:,px_i)**2 / UR(:,:,:,rho_i)
+          else
+            kinL = 0.5d0*(UL(:,:,:,px_i)**2+UL(:,:,:,py_i)**2
+     &                +UL(:,:,:,pz_i)**2) / UL(:,:,:,rho_i)
+            kinR = 0.5d0*(UR(:,:,:,px_i)**2+UR(:,:,:,py_i)**2
+     &                +UR(:,:,:,pz_i)**2) / UR(:,:,:,rho_i)
+          endif
           einL = UL(:,:,:,egas_i) - kinL
           einR = UR(:,:,:,egas_i) - kinR
           velL = UL(:,:,:,px_i+dm-1) / UL(:,:,:,rho_i)
@@ -269,21 +281,21 @@ c     Add flux contribution to dudt
           do i = 1, hydro_nf
             select case( dm )
             case(1)
-              dU(:,:,:,i) = dU(:,:,:,i) -
+              dU(1:hydro_nx-1,:,:,i) = dU(1:hydro_nx-1,:,:,i) -
      &          (Fv(2:hydro_nx,:,:,i) - Fv(1:hydro_nx-1,:,:,i)) /
      &            dX(1:hydro_nx-1,:,:,1) * volinv(1:hydro_nx-1,:,:)
      &         -
      &          (Fs(2:hydro_nx,:,:,i) - Fs(1:hydro_nx-1,:,:,i)) /
      &            (dX(1:hydro_nx-1,:,:,1) * scle(1:hydro_nx-1,:,:,1))
             case(2)
-              dU(:,:,:,i) = dU(:,:,:,i) -
+              dU(:,1:hydro_ny-1,:,i) = dU(:,1:hydro_ny-1,:,i) -
      &          (Fv(:,2:hydro_ny,:,i) - Fv(:,1:hydro_ny-1,:,i)) /
      &            dX(:,1:hydro_ny-1,:,2) * volinv(:,1:hydro_ny-1,:)
      &         -
      &          (Fs(:,2:hydro_ny,:,i) - Fs(:,1:hydro_ny-1,:,i)) /
      &            (dX(:,1:hydro_ny-1,:,2) * scle(:,1:hydro_ny-1,:,2))
             case(3)
-              dU(:,:,:,i) = dU(:,:,:,i) -
+              dU(:,:,1:hydro_nz-1,i) = dU(:,:,1:hydro_nz-1,i) -
      &          (Fv(:,:,2:hydro_nz,i) - Fv(:,:,1:hydro_nz-1,i)) /
      &            dX(:,:,1:hydro_nz-1,3) * volinv(:,:,1:hydro_nz-1)
      &         -
@@ -295,14 +307,15 @@ c     Add flux contribution to dudt
         enddo
 
 c       Geometrical source terms
-        if( grd_igeom .ne. 3 ) then
+        if( grd_igeom .ne. 11 ) then
+          if( grd_igeom .ne. 3 ) then
             tmp = 1.0d0 / (U(:,:,:,rho_i) * X(:,:,:,1))
             dU(:,:,:,px_i) = dU(:,:,:,px_i) +
      &        (U(:,:,:,py_i) * U(:,:,:,py_i)) * tmp
             dU(:,:,:,py_i) = dU(:,:,:,py_i) -
      &        (U(:,:,:,px_i) * U(:,:,:,py_i)) * tmp
-        endif
-        if( (grd_igeom .eq. 1) .or. (grd_igeom .eq. 11) ) then
+          endif
+          if( grd_igeom .eq. 1 ) then
             dU(:,:,:,px_i) = dU(:,:,:,px_i) +
      &        (U(:,:,:,pz_i) * U(:,:,:,pz_i)) * tmp
             dU(:,:,:,py_i) = dU(:,:,:,py_i) -
@@ -311,6 +324,7 @@ c       Geometrical source terms
      &        (U(:,:,:,px_i) * U(:,:,:,pz_i)) * tmp
             dU(:,:,:,pz_i) = dU(:,:,:,py_i) -
      &        (U(:,:,:,py_i) * U(:,:,:,py_i)) / tan(X(:,:,:,3)) * tmp
+          endif
         endif
 
 c     If grid is moving, volume increases
@@ -326,11 +340,11 @@ c     Apply dudt
         U = U + dU * dt
 
 c     Upate X, Xf, and dX for moving grids
-        do i = 1, 3
+        do i = 1, dm_max
           if( veldim(i) ) then
-            X = X * (1.0d0 + dt / t)
-            Xf = Xf * (1.0d0 + dt / t)
-            dX = dX * (1.0d0 + dt / t)
+            X(:,:,:,i) = X(:,:,:,i) * (1.0d0 + dt / t)
+            Xf(:,:,:,i) = Xf(:,:,:,i) * (1.0d0 + dt / t)
+            dX(:,:,:,i) = dX(:,:,:,i) * (1.0d0 + dt / t)
           endif
         enddo
 
