@@ -39,6 +39,7 @@
       integer :: xb, xe, yb, ye, zb, ze
       integer :: nx, ny, nz, bw, nf
       real(8) :: gamma
+      logical :: done
 
       gamma = hydro_gamma
       nx = hydro_nx
@@ -151,10 +152,16 @@ c     (in units of dX)
          scle = 1.0d0
          area = 1.0d0
       end select
-      volinv(:,:,:) = 1.0d0/(scle(:,:,:,1)*scle(:,:,:,2)*scle(:,:,:,3))
 
+      if( grd_igeom .ne. 11 ) then
+        volinv(:,:,:) = 1.0d0 / product(scle)
+      else
+        volinv(:,:,:) = 1.0d0 / (scle(:,:,:,1))
+      endif
+
+      done = .false.
 c     Main loop - loop until desired time is reached
-      do while (t .lt. t1)
+      do while (.not. done)
         dU = 0.0d0
         dtinv_max = 0.0d0
         U = hydro_state
@@ -333,30 +340,31 @@ c     Apply face areas to vector fluxes
               Fv(:,:,:,i) = Fv(:,:,:,i) * area(:,:,:,dm)
             enddo
 
+
 c     Add flux contribution to dudt
             do i = 1, nf
               select case( dm )
-              case(1)
-                dU(1:nx-1,:,:,i) = dU(1:nx-1,:,:,i) -
-     &            (Fv(2:nx,:,:,i) - Fv(1:nx-1,:,:,i)) /
-     &              dX(1:nx-1,:,:,1) * volinv(1:nx-1,:,:)
-     &           -
-     &            (Fs(2:nx,:,:,i) - Fs(1:nx-1,:,:,i)) /
-     &              (dX(1:nx-1,:,:,1) * scle(1:nx-1,:,:,1))
-              case(2)
-                dU(:,1:ny-1,:,i) = dU(:,1:ny-1,:,i) -
-     &            (Fv(:,2:ny,:,i) - Fv(:,1:ny-1,:,i)) /
-     &              dX(:,1:ny-1,:,2) * volinv(:,1:ny-1,:)
-     &           -
-     &            (Fs(:,2:ny,:,i) - Fs(:,1:ny-1,:,i)) /
-     &              (dX(:,1:ny-1,:,2) * scle(:,1:ny-1,:,2))
-              case(3)
-                dU(:,:,1:nz-1,i) = dU(:,:,1:nz-1,i) -
-     &            (Fv(:,:,2:nz,i) - Fv(:,:,1:nz-1,i)) /
-     &              dX(:,:,1:nz-1,3) * volinv(:,:,1:nz-1)
-     &           -
-     &            (Fs(:,:,2:nz,i) - Fs(:,:,1:nz-1,i)) /
-     &              (dX(:,:,1:nz-1,3) * scle(:,:,1:nz-1,3))
+                case(1)
+                  dU(1:nx-1,:,:,i) = dU(1:nx-1,:,:,i) -
+     &              (Fv(2:nx,:,:,i) - Fv(1:nx-1,:,:,i)) /
+     &                dX(1:nx-1,:,:,1) * volinv(1:nx-1,:,:)
+     &             -
+     &              (Fs(2:nx,:,:,i) - Fs(1:nx-1,:,:,i)) /
+     &                (dX(1:nx-1,:,:,1) * scle(1:nx-1,:,:,1))
+                case(2)
+                  dU(:,1:ny-1,:,i) = dU(:,1:ny-1,:,i) -
+     &              (Fv(:,2:ny,:,i) - Fv(:,1:ny-1,:,i)) /
+     &                dX(:,1:ny-1,:,2) * volinv(:,1:ny-1,:)
+     &             -
+     &              (Fs(:,2:ny,:,i) - Fs(:,1:ny-1,:,i)) /
+     &                (dX(:,1:ny-1,:,2) * scle(:,1:ny-1,:,2))
+                case(3)
+                  dU(:,:,1:nz-1,i) = dU(:,:,1:nz-1,i) -
+     &              (Fv(:,:,2:nz,i) - Fv(:,:,1:nz-1,i)) /
+     &                dX(:,:,1:nz-1,3) * volinv(:,:,1:nz-1)
+     &             -
+     &              (Fs(:,:,2:nz,i) - Fs(:,:,1:nz-1,i)) /
+     &                (dX(:,:,1:nz-1,3) * scle(:,:,1:nz-1,3))
               end select
             enddo
 
@@ -364,6 +372,15 @@ c     Add flux contribution to dudt
 
         enddo
 
+
+c      do i = xb,xe
+c      do j = yb,ye
+c      do k = zb,ze
+c         write(*,*) i,j,k,volinv(i,j,k)
+c      end do
+c      end do
+c      end do
+c      call abort()
 
 c       Geometrical source terms
         if( grd_igeom .ne. 11 ) then
@@ -386,6 +403,7 @@ c       Geometrical source terms
           endif
         endif
 
+
 c     If grid is moving, volume increases
         if( grd_isvelocity ) then
           dU = dU - 3.0d0 * U / t
@@ -393,7 +411,10 @@ c     If grid is moving, volume increases
 
 c     Compute timestep
         dt = 0.4d0 / dtinv_max
-        dt = min( dt, t1 - t )
+        if( dt .ge. t1 - t ) then
+          dt = t1 - t
+          done = .true.
+        endif
 
 c     Apply dudt
         U = U + dU * dt
@@ -407,7 +428,10 @@ c     Upate X, Xf, and dX for moving grids
           endif
         enddo
 
+        t = t + dt
+
         write(*,*) t, t1, dt, dtinv_max
+
 
       enddo
 

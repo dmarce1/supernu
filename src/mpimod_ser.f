@@ -128,6 +128,7 @@ c      HYDRO LSU
       use hydromod
       use gasmod
       use physconstmod
+      use timestepmod
       use elemdatamod
       implicit none
 
@@ -142,7 +143,9 @@ c      HYDRO LSU
          j0 = j - hydro_bw
          k0 = k - hydro_bw
          l = grd_icell(i0, j0, k0)
-
+         if( grd_isvelocity) then
+           gas_vol(l) = gas_vol(l) * (1.0d0 + tsp_dt / tsp_t )
+         endif
          gas_rho(l) = hydro_state(i,j,k,rho_i)
          grd_vx(l) = hydro_state(i,j,k,px_i) / gas_rho(l)
          grd_vy(l) = hydro_state(i,j,k,py_i) / gas_rho(l)
