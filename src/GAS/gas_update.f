@@ -113,12 +113,6 @@ c-- converge more quickly.
 c
 c
 
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c     HYDRO LSU
-      if( grd_hydro_on ) then
-        call hydro_update(tsp_t, tsp_t + tsp_dt)
-      endif
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 c-- update volume
 c========================================
@@ -128,21 +122,17 @@ c========================================
        gas_vol(i) = grd_vol(l)
       enddo !l
 c
-c
+
 c-- update density, start temperature derivative
 c===============================================
-
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c     HYDRO LSU
-      if( grd_hydro_on ) then
-        gas_mass = gas_rho * gas_vol
-      else
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
         gas_rho = gas_mass/gas_vol
 
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c     HYDRO LSU
+      if( grd_hydro_on ) then
+        call hydro_update(tsp_t, tsp_t + tsp_dt)
+        gas_mass = gas_rho * gas_vol
       endif
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 

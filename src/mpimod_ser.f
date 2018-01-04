@@ -96,10 +96,15 @@ c      HYDRO LSU
          hydro_state(i,j,k,py_i) = grd_vy(l) * gas_rho(l)
          hydro_state(i,j,k,pz_i) = grd_vz(l) * gas_rho(l)
          eint =  1.5d0*pc_kb*(1d0+gas_nelec(l))
-     &              * gas_natom(l) / gas_vol(l) / grd_tempinv(l);
+     &              * gas_natom(l) / gas_vol(l) * gas_temp(l)
          hydro_state(i,j,k,tau_i) = eint**(1.0d0 / hydro_gamma)
-         hydro_state(i,j,k,egas_i) = eint +
-     &   0.5d0*(grd_vx(l)**2 + grd_vy(l)**2 + grd_vz(l)**2) * gas_rho(l)
+         if( grd_igeom .eq. 11 ) then
+           hydro_state(i,j,k,egas_i) = eint +
+     &                               0.5d0*grd_vx(l)**2 * gas_rho(l)
+         else
+           hydro_state(i,j,k,egas_i) = eint + 0.5d0*
+     &     (grd_vx(l)**2 + grd_vy(l)**2 + grd_vz(l)**2) * gas_rho(l)
+         endif
          f = frac_i
          do f0 = -2*gas_nchain, -1
            hydro_state(i,j,k,f) =
@@ -164,7 +169,7 @@ c      HYDRO LSU
          gas_nelec(l) = gas_nelec(l) / gas_natom(l)
          gas_bcoef(l) = 1.5d0*pc_kb*(1d0+gas_nelec(l))
      &              * gas_natom(l) / gas_vol(l)
-         grd_tempinv(l) =  gas_bcoef(l) / eint
+         gas_temp(l) =    eint / gas_bcoef(l)
       enddo
       enddo
       enddo
