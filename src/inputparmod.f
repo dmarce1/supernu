@@ -28,6 +28,9 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c     HYDRO LSU
       logical :: in_hydro_on = .true.
       logical :: in_radiation_on = .true.
+      integer :: in_test_problem = 0
+c                0 - no test, read from file or input params
+c                1 - Blast wave
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 c
@@ -206,7 +209,7 @@ c-- runtime parameter namelist
      & in_io_opacdump,in_io_pdensdump,
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c     HYDRO LSU
-     & in_hydro_on, in_radiation_on
+     & in_hydro_on, in_radiation_on, in_test_problem
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 c

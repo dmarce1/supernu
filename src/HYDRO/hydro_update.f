@@ -176,7 +176,7 @@ c     Boundaries
 c     Spherical
             case(1,11)
 c     Radial singularity at center and outflow at edge
-              do j = 1, ny
+              do j = 1+bw, ny-bw
                 k = mod(j + (ny-2*bw) / 2 - 1, ny) + 1
                 U(i,:,j,:) = U(2 * bw - i + 1,:,k,:)
                 U(i,:,j,px_i) = -U(i,:,k,px_i)
@@ -190,7 +190,7 @@ c     Azimuthal periodic
                 U(:, i, :, :) = U(:, ny - bw - 1 + i, :, :)
                 U(:, ny - i + 1, :, :) = U(:, bw + i, :, :)
 c     Theta direction
-                do j = 1, ny
+                do j = 1+bw, ny-bw
                   k = mod(j + (ny-2*bw)/2-1, ny) + 1
                   U(:, j, i, :) = U(:, k, 2 * bw - i + 1, :)
                   U(:, j, i, pz_i) = -U(:, k, i, pz_i)
@@ -202,7 +202,7 @@ c     Theta direction
 c     Cylindrical
             case(2)
 c     Radial singularity at center and outflow at edge
-              do j = 1, ny
+              do j = 1+bw, ny-bw
                 k = mod(j + (ny-2*bw) / 2 - 1, ny) + 1
                 U(i,j,:,:) = U(2*bw-i+1,k,:,:)
                 U(i,j,:,px_i) = -U(i,k,:,px_i)

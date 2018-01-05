@@ -67,13 +67,44 @@ program supernu
 !
 !-- read input structure
      if(.not.in_noreadstruct.and.in_isvelocity) then
+
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!     MODIFICATION BY LSU
+      if(in_test_problem .eq. 0 ) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        call read_inputstr(in_grd_igeom,in_ndim,in_voidcorners,nmpi)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!     MODIFICATION BY LSU
+      endif
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      else
 !== generate_inputstr development in progress
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!     MODIFICATION BY LSU
+      if(in_test_problem .ne. 0 ) then
+        select case(in_test_problem)
+         case(1)
+          write(*,*) 'Calling Sedov'
+          call sedov_setup
+        end select
+      else
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        call generate_inputstr(in_grd_igeom)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!     MODIFICATION BY LSU
+      endif
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      endif
 !-- compressed domain, serialize non-void cells
-     call inputstr_compress
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!     MODIFICATION BY LSU
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+     if(in_test_problem .eq. 0 ) then
+      call inputstr_compress
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!     MODIFICATION BY LSU
+     endif
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !-- READ DATA
 !-- read ion and level data
