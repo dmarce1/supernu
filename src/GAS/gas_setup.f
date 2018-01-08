@@ -13,9 +13,10 @@ c     --------------------
 * Initialize the gas grid, the part that is constant with time and
 * temperature. The part that changes is done in gas_grid_update.
 ************************************************************************
-      integer :: l,i
+      integer :: l
+      integer :: i,j,k
       real*8 :: mass0fr(-2*gas_nchain:gas_nelem,gas_ncell)
-c
+
 c-- agnostic mass setup
       gas_mass = str_massdd
 c

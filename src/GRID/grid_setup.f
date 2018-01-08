@@ -64,6 +64,7 @@ c
 c-- maximum grid velocity
       select case(grd_igeom)
       case(1,11)
+       write(*,*) grd_nx
        grd_rout = grd_xarr(grd_nx+1)
 c-- cylindrical
       case(2)
@@ -128,24 +129,36 @@ c-- zero amplification-factor energy to begin with
       grd_eamp = 0d0
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c       HYDRO LSU
-        if( grd_hydro_on ) then
           if( grd_isvelocity ) then
-            do i = 1, grd_nx
-            do j = 1, grd_ny
-            do k = 1, grd_nz
-              l = grd_icell(i,j,k)
-              grd_vx(l) = (grd_xarr(i+1) + grd_xarr(i))*0.5d0
-              grd_vy(l) = (grd_yarr(j+1) + grd_yarr(j))*0.5d0
-              grd_vz(l) = (grd_zarr(k+1) + grd_zarr(k))*0.5d0
-            enddo
-            enddo
-            enddo
+            if(in_test_problem .eq. 0) then
+                do i = 1, grd_nx
+                do j = 1, grd_ny
+                do k = 1, grd_nz
+                  l = grd_icell(i,j,k)
+                  grd_vx(l) = (grd_xarr(i+1) + grd_xarr(i))*0.5d0
+                  grd_vy(l) = (grd_yarr(j+1) + grd_yarr(j))*0.5d0
+                  grd_vz(l) = (grd_zarr(k+1) + grd_zarr(k))*0.5d0
+                enddo
+                enddo
+                enddo
+            else
+                do i = 1, grd_nx
+                do j = 1, grd_ny
+                do k = 1, grd_nz
+                  l = grd_icell(i,j,k)
+                  grd_vx(l) = str_vx(i,j,k)
+                  grd_vy(l) = str_vy(i,j,k)
+                  grd_vz(l) = str_vz(i,j,k)
+                enddo
+                enddo
+                enddo
+            end if
           else
             grd_vx = 0.0d0
             grd_vy = 0.0d0
             grd_vz = 0.0d0
           endif
-        endif
+
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c-- read preset temperature profiles

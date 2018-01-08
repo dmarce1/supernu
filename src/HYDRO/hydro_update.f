@@ -41,6 +41,7 @@
       real(8) :: gamma
       logical :: done
 
+
       gamma = hydro_gamma
       nx = hydro_nx
       ny = hydro_ny
@@ -441,9 +442,12 @@ c     Upate X, Xf, and dX for moving grids
 
       enddo
 
+
       hydro_state = U
 
       call scatter_hydro
+
+
 
       end subroutine
 

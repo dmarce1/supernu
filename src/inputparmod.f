@@ -555,6 +555,10 @@ c
        stop 'in_grd_igeom invalid'
       endselect
 c
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     LSU MOD
+      if( in_test_problem .eq. 0 ) then
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       if(in_isvelocity) then
        if(in_str_lx>0d0) stop 'vel grid: use str_velout, not in_str_lx'
        if(in_str_ly>0d0) stop 'vel grid: use str_velout, not in_str_ly'
@@ -579,6 +583,10 @@ c
        if(in_str_dentype/='none') stop
      &   '!noreadstruct & str_dentype/=none'
       endif
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     LSU MOD
+      endif
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c-- special grid
       if(.not.in_noreadstruct) then

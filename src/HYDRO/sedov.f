@@ -61,14 +61,14 @@ c..the sedov expressions appear to become singular for various
 c..combinations of parameters and at the lower limits of the integration
 c..range. all these singularies are removable and done so by this routine.
 
-c..these routines are written in real*16 precision because the
+c..these routines are written in real*8 precision because the
 c..real*8 implementations simply run out of precision "near" the origin
 c..in the standard case or the transition region in the vacuum case.
 
 
 c..declare the pass
       integer          nstep
-      real*16          time,xpos(*),
+      real*8          time,xpos(*),
      1                 eblast,rho0,omega_in,vel0,ener0,pres0,cs0,
      1                 gam0,xgeom_in,den(*),ener(*),pres(*),
      3                 vel(*),cs(*)
@@ -78,8 +78,8 @@ c..local variables
       external         midpnt,midpowl,midpowl2,sed_v_find,sed_r_find,
      1                 efun01,efun02
       integer          i
-      real*16          efun01,efun02,eval1,eval2
-      real*16          v0,v2,vstar,vmin,
+      real*8          efun01,efun02,eval1,eval2
+      real*8          v0,v2,vstar,vmin,
      1                 alpha,vstep,us,u2,rho2,p2,e2,cs2,
      2                 zeroin,sed_v_find,sed_r_find,
      3                 vat,l_fun,dlamdv,f_fun,g_fun,h_fun,
@@ -91,18 +91,18 @@ c..of function evaluations required kills.
 c..eps2 controls the root find accuracy
 c..osmall controls the size of transition regions
 
-      real*16          iprint,eps,eps2,osmall,pi
+      real*8          iprint,eps,eps2,osmall,pi
       parameter        (iprint = 1,
-     1                  eps    = 1.0q-10,
+     1                  eps    = 1.0d-10,
      2                  eps2   = 1.0q-30,
      3                  osmall = 1.0q-4,
-     4                  pi     = 3.1415926535897932384626433832795029q0)
+     4                  pi     = 3.1415926535897932384626433832795029d0)
 
 
 
 c..common block communication
       logical          lsingular,lstandard,lvacuum,lomega2,lomega3
-      real*16          gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
+      real*8          gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
      1                 a0,a1,a2,a3,a4,a5,a_val,b_val,c_val,d_val,e_val,
      2                 omega,vv,xlam_want,vwant,rvv
       common /slap/    gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
@@ -114,7 +114,7 @@ c..common block communication
 
 
 c..common block communication with the integration stepper
-      real*16          gam_int
+      real*8          gam_int
       common /cmidp/   gam_int
 
 
@@ -125,11 +125,11 @@ c..popular formats
 
 c..initialize the solution
       do i=1,nstep
-       den(i)  = 0.0q0
-       vel(i)  = 0.0q0
-       pres(i) = 0.0q0
-       ener(i) = 0.0q0
-       cs(i)   = 0.0q0
+       den(i)  = 0.0d0
+       vel(i)  = 0.0d0
+       pres(i) = 0.0d0
+       ener(i) = 0.0d0
+       cs(i)   = 0.0d0
       end do
 
 
@@ -141,21 +141,21 @@ c..infinite mass
 
 c..transfer the pass to common block and create some frequent combinations
       gamma  = gam0
-      gamm1  = gamma - 1.0q0
-      gamp1  = gamma + 1.0q0
+      gamm1  = gamma - 1.0d0
+      gamp1  = gamma + 1.0d0
       gpogm  = gamp1 / gamm1
       xgeom  = xgeom_in
       omega  = omega_in
-      xg2    = xgeom + 2.0q0 - omega
-      denom2 = 2.0q0*gamm1 + xgeom - gamma*omega
-      denom3 = xgeom * (2.0q0 - gamma) - omega
+      xg2    = xgeom + 2.0d0 - omega
+      denom2 = 2.0d0*gamm1 + xgeom - gamma*omega
+      denom3 = xgeom * (2.0d0 - gamma) - omega
 
 
 c..post shock location v2 and location of singular point vstar
 c..kamm equation 18 and 19
 
-      v2    = 4.0q0 / (xg2 * gamp1)
-      vstar = 2.0q0 / (gamm1*xgeom + 2.0q0)
+      v2    = 4.0d0 / (xg2 * gamp1)
+      vstar = 2.0d0 / (gamm1*xgeom + 2.0d0)
 
 
 c..set two logicals that determines the type of solution
@@ -192,21 +192,21 @@ c..various exponents, kamm equations 42-47
 c..in terms of book's notation:
 c..a0=beta6 a1=beta1  a2=-beta2 a3=beta3 a4=beta4 a5=-beta5
 
-      a0  = 2.0q0/xg2
+      a0  = 2.0d0/xg2
       a2  = -gamm1/denom2
-      a1  =  xg2*gamma/(2.0q0 + xgeom*gamm1) *
-     1      (((2.0q0*(xgeom*(2.0q0-gamma) - omega))/(gamma*xg2*xg2))-a2)
+      a1  =  xg2*gamma/(2.0d0 + xgeom*gamm1) *
+     1      (((2.0d0*(xgeom*(2.0d0-gamma) - omega))/(gamma*xg2*xg2))-a2)
       a3  = (xgeom - omega) / denom2
       a4  = xg2 * (xgeom - omega) * a1 /denom3
-      a5  = (omega*gamp1 - 2.0q0*xgeom)/denom3
+      a5  = (omega*gamp1 - 2.0d0*xgeom)/denom3
 
 
 c..frequent combinations, kamm equations 33-37
-      a_val = 0.25q0 * xg2 * gamp1
+      a_val = 0.25d0 * xg2 * gamp1
       b_val = gpogm
-      c_val = 0.5q0 * xg2 * gamma
-      d_val = (xg2 * gamp1)/(xg2*gamp1 - 2.0q0*(2.0q0 + xgeom*gamm1))
-      e_val = 0.5q0 * (2.0q0 + xgeom * gamm1)
+      c_val = 0.5d0 * xg2 * gamma
+      d_val = (xg2 * gamp1)/(xg2*gamp1 - 2.0d0*(2.0d0 + xgeom*gamm1))
+      e_val = 0.5d0 * (2.0d0 + xgeom * gamm1)
 
 
 
@@ -216,9 +216,9 @@ c..kamm equations 80, 81, and 85
 
       if (lsingular) then
 
-       eval2 = gamp1/(xgeom*(gamm1*xgeom + 2.0q0)**2)
-       eval1 = 2.0q0/gamm1 * eval2
-       alpha = gpogm * 2**(xgeom)/(xgeom*(gamm1*xgeom + 2.0q0)**2)
+       eval2 = gamp1/(xgeom*(gamm1*xgeom + 2.0d0)**2)
+       eval1 = 2.0d0/gamm1 * eval2
+       alpha = gpogm * 2**(xgeom)/(xgeom*(gamm1*xgeom + 2.0d0)**2)
        if (int(xgeom) .ne. 1) alpha = pi * alpha
 
 
@@ -229,8 +229,8 @@ c..set the radius corespondin to vv to zero for now
 c..kamm equations 18, and 28.
 
       else
-       v0  = 2.0q0 / (xg2 * gamma)
-       vv  = 2.0q0 / xg2
+       v0  = 2.0d0 / (xg2 * gamma)
+       vv  = 2.0d0 / xg2
        rvv = 0.0d0
        if (lstandard) vmin = v0
        if (lvacuum)   vmin  = vv
@@ -241,7 +241,7 @@ c..the first energy integral
 c..in the standard case the term (c_val*v - 1) might be singular at v=vmin
 
        if (lstandard) then
-        gam_int = a3 - a2*xg2 - 1.0q0
+        gam_int = a3 - a2*xg2 - 1.0d0
         if (gam_int .ge. 0) then
          call qromo(efun01,vmin,v2,eps,eval1,midpnt)
         else
@@ -267,7 +267,7 @@ c..the second energy integral
 c..in the standard case the term (c_val*v - 1) might be singular at v=vmin
 
        if (lstandard) then
-        gam_int = a3 - a2*xg2 - 2.0q0
+        gam_int = a3 - a2*xg2 - 2.0d0
         if (gam_int .ge. 0) then
          call qromo(efun02,vmin,v2,eps,eval2,midpnt)
         else
@@ -291,9 +291,9 @@ c..in the vacuum case the term (1 - c_val/gamma*v) might be singular at v=vmin
 
 c..kamm equations 57 and 58 for alpha, in a slightly different form.
        if (int(xgeom) .eq. 1) then
-        alpha = 0.5q0*eval1 + eval2/gamm1
+        alpha = 0.5d0*eval1 + eval2/gamm1
        else
-        alpha = (xgeom - 1.0q0) * pi * (eval1 + 2.0q0 * eval2/gamm1)
+        alpha = (xgeom - 1.0d0) * pi * (eval1 + 2.0d0 * eval2/gamm1)
        end if
       end if
 
@@ -317,12 +317,12 @@ c..u2 = post-shock material speed, rho2 = post-shock density,
 c..p2 = post-shock pressure, e2 = post-shoock specific internal energy,
 c..and cs2 = post-shock sound speed
 
-      r2   = (eblast/(alpha*rho0))**(1.0q0/xg2) * time**(2.0q0/xg2)
-      us   = (2.0q0/xg2) * r2 / time
+      r2   = (eblast/(alpha*rho0))**(1.0d0/xg2) * time**(2.0d0/xg2)
+      us   = (2.0d0/xg2) * r2 / time
       rho1 = rho0 * r2**(-omega)
-      u2   = 2.0q0 * us / gamp1
+      u2   = 2.0d0 * us / gamp1
       rho2 = gpogm * rho1
-      p2   = 2.0q0 * rho1 * us**2 / gamp1
+      p2   = 2.0d0 * rho1 * us**2 / gamp1
       e2   = p2/(gamm1*rho2)
       cs2  = sqrt(gamma*p2/rho2)
 
@@ -330,7 +330,7 @@ c..and cs2 = post-shock sound speed
 c..find the radius corresponding to vv
        if (lvacuum)   then
         vwant = vv
-        rvv = zeroin(0.0q0,r2,sed_r_find,eps2)
+        rvv = zeroin(0.0d0,r2,sed_r_find,eps2)
        end if
 
 
@@ -367,9 +367,9 @@ c..if we are between the origin and the shock front
 c..find the correct similarity value for this radius in the standard or vacuum cases
        else
         if (lstandard) then
-         vat = zeroin(0.90q0*v0,v2,sed_v_find,eps2)
+         vat = zeroin(0.90d0*v0,v2,sed_v_find,eps2)
         else if (lvacuum) then
-         vat = zeroin(v2,1.2q0*vv,sed_v_find,eps2)
+         vat = zeroin(v2,1.2d0*vv,sed_v_find,eps2)
         end if
 
 c..the physical solution
@@ -377,8 +377,8 @@ c..the physical solution
         den(i)   = rho2 * g_fun
         vel(i)   = u2   * f_fun
         pres(i)  = p2   * h_fun
-        ener(i)  = 0.0q0
-        cs(i)    = 0.0q0
+        ener(i)  = 0.0d0
+        cs(i)    = 0.0d0
         if (den(i) .ne. 0.0) then
          ener(i)  = pres(i) / (gamm1 * den(i))
          cs(i)    = sqrt(gamma * pres(i)/den(i))
@@ -396,7 +396,7 @@ c..end of loop over positions
 
 
 
-      real*16 function efun01(v)
+      real*8 function efun01(v)
       implicit none
       save
 
@@ -406,12 +406,12 @@ c..the (1 - c_val/gamma * v) term might be singular at v=vmin in the vacuum case
 c..due care should be taken for these removable singularities by the integrator.
 
 c..declare the pass
-      real*16  v
+      real*8  v
 
 
 c..common block communication
       logical          lsingular,lstandard,lvacuum,lomega2,lomega3
-      real*16          gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
+      real*8          gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
      1                 a0,a1,a2,a3,a4,a5,a_val,b_val,c_val,d_val,e_val,
      2                 omega,vv,xlam_want,vwant,rvv
       common /slap/    gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
@@ -420,11 +420,11 @@ c..common block communication
      3                 lsingular,lstandard,lvacuum,lomega2,lomega3
 
 c..local variables
-      real*16 l_fun,dlamdv,f_fun,g_fun,h_fun
+      real*8 l_fun,dlamdv,f_fun,g_fun,h_fun
 
 c..go
       call sedov_funcs(v,l_fun,dlamdv,f_fun,g_fun,h_fun)
-      efun01 = dlamdv * l_fun**(xgeom + 1.0q0) * gpogm * g_fun * v**2
+      efun01 = dlamdv * l_fun**(xgeom + 1.0d0) * gpogm * g_fun * v**2
 
       return
       end
@@ -434,7 +434,7 @@ c..go
 
 
 
-      real*16 function efun02(v)
+      real*8 function efun02(v)
       implicit none
       save
 
@@ -444,12 +444,12 @@ c..the (1 - c_val/gamma * v) term might be singular at v=vmin in the vacuum case
 c..due care should be taken for these removable singularities by the integrator.
 
 c..declare the pass
-      real*16  v
+      real*8  v
 
 
 c..common block communication
       logical          lsingular,lstandard,lvacuum,lomega2,lomega3
-      real*16          gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
+      real*8          gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
      1                 a0,a1,a2,a3,a4,a5,a_val,b_val,c_val,d_val,e_val,
      2                 omega,vv,xlam_want,vwant,rvv
       common /slap/    gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
@@ -458,12 +458,12 @@ c..common block communication
      3                 lsingular,lstandard,lvacuum,lomega2,lomega3
 
 c..local variables
-      real*16 l_fun,dlamdv,f_fun,g_fun,h_fun,z
+      real*8 l_fun,dlamdv,f_fun,g_fun,h_fun,z
 
 c..go
       call sedov_funcs(v,l_fun,dlamdv,f_fun,g_fun,h_fun)
-      z = 8.0q0/( (xgeom + 2.0q0 - omega)**2 * gamp1)
-      efun02 = dlamdv * l_fun**(xgeom - 1.0q0 ) * h_fun * z
+      z = 8.0d0/( (xgeom + 2.0d0 - omega)**2 * gamp1)
+      efun02 = dlamdv * l_fun**(xgeom - 1.0d0 ) * h_fun * z
 
       return
       end
@@ -474,7 +474,7 @@ c..go
 
 
 
-      real*16 function sed_v_find(v)
+      real*8 function sed_v_find(v)
       implicit none
       save
 
@@ -482,12 +482,12 @@ c..given corresponding physical distances, find the similarity variable v
 c..kamm equation 38 as a root find
 
 c..declare the pass
-      real*16  v
+      real*8  v
 
 
 c..common block communication
       logical          lsingular,lstandard,lvacuum,lomega2,lomega3
-      real*16          gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
+      real*8          gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
      1                 a0,a1,a2,a3,a4,a5,a_val,b_val,c_val,d_val,e_val,
      2                 omega,vv,xlam_want,vwant,rvv
       common /slap/    gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
@@ -497,7 +497,7 @@ c..common block communication
 
 
 c..local variables
-      real*16 l_fun,dlamdv,f_fun,g_fun,h_fun
+      real*8 l_fun,dlamdv,f_fun,g_fun,h_fun
 
 
       call sedov_funcs(v,l_fun,dlamdv,f_fun,g_fun,h_fun)
@@ -510,7 +510,7 @@ c..local variables
 
 
 
-      real*16 function sed_r_find(r)
+      real*8 function sed_r_find(r)
       implicit none
       save
 
@@ -518,12 +518,12 @@ c..given the similarity variable v, find the corresponding physical distance
 c..kamm equation 38 as a root find
 
 c..declare the pass
-      real*16  r
+      real*8  r
 
 
 c..common block communication
       logical          lsingular,lstandard,lvacuum,lomega2,lomega3
-      real*16          gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
+      real*8          gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
      1                 a0,a1,a2,a3,a4,a5,a_val,b_val,c_val,d_val,e_val,
      2                 omega,vv,xlam_want,vwant,rvv
       common /slap/    gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
@@ -533,7 +533,7 @@ c..common block communication
 
 
 c..local variables
-      real*16 l_fun,dlamdv,f_fun,g_fun,h_fun
+      real*8 l_fun,dlamdv,f_fun,g_fun,h_fun
 
       call sedov_funcs(vwant,l_fun,dlamdv,f_fun,g_fun,h_fun)
       sed_r_find = r2*l_fun - r
@@ -548,7 +548,7 @@ c..local variables
 
 
 
-      real*16 function sed_lam_find(v)
+      real*8 function sed_lam_find(v)
       implicit none
       save
 
@@ -556,12 +556,12 @@ c..given the similarity variable v, find the corresponding physical distance
 c..kamm equation 38 as a root find
 
 c..declare the pass
-      real*16  v
+      real*8  v
 
 
 c..common block communication
       logical          lsingular,lstandard,lvacuum,lomega2,lomega3
-      real*16          gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
+      real*8          gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
      1                 a0,a1,a2,a3,a4,a5,a_val,b_val,c_val,d_val,e_val,
      2                 omega,vv,xlam_want,vwant,rvv
       common /slap/    gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
@@ -571,7 +571,7 @@ c..common block communication
 
 
 c..local variables
-      real*16 l_fun,dlamdv,f_fun,g_fun,h_fun
+      real*8 l_fun,dlamdv,f_fun,g_fun,h_fun
 
 
       call sedov_funcs(v,l_fun,dlamdv,f_fun,g_fun,h_fun)
@@ -600,12 +600,12 @@ c..range. all these singularies are removable and done so by this routine.
 
 
 c..declare the pass
-      real*16          v,l_fun,dlamdv,f_fun,g_fun,h_fun
+      real*8          v,l_fun,dlamdv,f_fun,g_fun,h_fun
 
 
 c..common block communication
       logical          lsingular,lstandard,lvacuum,lomega2,lomega3
-      real*16          gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
+      real*8          gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
      1                 a0,a1,a2,a3,a4,a5,a_val,b_val,c_val,d_val,e_val,
      2                 omega,vv,xlam_want,vwant,rvv
       common /slap/    gamma,gamm1,gamp1,gpogm,xgeom,xg2,rwant,r2,
@@ -615,7 +615,7 @@ c..common block communication
 
 
 c..local variables
-      real*16          x1,x2,x3,x4,dx1dv,dx2dv,dx3dv,dx4dv,
+      real*8          x1,x2,x3,x4,dx1dv,dx2dv,dx3dv,dx4dv,
      1                 cbag,ebag,beta0,pp1,pp2,pp3,pp4,c2,c6,y,z,
      2                 dpp2dv,eps
       parameter        (eps = 1.0q-30)
@@ -628,16 +628,16 @@ c..x1 is book's F
        x1 = a_val * v
        dx1dv = a_val
 
-       cbag = max(eps, c_val * v - 1.0q0)
+       cbag = max(eps, c_val * v - 1.0d0)
        x2 = b_val * cbag
        dx2dv = b_val * c_val
 
-       ebag = 1.0q0 - e_val * v
+       ebag = 1.0d0 - e_val * v
        x3 = d_val * ebag
        dx3dv = -d_val * e_val
 
-       x4 = b_val * (1.0q0 - 0.5q0 * xg2 *v)
-       dx4dv = -b_val * 0.5q0 * xg2
+       x4 = b_val * (1.0d0 - 0.5d0 * xg2 *v)
+       dx4dv = -b_val * 0.5d0 * xg2
 
 
 c..transition region between standard and vacuum cases
@@ -647,9 +647,9 @@ c..f_fun is books V, g_fun is book's D, h_fun is book's P
 
       if (lsingular) then
        l_fun  = rwant/r2
-       dlamdv = 0.0q0
+       dlamdv = 0.0d0
        f_fun  = l_fun
-       g_fun  = l_fun**(xgeom - 2.0q0)
+       g_fun  = l_fun**(xgeom - 2.0d0)
        h_fun  = l_fun**xgeom
 
 
@@ -657,11 +657,11 @@ c..f_fun is books V, g_fun is book's D, h_fun is book's P
 c..for the vacuum case in the hole
       else if (lvacuum .and. rwant .lt. rvv) then
 
-       l_fun  = 0.0q0
-       dlamdv = 0.0q0
-       f_fun  = 0.0q0
-       g_fun  = 0.0q0
-       h_fun  = 0.0q0
+       l_fun  = 0.0d0
+       dlamdv = 0.0d0
+       f_fun  = 0.0d0
+       g_fun  = 0.0d0
+       h_fun  = 0.0d0
 
 
 
@@ -670,22 +670,22 @@ c..book expressions 20-22
 
       else if (lomega2) then
 
-       beta0 = 1.0q0/(2.0q0 * e_val)
+       beta0 = 1.0d0/(2.0d0 * e_val)
        pp1   = gamm1 * beta0
-       c6    = 0.5q0 * gamp1
+       c6    = 0.5d0 * gamp1
        c2    = c6/gamma
-       y     = 1.0q0/(x1 - c2)
-       z     = (1.0q0 - x1)*y
+       y     = 1.0d0/(x1 - c2)
+       z     = (1.0d0 - x1)*y
        pp2   = gamp1 * beta0 * z
-       dpp2dv = -gamp1 * beta0 * dx1dv * y * (1.0q0 + z)
-       pp3   = (4.0q0 - xgeom - 2.0q0*gamma) * beta0
+       dpp2dv = -gamp1 * beta0 * dx1dv * y * (1.0d0 + z)
+       pp3   = (4.0d0 - xgeom - 2.0d0*gamma) * beta0
        pp4   = -xgeom * gamma * beta0
 
        l_fun = x1**(-a0) * x2**(pp1) * exp(pp2)
        dlamdv = (-a0*dx1dv/x1 + pp1*dx2dv/x2 + dpp2dv) * l_fun
        f_fun = x1 * l_fun
-       g_fun = x1**(a0*omega) * x2**pp3 * x4**a5 * exp(-2.0q0*pp2)
-       h_fun = x1**(a0*xgeom) * x2**pp4 * x4**(1.0q0 + a5)
+       g_fun = x1**(a0*omega) * x2**pp3 * x4**a5 * exp(-2.0d0*pp2)
+       h_fun = x1**(a0*xgeom) * x2**pp4 * x4**(1.0d0 + a5)
 
 
 
@@ -694,12 +694,12 @@ c..book expressions 23-25
 
       else if (lomega3) then
 
-       beta0 = 1.0q0/(2.0q0 * e_val)
+       beta0 = 1.0d0/(2.0d0 * e_val)
        pp1   = a3 + omega * a2
-       pp2   = 1.0q0 - 4.0q0 * beta0
-       c6    = 0.5q0 * gamp1
-       pp3   = -xgeom * gamma * gamp1 * beta0 * (1.0q0 - x1)/(c6 - x1)
-       pp4   = 2.0q0 * (xgeom * gamm1 - gamma) * beta0
+       pp2   = 1.0d0 - 4.0d0 * beta0
+       c6    = 0.5d0 * gamp1
+       pp3   = -xgeom * gamma * gamp1 * beta0 * (1.0d0 - x1)/(c6 - x1)
+       pp4   = 2.0d0 * (xgeom * gamm1 - gamma) * beta0
 
        l_fun = x1**(-a0) * x2**(-a2) * x4**(-a1)
        dlamdv = -(a0*dx1dv/x1 + a2*dx2dv/x2 + a1*dx4dv/x4) * l_fun
@@ -716,7 +716,7 @@ c..kamm equations 38-41
        dlamdv = -(a0*dx1dv/x1 + a2*dx2dv/x2 + a1*dx3dv/x3) * l_fun
        f_fun = x1 * l_fun
        g_fun = x1**(a0*omega)*x2**(a3+a2*omega)*x3**(a4+a1*omega)*x4**a5
-       h_fun = x1**(a0*xgeom)*x3**(a4+a1*(omega-2.0q0))*x4**(1.0q0 + a5)
+       h_fun = x1**(a0*xgeom)*x3**(a4+a1*(omega-2.0d0))*x4**(1.0d0 + a5)
 
       end if
 
@@ -743,24 +743,24 @@ c..improve the accuracy of s by adding 2/3*3**(n-1) addtional interior points.
 c..declare
       external          func
       integer           n,it,j
-      real*16           func,a,b,s,tnm,del,ddel,x,sum
+      real*8           func,a,b,s,tnm,del,ddel,x,sum
 
       if (n.eq.1) then
-       s  = (b-a) * func(0.5q0*(a+b))
+       s  = (b-a) * func(0.5d0*(a+b))
       else
        it   = 3**(n-2)
        tnm  = it
-       del  = (b-a)/(3.0q0*tnm)
+       del  = (b-a)/(3.0d0*tnm)
        ddel = del + del
-       x    = a + (0.5q0 * del)
-       sum  = 0.0q0
+       x    = a + (0.5d0 * del)
+       sum  = 0.0d0
        do j=1,it
         sum = sum + func(x)
         x   = x + ddel
         sum = sum + func(x)
         x   = x + del
        enddo
-       s  = (s + ((b-a) * sum/tnm)) / 3.0q0
+       s  = (s + ((b-a) * sum/tnm)) / 3.0d0
       end if
       return
       end
@@ -782,37 +782,37 @@ c..at the lower limit aa for 0 < gam_int < 1.
 c..declare
       external          funk
       integer           n,it,j
-      real*16           func,funk,a,aa,b,bb,s,tnm,del,ddel,x,sum
+      real*8           func,funk,a,aa,b,bb,s,tnm,del,ddel,x,sum
 
 
 c..common block communication
-      real*16          gam_int
+      real*8          gam_int
       common /cmidp/   gam_int
 
 
 c..a little conversion, recipe equation 4.4.3
-      func(x) = 1.0q0/(1.0q0 - gam_int) * x**(gam_int/(1.0q0 - gam_int))
-     &          * funk(x**(1.0q0/(1.0q0 - gam_int)) + aa)
-      b = (bb - aa)**(1.0q0 - gam_int)
-      a = 0.0q0
+      func(x) = 1.0d0/(1.0d0 - gam_int) * x**(gam_int/(1.0d0 - gam_int))
+     &          * funk(x**(1.0d0/(1.0d0 - gam_int)) + aa)
+      b = (bb - aa)**(1.0d0 - gam_int)
+      a = 0.0d0
 
 c..now exactly as midpnt
       if (n .eq. 1) then
-       s = (b-a) * func(0.5q0*(a+b))
+       s = (b-a) * func(0.5d0*(a+b))
       else
        it   = 3**(n-2)
        tnm = it
-       del = (b-a)/(3.0q0*tnm)
+       del = (b-a)/(3.0d0*tnm)
        ddel = del + del
-       x = a + (0.5q0 * del)
-       sum = 0.0q0
+       x = a + (0.5d0 * del)
+       sum = 0.0d0
        do j=1,it
         sum = sum + func(x)
         x   = x + ddel
         sum = sum + func(x)
         x   = x + del
        enddo
-       s = (s + ((b-a) * sum/tnm)) / 3.0q0
+       s = (s + ((b-a) * sum/tnm)) / 3.0d0
       end if
       return
       end
@@ -831,37 +831,37 @@ c..at the lower limit aa for 0 < gam_int < 1.
 c..declare
       external          funk
       integer           n,it,j
-      real*16           func,funk,a,aa,b,bb,s,tnm,del,ddel,x,sum
+      real*8           func,funk,a,aa,b,bb,s,tnm,del,ddel,x,sum
 
 
 c..common block communication
-      real*16          gam_int
+      real*8          gam_int
       common /cmidp/   gam_int
 
 
 c..a little conversion, modulo recipe equation 4.4.3
-      func(x) = 1.0q0/(gam_int - 1.0q0) * x**(gam_int/(1.0q0 - gam_int))
-     &          * funk(aa - x**(1.0q0/(1.0q0 - gam_int)))
-      b = (aa - bb)**(1.0q0 - gam_int)
-      a = 0.0q0
+      func(x) = 1.0d0/(gam_int - 1.0d0) * x**(gam_int/(1.0d0 - gam_int))
+     &          * funk(aa - x**(1.0d0/(1.0d0 - gam_int)))
+      b = (aa - bb)**(1.0d0 - gam_int)
+      a = 0.0d0
 
 c..now exactly as midpnt
       if (n .eq. 1) then
-       s = (b-a) * func(0.5q0*(a+b))
+       s = (b-a) * func(0.5d0*(a+b))
       else
        it   = 3**(n-2)
        tnm = it
-       del = (b-a)/(3.0q0*tnm)
+       del = (b-a)/(3.0d0*tnm)
        ddel = del + del
-       x = a + (0.5q0 * del)
-       sum = 0.0q0
+       x = a + (0.5d0 * del)
+       sum = 0.0d0
        do j=1,it
         sum = sum + func(x)
         x   = x + ddel
         sum = sum + func(x)
         x   = x + del
        enddo
-       s = (s + ((b-a) * sum/tnm)) / 3.0q0
+       s = (s + ((b-a) * sum/tnm)) / 3.0d0
       end if
       return
       end
@@ -889,18 +889,18 @@ c..declare
       external          choose,func
       integer           j,jmax,jmaxp,k,km,i
       parameter         (jmax=14, jmaxp=jmax+1, k=5, km=k-1)
-      real*16           a,b,ss,s(jmaxp),h(jmaxp),eps,dss,func
+      real*8           a,b,ss,s(jmaxp),h(jmaxp),eps,dss,func
 
 
-      h(1) = 1.0q0
+      h(1) = 1.0d0
       do j=1,jmax
        call choose(func,a,b,s(j),j)
        if (j .ge. k) then
-        call polint(h(j-km),s(j-km),k,0.0q0,ss,dss)
+        call polint(h(j-km),s(j-km),k,0.0d0,ss,dss)
         if (abs(dss) .le. eps*abs(ss)) return
        end if
        s(j+1) = s(j)
-       h(j+1) = h(j)/9.0q0
+       h(j+1) = h(j)/9.0d0
       enddo
       write(6,*)  'too many steps in qromo'
       return
@@ -924,7 +924,7 @@ c..such that ya = p(xa) ya then the returned value is y = p(x)
 c..declare
       integer          n,nmax,ns,i,m
       parameter        (nmax=20)
-      real*16          xa(n),ya(n),x,y,dy,c(nmax),d(nmax),dif,dift,
+      real*8          xa(n),ya(n),x,y,dy,c(nmax),d(nmax),dif,dift,
      1                 ho,hp,w,den
 
 c..find the index ns of the closest table entry; initialize the c and d tables
@@ -978,8 +978,8 @@ c..are. the last dy added is the error indicator.
 
 
 
-      real*16 function zeroin( ax, bx, f, tol)
-      implicit real*16 (a-h,o-z)
+      real*8 function zeroin( ax, bx, f, tol)
+      implicit real*8 (a-h,o-z)
 
 c-----------------------------------------------------------------------
 c
@@ -993,7 +993,7 @@ c  bx     right endpoint of initial interval
 c  f      function subprogram which evaluates f(x) for any x in
 c         the interval  ax,bx
 c  tol    desired length of the interval of uncertainty of the
-c         final result ( .ge. 0.0q0)
+c         final result ( .ge. 0.0d0)
 c
 c
 c  output..
@@ -1013,26 +1013,26 @@ c-----------------------------------------------------------------------
 
 c.... call list variables
 
-      real*16  ax
-      real*16  bx
-      real*16  f
-      real*16  tol
+      real*8  ax
+      real*8  bx
+      real*8  f
+      real*8  tol
 c
-      real*16  a
-      real*16  b
-      real*16  c
-      real*16  d
-      real*16  e
-      real*16  eps
-      real*16  fa
-      real*16  fb
-      real*16  fc
-      real*16  tol1
-      real*16  xm
-      real*16  p
-      real*16  q
-      real*16  r
-      real*16  s
+      real*8  a
+      real*8  b
+      real*8  c
+      real*8  d
+      real*8  e
+      real*8  eps
+      real*8  fa
+      real*8  fb
+      real*8  fc
+      real*8  tol1
+      real*8  xm
+      real*8  p
+      real*8  q
+      real*8  r
+      real*8  s
 
       external f
 
@@ -1041,10 +1041,10 @@ c----------------------------------------------------------------------
 c
 c  compute eps, the relative machine precision
 c
-      eps = 1.0q0
-   10 eps = eps/2.0q0
-      tol1 = 1.0q0 + eps
-      if (tol1 .gt. 1.0q0) go to 10
+      eps = 1.0d0
+   10 eps = eps/2.0d0
+      tol1 = 1.0d0 + eps
+      if (tol1 .gt. 1.0d0) go to 10
 c
 c initialization
 c
@@ -1069,10 +1069,10 @@ c
 c
 c convergence test
 c
-   40 tol1 = 2.0q0*eps*abs(b) + 0.5q0*tol
-      xm = 0.5q0*(c - b)
+   40 tol1 = 2.0d0*eps*abs(b) + 0.5d0*tol
+      xm = 0.5d0*(c - b)
       if (abs(xm) .le. tol1) go to 90
-      if (fb .eq. 0.0q0) go to 90
+      if (fb .eq. 0.0d0) go to 90
 c
 c is bisection necessary?
 c
@@ -1086,8 +1086,8 @@ c
 c linear interpolation
 c
       s = fb/fa
-      p = 2.0q0*xm*s
-      q = 1.0q0 - s
+      p = 2.0d0*xm*s
+      q = 1.0d0 - s
       go to 60
 c
 c inverse quadratic interpolation
@@ -1095,18 +1095,18 @@ c
    50 q = fa/fc
       r = fb/fc
       s = fb/fa
-      p = s*(2.0q0*xm*q*(q - r) - (b - a)*(r - 1.0q0))
-      q = (q - 1.0q0)*(r - 1.0q0)*(s - 1.0q0)
+      p = s*(2.0d0*xm*q*(q - r) - (b - a)*(r - 1.0d0))
+      q = (q - 1.0d0)*(r - 1.0d0)*(s - 1.0d0)
 c
 c adjust signs
 c
-   60 if (p .gt. 0.0q0) q = -q
+   60 if (p .gt. 0.0d0) q = -q
       p = abs(p)
 c
 c is interpolation acceptable?
 c
-      if ((2.0q0*p) .ge. (3.0q0*xm*q - abs(tol1*q))) go to 70
-      if (p .ge. abs(0.5q0*e*q)) go to 70
+      if ((2.0d0*p) .ge. (3.0d0*xm*q - abs(tol1*q))) go to 70
+      if (p .ge. abs(0.5d0*e*q)) go to 70
       e = d
       d = p/q
       go to 80
@@ -1123,7 +1123,7 @@ c
       if (abs(d) .gt. tol1) b = b + d
       if (abs(d) .le. tol1) b = b + Sign(tol1, xm)
       fb = f(b)
-      if ((fb*(fc/abs(fc))) .gt. 0.0q0) go to 20
+      if ((fb*(fc/abs(fc))) .gt. 0.0d0) go to 20
       go to 30
 c
 c done
@@ -1141,7 +1141,7 @@ c
 
 
 
-      real*16 function value(string)
+      real*8 function value(string)
       implicit none
       save
 
@@ -1154,7 +1154,7 @@ c..declare
       character*(*)    string
       character*1      plus,minus,decmal,blank,se,sd,sq,se1,sd1,sq1
       integer          noblnk,long,ipoint,power,psign,iten,j,z,i
-      real*16           x,sign,factor,rten,temp
+      real*8           x,sign,factor,rten,temp
       parameter        (plus = '+'  , minus = '-' , decmal = '.'   ,
      1                  blank = ' ' ,
      2                  se  = 'e'   , sd  = 'd'   , sq = 'q'       ,
@@ -1162,8 +1162,8 @@ c..declare
      4                  rten =  10.0, iten = 10 )
 
 c..initialize
-      x      =  0.0q0
-      sign   =  1.0q0
+      x      =  0.0d0
+      sign   =  1.0d0
       factor =  rten
       pflag  =  .false.
       noblnk =  0
@@ -1182,7 +1182,7 @@ c..remove any leading blanks and get the sign of the number
          noblnk = noblnk + 1
         else if (string(noblnk:noblnk) .eq. minus) then
          noblnk = noblnk + 1
-         sign =  -1.0q0
+         sign =  -1.0d0
         end if
         goto 10
        end if
@@ -1209,8 +1209,8 @@ c..if an exponent character, process the whole exponent, and return
      3          string(i:i) .eq. se1 .or.
      4          string(i:i) .eq. sd1 .or.
      5          string(i:i) .eq. sq1   ) then
-        if (x .eq. 0.0 .and. ipoint.eq.2)     x = 1.0q0
-        if (sign .eq. -1.0 .and. ipoint.eq.3) x = 1.0q0
+        if (x .eq. 0.0 .and. ipoint.eq.2)     x = 1.0d0
+        if (sign .eq. -1.0 .and. ipoint.eq.3) x = 1.0d0
         if (string(ipoint:ipoint) .eq. plus) ipoint = ipoint + 1
         if (string(ipoint:ipoint) .eq. minus) then
          ipoint = ipoint + 1

@@ -9,31 +9,30 @@
       subroutine sedov_setup
       use hydromod
       use inputstrmod
+      use inputparmod
+      use timestepmod
       use gridmod
       use mpimod
+      use physconstmod
       implicit none
 c     http://cococubed.asu.edu/research_pages/sedov.shtml
 
 
 c..declare
       integer          i,nstep
-      real*8          time,zpos(grd_nx-1),
+      real*8          time,zpos(in_ndim(1)),
      1                 eblast,rho0,omega,vel0,ener0,pres0,cs0,gamma,
      2                 xgeom,
-     3                 den(grd_nx-1),ener(grd_nx-1),pres(grd_nx-1),
-     4                 vel(grd_nx-1),cs(grd_nx-1),
-     5                 zlo,zhi,zstep,value
-      integer :: j, k, l
-      real*8 :: h_time
+     3                 den(in_ndim(1)),ener(in_ndim(1)),
+     4                 pres(in_ndim(1)),vel(in_ndim(1)),
+     5                 cs(in_ndim(1)),zlo,zhi,zstep,value
+      integer :: j, k
+      real*8 :: h_time, vol, mint
 
-      write(*,*) '~~~~~~~~~~~~~~~~~~~~', grd_nx, grd_ny, grd_nz
-      allocate(str_xleft(grd_nx))
-      allocate(str_yleft(grd_ny))
-      allocate(str_zleft(grd_nz))
 
 
       nstep = 120
-      eblast = 0.851072d0
+      eblast = 1.0d0
       xgeom  = 3.0d0
       omega  = 0.0d0
 
@@ -71,27 +70,42 @@ c..get the solution for all spatial points at once
 
       h_time = 1.0d0 / maxval(vel/zpos)
       str_xleft(1) = 0.0d0
-      do i = 2, grd_nx
+      do i = 2, in_ndim(1)
         str_xleft(i) = 0.5d0 * (zpos(i) + zpos(i-1)) / h_time
       enddo
-      str_yleft = 0.0d0
-      str_zleft = 1.0d0
+      str_yleft = -3.14159d0
+      str_zleft = -1.0d0
 
-      do i = hydro_bw+1, hydro_nx - hydro_bw
-      do j = hydro_bw+1, hydro_ny - hydro_bw
-      do k = hydro_bw+1, hydro_nz - hydro_bw
-        l = i - hydro_bw
-        hydro_state(i,j,k,rho_i) = den(l)
-        hydro_state(i,j,k,px_i) = den(l) * vel(l)
-        hydro_state(i,j,k,py_i) = 0.0d0
-        hydro_state(i,j,k,pz_i) = 0.0d0
-        hydro_state(i,j,k,egas_i) = (ener(l) + 0.5d0*vel(l)**2) * den(l)
-        hydro_state(i,j,k,tau_i) = (ener(l)*den(l))**(1.0d0/hydro_gamma)
-        hydro_state(i,j,k,frac_i) = den(l)
-        hydro_state(i,j,k,frac_i+1:hydro_nf) = 0.0d0
+      mint = 1.0d+100
+      do i = 1, in_ndim(1)
+      do j = 1, in_ndim(2)
+      do k = 1, in_ndim(3)
+        if( i .gt. 1 ) then
+          vol = 4.0*3.14159/3.0*(zpos(i)**3 - zpos(i-1)**2)
+        else
+          vol = 4.0*3.14159/3.0*(zpos(i)**3)
+        endif
+        str_mass(i,j,k) = den(i)*vol
+        str_vx(i,j,k) = vel(i)
+        str_vy(i,j,k) = vel(i)
+        str_vz(i,j,k) = vel(i)
+        str_temp(i,j,k) = ener(i) / (1.5d0*pc_kb/pc_mh)
+        str_massfr(:,i,j,k) = 0.0d0
+        str_massfr(1,i,j,k) = 1.0d0
+        str_ye(i,j,k) = 1.0d0
+        if( ener(i) .gt. 0.0d0 ) then
+          mint = min(mint,ener(i))
+        endif
       enddo
       enddo
       enddo
+
+      mint = mint / (1.5d0*pc_kb/pc_mh)
+      str_temp = max(str_temp, mint/10.0d0)
+      str_mass = max(str_mass,1.0e-10)
+
+      tsp_tfirst = h_time
+
 
       call scatter_hydro
 

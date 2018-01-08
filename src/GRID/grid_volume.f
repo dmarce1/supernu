@@ -23,6 +23,7 @@ c
        t = 1d0
       endif
 c
+
       select case(igeom)
       case(1,11)
        forall(i=1:grd_nx,j=1:grd_ny,k=1:grd_nz)
@@ -56,6 +57,7 @@ c-- map to compressed grid
       do i=1,grd_nx
        l = grd_icell(i,j,k)
        grd_vol(l) = grd_vol(l) + vol(i,j,k) !multiple void cells are linked to the dummy cell
+
       enddo
       enddo
       enddo

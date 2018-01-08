@@ -20,6 +20,12 @@ c
       real*8,allocatable :: str_temp(:,:,:) !(nx,ny,nz)
       real*8,allocatable :: str_ye(:,:,:) !(nx,ny,nz)
       real*8,allocatable :: str_massfr(:,:,:,:) !(nabund,nx,ny,nz)
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     LSU MODIFICATION
+      real*8,allocatable :: str_vx(:,:,:)
+      real*8,allocatable :: str_vy(:,:,:)
+      real*8,allocatable :: str_vz(:,:,:)
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c-- domain compression
       logical :: str_lvoid=.false.  !flag existence of void cells
@@ -143,6 +149,16 @@ c-- allocate data arrays
       if(str_ltemp) allocate(str_temp(nx,ny,nz))
       if(str_lye) allocate(str_ye(nx,ny,nz))
       allocate(raw(ncol,nx*ny*nz))
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     LSU MODIFICATION
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      allocate(str_vx(nx,ny,nz))
+      allocate(str_vy(nx,ny,nz))
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     LSU MODIFICATION
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      allocate(str_vz(nx,ny,nz))
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c-- read body
       read(4,*,iostat=ierr) raw
@@ -340,6 +356,7 @@ c     ----------------------------!{{{
 * put valid (non-void) cells in sequence, link the other (void) cells
 * to the dummy cell at the end of the sequence.
 ************************************************************************
+
       integer :: i,j,k,l
       integer :: idcell
 c
@@ -400,11 +417,47 @@ c
 c
       subroutine generate_inputstr(igeomin)
 c     ---------------------------------------------!{{{
-      implicit none
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     LSU MODIFICATION
+      use inputparmod
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc      implicit none
       integer,intent(in) :: igeomin
 ************************************************************************
 * wrapper around routines for different geometries
-************************************************************************
+**********************************
+
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     LSU MODIFICATION
+      if( in_test_problem .ne. 0 ) then
+         nx = in_ndim(1)
+         ny = in_ndim(2)
+         nz = in_ndim(3)
+         str_nabund = 1
+         allocate(str_abundlabl(1))
+         str_abundlabl(1) = 'h       '
+         str_ltemp=.true.
+         allocate(str_mass(nx,ny,nz))
+         allocate(str_massfr(str_nabund,nx,ny,nz))
+         allocate(str_temp(nx,ny,nz))
+         allocate(str_xleft(nx+1))
+         allocate(str_yleft(nx+1))
+         allocate(str_zleft(nx+1))
+         allocate(str_ye(nx,ny,nz))
+         allocate(str_vx(nx,ny,nz))
+         allocate(str_vy(nx,ny,nz))
+         allocate(str_vz(nx,ny,nz))
+
+        select case(in_test_problem)
+          case(1)
+            write(*,*) 'Setting up Sedov-Taylor blast wave'
+            call sedov_setup
+        end select
+      else
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+
+**************************************
       igeom = igeomin
       select case(igeom)
       case(1,11)
@@ -421,6 +474,11 @@ c-- allocate remaining arrays
       if(.not.allocated(str_yleft)) allocate(str_yleft(2))
       if(.not.allocated(str_zleft)) allocate(str_zleft(2))
 c!}}}
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     LSU MODIFICATION
+      endif
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       end subroutine generate_inputstr
 c
 c
@@ -530,6 +588,8 @@ c-- allocate arrays
       allocate(str_zleft(nz+1))
       allocate(str_mass(nx,ny,nz))
 c
+
+
 c-- create unit cylinder radii xout
       dx = 1d0/nx
       forall(i=1:nx+1) xout(i) = (i-1)*dx
@@ -607,6 +667,9 @@ c-- adjusting mass to correct total
 c-- deallocating helper arrays
       deallocate(xout,yout)
 c!}}}
+
+
+
       end subroutine generate_inputstr2
 c
 c

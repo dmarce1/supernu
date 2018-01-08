@@ -67,44 +67,13 @@ program supernu
 !
 !-- read input structure
      if(.not.in_noreadstruct.and.in_isvelocity) then
-
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!     MODIFICATION BY LSU
-      if(in_test_problem .eq. 0 ) then
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        call read_inputstr(in_grd_igeom,in_ndim,in_voidcorners,nmpi)
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!     MODIFICATION BY LSU
-      endif
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      else
 !== generate_inputstr development in progress
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!     MODIFICATION BY LSU
-      if(in_test_problem .ne. 0 ) then
-        select case(in_test_problem)
-         case(1)
-          write(*,*) 'Calling Sedov'
-          call sedov_setup
-        end select
-      else
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        call generate_inputstr(in_grd_igeom)
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!     MODIFICATION BY LSU
-      endif
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      endif
 !-- compressed domain, serialize non-void cells
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!     MODIFICATION BY LSU
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-     if(in_test_problem .eq. 0 ) then
-      call inputstr_compress
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!     MODIFICATION BY LSU
-     endif
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+    call inputstr_compress
 
 !-- READ DATA
 !-- read ion and level data
@@ -143,6 +112,8 @@ program supernu
 !     MODIFICATION BY LSU
   call hydromod_init
   call hydro_setup
+  call grid_volume(grd_igeom,grd_isvelocity,tsp_t)
+
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !-- setup gas
