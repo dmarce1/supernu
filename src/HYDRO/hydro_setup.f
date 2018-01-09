@@ -20,14 +20,14 @@ c     http://cococubed.asu.edu/research_pages/sedov.shtml
 
 c..declare
       integer          i,nstep
-      real*8          time,zpos(in_ndim(1)+1),
+      real*16          time,zpos(in_ndim(1)+1),
      1                 eblast,rho0,omega,vel0,ener0,pres0,cs0,gamma,
      2                 xgeom,
      3                 den(in_ndim(1)+1),ener(in_ndim(1)+1),
      4                 pres(in_ndim(1)+1),vel(in_ndim(1)+1),
      5                 cs(in_ndim(1)+1),zlo,zhi,zstep,value
       integer :: j, k
-      real*8 :: h_time, vol, mint
+      real*16 :: h_time, vol, mint
 
 
 
@@ -71,7 +71,7 @@ c..get the solution for all spatial points at once
       h_time = 1.0d0 / maxval(vel/zpos)
       str_xleft(1) = 0.0d0
       do i = 2, in_ndim(1)+1
-        str_xleft(i) = 0.5d0 * (zpos(i) + zpos(i-1)) / h_time
+        str_xleft(i) = 0.5d0 * (zpos(i) + zpos(i-1)) / in_tsp_tfirst
       enddo
       str_yleft(1) = -1.0d0
       str_yleft(2) = +1.0d0
@@ -83,15 +83,13 @@ c..get the solution for all spatial points at once
       do i = 1, in_ndim(1)
       do j = 1, in_ndim(2)
       do k = 1, in_ndim(3)
-        if( i .gt. 1 ) then
-          vol = 4.0*3.14159/3.0*(zpos(i)**3 - zpos(i-1)**2)
-        else
-          vol = 4.0*3.14159/3.0*(zpos(i)**3)
-        endif
+        vol = 4.0*3.14159/3.0*(str_xleft(i+1)**3 - str_xleft(i)**3)
+        vol = vol * in_tsp_tfirst**3
         str_mass(i,j,k) = den(i)*vol
         str_vx(i,j,k) = vel(i)
         str_vy(i,j,k) = 0.0d0
         str_vz(i,j,k) = 0.0d0
+        write(*,*) i,j,k,ener(i)
         str_temp(i,j,k) = ener(i) / (1.5d0*pc_kb/pc_mh)
         str_massfr(:,i,j,k) = 0.0d0
         str_massfr(1,i,j,k) = 1.0d0
@@ -106,9 +104,6 @@ c..get the solution for all spatial points at once
       mint = mint / (1.5d0*pc_kb/pc_mh)
       str_temp = max(str_temp, mint/10.0d0)
       str_mass = max(str_mass,1.0e-10)
-
-      tsp_tfirst = h_time
-
 
       call scatter_hydro
 

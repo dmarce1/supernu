@@ -174,7 +174,6 @@ c         write(*,*) gas_nelec(l), gas_natom(l), gas_vol(l), gas_temp(l)
          gas_bcoef(l) = 1.5d0*pc_kb*(1d0+gas_nelec(l))
      &              * gas_natom(l) / gas_vol(l)
          gas_temp(l) =    eint / gas_bcoef(l)
-         write(*,*) l, gas_nelec(l)
       enddo
       enddo
       enddo

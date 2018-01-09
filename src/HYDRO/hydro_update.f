@@ -290,6 +290,15 @@ c     Compute signal speeds
      &              sqrt((gamma-1.0d0)*einR) + abs( velR )
      &                       )
 
+c      do i = 1,nx
+c      do j = bw+1,ny-bw+1
+c      do k = bw+1,nz-bw+1
+c        write(*,*) i, j, k, U(i,j,k, rho_i),
+c     &         U(i,j,k, egas_i)
+c      enddo
+c      enddo
+c      enddo
+c      call abort()
 c     Compute maximum dt inverse
             xb = bw + 1
             yb = bw + 1
@@ -418,6 +427,7 @@ c     Upate X, Xf, and dX for moving grids
         enddo
 
         t = t + dt
+        write(*,*) t, t1, dt, dtinv_max
 
 
       enddo
