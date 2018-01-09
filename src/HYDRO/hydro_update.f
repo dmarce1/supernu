@@ -65,38 +65,42 @@ c     Find out which dimensions are in use
 
 c     Get face X from grd_?arr
       do i = 1+bw, nx-bw+1
+      do j = 1, ny
+      do k = 1, nz
+        Xf(i,j,k,1) = grd_xarr(i-bw)
+      enddo
+      enddo
+      enddo
+      do i = 1, nx
       do j = 1+bw, ny-bw+1
+      do k = 1, nz
+        Xf(i,j,k,2) = grd_yarr(j-bw)
+      enddo
+      enddo
+      enddo
+      do i = 1, nx
+      do j = 1, ny
       do k = 1+bw, nz-bw+1
-        if( dimused(1) ) then
-          Xf(i,j,k,1) = grd_xarr(i-bw)
-        endif
-        if( dimused(2) ) then
-          Xf(i,j,k,2) = grd_yarr(j-bw)
-        endif
-        if( dimused(3) ) then
-          Xf(i,j,k,3) = grd_zarr(k-bw)
-        endif
+        Xf(i,j,k,3) = grd_zarr(k-bw)
       enddo
       enddo
       enddo
 
       do i = 0, bw-1
-        if( dimused(1) ) then
-          Xf(bw-i,:,:,1) = 2.0d0*Xf(bw-i+2,:,:,1) - Xf(bw-i+1,:,:,1)
+          Xf(bw-i,:,:,1) = 2.0d0*Xf(bw-i+1,:,:,1) - Xf(bw-i+2,:,:,1)
+          Xf(:,bw-i,:,2) = 2.0d0*Xf(:,bw-i+1,:,2) - Xf(:,bw-i+2,:,2)
+          Xf(:,:,bw-i,3) = 2.0d0*Xf(:,:,bw-i+1,3) - Xf(:,:,bw-i+2,3)
+      enddo
+      if( bw .gt. 1 ) then
+        do i = 1, bw-1
           Xf(nx-bw+i+1,:,:,1) =
      &      2.0d0*Xf(nx-bw+i,:,:,1) - Xf(nx-bw+i-1,:,:,1)
-        endif
-        if( dimused(2) ) then
-          Xf(:,bw-i,:,2) = 2.0d0*Xf(:,bw-i+2,:,2) - Xf(:,bw-i+1,:,2)
           Xf(:,ny-bw+i+1,:,2) =
      &      2.0d0*Xf(:,ny-bw+i,:,2) - Xf(:,ny-bw+i-1,:,2)
-        endif
-        if( dimused(3) ) then
-          Xf(:,:,bw-i,3) = 2.0d0*Xf(:,:,bw-i+2,3) - Xf(:,:,bw-i+1,3)
           Xf(:,:,nz-bw+i+1,3) =
      &      2.0d0*Xf(:,:,nz-bw+i,3) - Xf(:,:,nz-bw+i-1,3)
-        endif
-      enddo
+        enddo
+      endif
 
 c     Select dimensions where grid is in velocity space
       select case( grd_igeom )
@@ -117,37 +121,27 @@ c     Select dimensions where grid is in velocity space
 
 c     Compute cell centered X and dX from face X
 
-      if( dimused(1) ) then
-        X(1:nx-1,:,:,1) = (Xf(2:nx,:,:,1) + Xf(1:nx-1,:,:,1))*0.5d0
-        dX(1:nx-1,:,:,1) = Xf(2:nx,:,:,1) - Xf(1:nx-1,:,:,1)
-      endif
+      X(1:nx-1,:,:,1) = (Xf(2:nx,:,:,1) + Xf(1:nx-1,:,:,1))*0.5d0
+      dX(1:nx-1,:,:,1) = Xf(2:nx,:,:,1) - Xf(1:nx-1,:,:,1)
 
-      if( dimused(2) ) then
-        X(:,1:ny-1,:,2) = (Xf(:,2:ny,:,2) + Xf(:,1:ny-1,:,2))*0.5d0
-        dX(:,1:ny-1,:,2) = Xf(:,2:ny,:,2) - Xf(:,1:ny-1,:,2)
-      endif
+      X(:,1:ny-1,:,2) = (Xf(:,2:ny,:,2) + Xf(:,1:ny-1,:,2))*0.5d0
+      dX(:,1:ny-1,:,2) = Xf(:,2:ny,:,2) - Xf(:,1:ny-1,:,2)
 
-      if( dimused(3) ) then
-        X(:,:,1:nz-1,3) = (Xf(:,:,2:nz,3) + Xf(:,:,1:nz-1,3))*0.5d0
-        dX(:,:,1:nz-1,3) = Xf(:,:,2:nz,3) - Xf(:,:,1:nz-1,3)
-      endif
+      X(:,:,1:nz-1,3) = (Xf(:,:,2:nz,3) + Xf(:,:,1:nz-1,3))*0.5d0
+      dX(:,:,1:nz-1,3) = Xf(:,:,2:nz,3) - Xf(:,:,1:nz-1,3)
 
 c     Compute geometrical scale, face area, and inverse cell volumes
 c     (in units of dX)
       select case( grd_igeom )
         case(1,11)
+          tmp = acos(X(:,:,:,2))
+          tmp = sin(tmp)
           scle(:,:,:,1) = 1.0d0
-          scle(:,:,:,2) = X(:,:,:,1)
+          scle(:,:,:,2) = X(:,:,:,1) * tmp
+          scle(:,:,:,3) = X(:,:,:,1)
+          area(:,:,:,1) = Xf(:,:,:,1)**2 * tmp
           area(:,:,:,2) = Xf(:,:,:,1)
-          if( grd_igeom .eq. 1 ) then
-            area(:,:,:,1) = Xf(:,:,:,1)**2 * sin(Xf(:,:,:,2))
-            scle(:,:,:,3) = X(:,:,:,1) * sin(X(:,:,:,2))
-            area(:,:,:,3) = Xf(:,:,:,1) * sin(Xf(:,:,:,2))
-          else
-            area(:,:,:,1) = Xf(:,:,:,1)**2
-            scle(:,:,:,3) = X(:,:,:,1)
-            area(:,:,:,3) = Xf(:,:,:,1)
-          endif
+          area(:,:,:,3) = Xf(:,:,:,1) * tmp
         case(2)
           scle(:,:,:,(/1,3/)) = 1.0d0
           scle(:,:,:,2) = X(:,:,:,1)
@@ -158,10 +152,13 @@ c     (in units of dX)
           scle = 1.0d0
           area = 1.0d0
       end select
+      tmp = Xf(:,:,:,2)
 
-      volinv(:,:,:) = 1.0d0         / scle(:,:,:,1)
-      volinv(:,:,:) = volinv(:,:,:) / scle(:,:,:,2)
-      volinv(:,:,:) = volinv(:,:,:) / scle(:,:,:,3)
+      volinv(1:nx-1,1:ny-1,1:nz-1) = 1.0d0/scle(1:nx-1,1:ny-1,1:nz-1,1)
+      volinv(1:nx-1,1:ny-1,1:nz-1) = volinv(1:nx-1,1:ny-1,1:nz-1) /
+     &                                 scle(1:nx-1,1:ny-1,1:nz-1,2)
+      volinv(1:nx-1,1:ny-1,1:nz-1) = volinv(1:nx-1,1:ny-1,1:nz-1) /
+     &                                 scle(1:nx-1,1:ny-1,1:nz-1,3)
 
       done = .false.
 c     Main loop - loop until desired time is reached
@@ -177,33 +174,31 @@ c     Boundaries
 c     Spherical
             case(1,11)
 c     Radial singularity at center and outflow at edge
-              do j = 1+bw, ny-bw
-                k = mod(j + (ny-2*bw) / 2 - 1, ny) + 1
-                U(i,:,j,:) = U(2 * bw - i + 1,:,k,:)
-                U(i,:,j,px_i) = -U(i,:,k,px_i)
+              do j = 1, ny
+                k = mod(j + (nz-2*bw) / 2 - 1, nz) + 1
+                U(i,j,:,:) = U(2 * bw - i + 1,k,:,:)
+                U(i,j,:,px_i) = -U(i,k,:,px_i)
               enddo
               U(nx - i + 1,:, :, :) = U(nx-bw,:,:,:)
               U(nx - i + 1, :, :, px_i) =
      &          max( U(nx - i + 1, :, :, px_i), 0.d0 )
 
-              if( grd_igeom .ne. 11 ) then
 c     Azimuthal periodic
-                U(:, i, :, :) = U(:, ny - bw - 1 + i, :, :)
-                U(:, ny - i + 1, :, :) = U(:, bw + i, :, :)
+              U(:, :, i, :) = U(:, :, nz - bw - 1 + i, :)
+              U(:, :, nz - i + 1, :) = U(:, :, bw + i, :)
 c     Theta direction
-                do j = 1+bw, ny-bw
-                  k = mod(j + (ny-2*bw)/2-1, ny) + 1
-                  U(:, j, i, :) = U(:, k, 2 * bw - i + 1, :)
-                  U(:, j, i, pz_i) = -U(:, k, i, pz_i)
-                  U(:,j,nz-i+1,:) = U(:,k,nz+i-bw-1,:)
-                  U(:,j,nz-i+1,pz_i) = -U(:,k,nz+i-bw-1,pz_i)
-                enddo
-              endif
+              do j = 1, nz
+                k = mod(j + (nz-2*bw)/2-1, nz) + 1
+                U(:, i, j, :) = U(:, 2 * bw - i + 1, k, :)
+                U(:, i, j, pz_i) = -U(:, i, k, pz_i)
+                U(:,ny-i+1,j,:) = U(:,ny+i-bw-1,k,:)
+                U(:,ny-i+1,j,py_i) = -U(:,ny+i-bw-1,k,py_i)
+              enddo
 
 c     Cylindrical
             case(2)
 c     Radial singularity at center and outflow at edge
-              do j = 1+bw, ny-bw
+              do j = 1, ny
                 k = mod(j + (ny-2*bw) / 2 - 1, ny) + 1
                 U(i,j,:,:) = U(2*bw-i+1,k,:,:)
                 U(i,j,:,px_i) = -U(i,k,:,px_i)
@@ -238,9 +233,9 @@ c     All dims are outflow
           end select
         enddo
 
+
 c     Compute contribution to dudt in each flux direction
         do dm = 1, 3
-
           if( dimused(dm) ) then
 
 c     Reconstruct face values (piecewise constant only)
@@ -289,7 +284,6 @@ c     energy
             enddo
             enddo
             enddo
-
 c     Compute signal speeds
             A = max(
      &              sqrt((gamma-1.0d0)*einL) + abs( velL ),
@@ -304,17 +298,17 @@ c     Compute maximum dt inverse
             ye = ny - bw
             ze = nz - bw
             dtinv_max = max(dtinv_max,maxval(A(xb:xe,yb:ye,zb:ze) /
-     &                                      dX(xb:xe,yb:ye,zb:ze, dm)))
+     &          scle(xb:xe,yb:ye,zb:ze, dm)*dX(xb:xe,yb:ye,zb:ze, dm)))
             select case(dm)
               case(1)
                 dtinv_max=max(dtinv_max,maxval(A(xb+1:xe+1,yb:ye,zb:ze)/
-     &                                      dX(xb:xe,yb:ye,zb:ze, dm)))
+     &          scle(xb:xe,yb:ye,zb:ze, dm)*dX(xb:xe,yb:ye,zb:ze, dm)))
               case(2)
                 dtinv_max=max(dtinv_max,maxval(A(xb:xe,yb+1:ye+1,zb:ze)/
-     &                                      dX(xb:xe,yb:ye,zb:ze, dm)))
+     &          scle(xb:xe,yb:ye,zb:ze, dm)*dX(xb:xe,yb:ye,zb:ze, dm)))
               case(3)
                 dtinv_max=max(dtinv_max,maxval(A(xb:xe,yb:ye,zb+1:ze+1)/
-     &                                      dX(xb:xe,yb:ye,zb:ze, dm)))
+     &          scle(xb:xe,yb:ye,zb:ze, dm)*dX(xb:xe,yb:ye,zb:ze, dm)))
             end select
 
 
@@ -377,19 +371,6 @@ c     Add flux contribution to dudt
         enddo
 
 
-
-c      if( t0 .gt. 1.0d0 ) then
-c        do i = xb,xe
-c        do j = yb,ye
-c        do k = zb,ze
-c          write(*,*) i,j,k,U(i,j,k,px_i)/U(i,j,k,rho_i),
-c     &                       U(i,j,k,px_i),U(i,j,k,rho_i)
-c        end do
-c        end do
-c        end do
-c        call abort()
-c      endif
-
 c       Geometrical source terms
         if( grd_igeom .ne. 11 ) then
           if( grd_igeom .ne. 3 ) then
@@ -437,7 +418,6 @@ c     Upate X, Xf, and dX for moving grids
         enddo
 
         t = t + dt
-        write(*,*) t, t1, dt, dtinv_max
 
 
       enddo

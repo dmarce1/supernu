@@ -20,18 +20,18 @@ c     http://cococubed.asu.edu/research_pages/sedov.shtml
 
 c..declare
       integer          i,nstep
-      real*8          time,zpos(in_ndim(1)),
+      real*8          time,zpos(in_ndim(1)+1),
      1                 eblast,rho0,omega,vel0,ener0,pres0,cs0,gamma,
      2                 xgeom,
-     3                 den(in_ndim(1)),ener(in_ndim(1)),
-     4                 pres(in_ndim(1)),vel(in_ndim(1)),
-     5                 cs(in_ndim(1)),zlo,zhi,zstep,value
+     3                 den(in_ndim(1)+1),ener(in_ndim(1)+1),
+     4                 pres(in_ndim(1)+1),vel(in_ndim(1)+1),
+     5                 cs(in_ndim(1)+1),zlo,zhi,zstep,value
       integer :: j, k
       real*8 :: h_time, vol, mint
 
 
 
-      nstep = 120
+      nstep = in_ndim(1)+1
       eblast = 1.0d0
       xgeom  = 3.0d0
       omega  = 0.0d0
@@ -70,11 +70,14 @@ c..get the solution for all spatial points at once
 
       h_time = 1.0d0 / maxval(vel/zpos)
       str_xleft(1) = 0.0d0
-      do i = 2, in_ndim(1)
+      do i = 2, in_ndim(1)+1
         str_xleft(i) = 0.5d0 * (zpos(i) + zpos(i-1)) / h_time
       enddo
-      str_yleft = -3.14159d0
-      str_zleft = -1.0d0
+      str_yleft(1) = -1.0d0
+      str_yleft(2) = +1.0d0
+      str_zleft(1) = 0.0d0
+      str_zleft(2) = 2.0d0 * pc_pi
+
 
       mint = 1.0d+100
       do i = 1, in_ndim(1)
@@ -87,8 +90,8 @@ c..get the solution for all spatial points at once
         endif
         str_mass(i,j,k) = den(i)*vol
         str_vx(i,j,k) = vel(i)
-        str_vy(i,j,k) = vel(i)
-        str_vz(i,j,k) = vel(i)
+        str_vy(i,j,k) = 0.0d0
+        str_vz(i,j,k) = 0.0d0
         str_temp(i,j,k) = ener(i) / (1.5d0*pc_kb/pc_mh)
         str_massfr(:,i,j,k) = 0.0d0
         str_massfr(1,i,j,k) = 1.0d0

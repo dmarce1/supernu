@@ -97,6 +97,7 @@ c      HYDRO LSU
          hydro_state(i,j,k,pz_i) = grd_vz(l) * gas_rho(l)
          eint =  1.5d0*pc_kb*(1d0+gas_nelec(l))
      &              * gas_natom(l) / gas_vol(l) * gas_temp(l)
+c         write(*,*) gas_nelec(l), gas_natom(l), gas_vol(l), gas_temp(l)
          hydro_state(i,j,k,tau_i) = eint**(1.0d0 / hydro_gamma)
          if( grd_igeom .eq. 11 ) then
            hydro_state(i,j,k,egas_i) = eint +
