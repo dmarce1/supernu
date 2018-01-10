@@ -97,7 +97,6 @@ c      HYDRO LSU
          hydro_state(i,j,k,pz_i) = grd_vz(l) * gas_rho(l)
          eint =  1.5d0*pc_kb*(1d0+gas_nelec(l))
      &              * gas_natom(l) / gas_vol(l) * gas_temp(l)
-c         write(*,*) gas_nelec(l), gas_natom(l), gas_vol(l), gas_temp(l)
          hydro_state(i,j,k,tau_i) = eint**(1.0d0 / hydro_gamma)
          if( grd_igeom .eq. 11 ) then
            hydro_state(i,j,k,egas_i) = eint +
@@ -119,7 +118,6 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
       enddo
       enddo
       enddo
-
       end subroutine gather_hydro
 
 
@@ -135,7 +133,6 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
       integer :: i, j, k, l, f
       integer :: i0, j0, k0, f0
       real*8 :: eint, nnuc
-
       do i = hydro_bw+1, hydro_nx - hydro_bw
       do j = hydro_bw+1, hydro_ny - hydro_bw
       do k = hydro_bw+1, hydro_nz - hydro_bw
@@ -161,10 +158,12 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
            gas_natom1fr(f0,l) = hydro_state(i,j,k,f) / gas_rho(l)
            f = f + 1
          enddo
-         gas_natom(l) = sum(gas_natom1fr(1:gas_nelem,l))
+         gas_natom(l) = 0.0d0
          gas_nelec(l) = 0.0d0
          nnuc = 0.0d0
          do f = 1, gas_nelem
+           gas_natom(l) = gas_natom(l) +
+     &          gas_rho(l) * gas_natom1fr(f,l) / (elem_data(f)%m*pc_amu)
            gas_nelec(l) = gas_nelec(l) + f * gas_natom1fr(f,l)
            nnuc = nnuc + elem_data(f)%m * gas_natom1fr(f,l)
          enddo
@@ -173,6 +172,7 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
          gas_bcoef(l) = 1.5d0*pc_kb*(1d0+gas_nelec(l))
      &              * gas_natom(l) / gas_vol(l)
          gas_temp(l) =    eint / gas_bcoef(l)
+         write(*,*) gas_temp(l), gas_vol(l), gas_rho(l), gas_nelec(l)
       enddo
       enddo
       enddo

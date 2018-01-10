@@ -89,7 +89,6 @@ c..get the solution for all spatial points at once
         str_vx(i,j,k) = vel(i)
         str_vy(i,j,k) = 0.0d0
         str_vz(i,j,k) = 0.0d0
-c        write(*,*) i,j,k,ener(i)
         str_temp(i,j,k) = ener(i) / (1.5d0*pc_kb/pc_mh)
         str_massfr(:,i,j,k) = 0.0d0
         str_massfr(1,i,j,k) = str_mass(i,j,k)
@@ -100,11 +99,8 @@ c        write(*,*) i,j,k,ener(i)
       enddo
       enddo
       enddo
-
       mint = mint / (1.5d0*pc_kb/pc_mh)
       str_temp = max(str_temp, mint/10.0d0)
-      str_mass = max(str_mass,1.0e-10)
-
-      call scatter_hydro
+      str_mass = max(str_mass,1.0e-20)
 
       end subroutine

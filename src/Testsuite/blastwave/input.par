@@ -9,7 +9,7 @@
  in_radiation_on = f
  
 !-- time step
- in_tsp_nt = 10
+ in_tsp_nt = 1000000
  in_tsp_tfirst = 3.3353413112755281
  in_tsp_tlast = 10.0
  

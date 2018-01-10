@@ -27,10 +27,14 @@
       real(8) :: X(hydro_nx,hydro_ny,hydro_nz,3)
       real(8) :: Xf(hydro_nx,hydro_ny,hydro_nz,3)
       real(8) :: dX(hydro_nx,hydro_ny,hydro_nz,3)
+      real(8) :: kin(hydro_nx,hydro_ny,hydro_nz)
+      real(8) :: ein(hydro_nx,hydro_ny,hydro_nz)
       real(8) :: kinR(hydro_nx,hydro_ny,hydro_nz)
       real(8) :: kinL(hydro_nx,hydro_ny,hydro_nz)
       real(8) :: velR(hydro_nx,hydro_ny,hydro_nz)
       real(8) :: velL(hydro_nx,hydro_ny,hydro_nz)
+      real(8) :: cR(hydro_nx,hydro_ny,hydro_nz)
+      real(8) :: cL(hydro_nx,hydro_ny,hydro_nz)
       real(8) :: einR(hydro_nx,hydro_ny,hydro_nz)
       real(8) :: einL(hydro_nx,hydro_ny,hydro_nz)
       real(8) :: tmp(hydro_nx,hydro_ny,hydro_nz)
@@ -52,6 +56,13 @@
       nf = hydro_nf
 
       t = t0
+
+      xb = bw + 1
+      yb = bw + 1
+      zb = bw + 1
+      xe = nx - bw
+      ye = ny - bw
+      ze = nz - bw
 
 
 c     Find out which dimensions are in use
@@ -138,11 +149,13 @@ c     (in units of dX)
           tmp = acos(X(:,:,:,2))
           tmp = sin(tmp)
           scle(:,:,:,1) = 1.0d0
-          scle(:,:,:,2) = X(:,:,:,1) * tmp
-          scle(:,:,:,3) = X(:,:,:,1)
+          scle(:,:,:,2) = abs(X(:,:,:,1)) * tmp
+          scle(:,:,:,3) = abs(X(:,:,:,1))
           area(:,:,:,1) = Xf(:,:,:,1)**2 * tmp
-          area(:,:,:,2) = Xf(:,:,:,1)
-          area(:,:,:,3) = Xf(:,:,:,1) * tmp
+          area(:,:,:,2) = abs(Xf(:,:,:,1))
+          area(:,:,:,3) = abs(Xf(:,:,:,1)) * tmp
+          j = hydro_bw + 1
+          k = j
         case(2)
           scle(:,:,:,(/1,3/)) = 1.0d0
           scle(:,:,:,2) = X(:,:,:,1)
@@ -155,11 +168,10 @@ c     (in units of dX)
       end select
       tmp = Xf(:,:,:,2)
 
-      volinv(1:nx-1,1:ny-1,1:nz-1) = 1.0d0/scle(1:nx-1,1:ny-1,1:nz-1,1)
-      volinv(1:nx-1,1:ny-1,1:nz-1) = volinv(1:nx-1,1:ny-1,1:nz-1) /
-     &                                 scle(1:nx-1,1:ny-1,1:nz-1,2)
-      volinv(1:nx-1,1:ny-1,1:nz-1) = volinv(1:nx-1,1:ny-1,1:nz-1) /
-     &                                 scle(1:nx-1,1:ny-1,1:nz-1,3)
+      volinv(1:nx-1,1:ny-1,1:nz-1) = 1.0d0 /
+     &                               scle(1:nx-1,1:ny-1,1:nz-1,1) /
+     &                               scle(1:nx-1,1:ny-1,1:nz-1,2) /
+     &                               scle(1:nx-1,1:ny-1,1:nz-1,3)
 
       done = .false.
 c     Main loop - loop until desired time is reached
@@ -169,11 +181,32 @@ c     Main loop - loop until desired time is reached
         U = hydro_state
 
 c     Boundaries
+
+c       pre-bound
+        do dm = 1, 3
+          if( veldim(dm) ) then
+            U(:,:,:,px_i+dm-1) = U(:,:,:,px_i+dm-1) -
+     &               U(:,:,:,rho_i)*X(:,:,:,px_i+dm-1) / t
+          endif
+        enddo
+
         do i = 1, bw
           select case( grd_igeom )
 
+c     1D Spherical
+            case(11)
+              U(i,:,:,:) = U(2*bw-i+1,:,:,:)
+              U(nx - i + 1,:, :, :) = U(nx-bw,:,:,:)
+              U(i,:,:,px_i) = -U(i,:,:,px_i)
+              U(nx - i + 1, :, :, px_i) =
+     &          max( U(nx - i + 1, :, :, px_i), 0.d0 )
+              U(:,i,:,:) = U(:,bw+1,:,:)
+              U(:,ny-i+1,:,:) = U(:,ny-bw,:,:)
+              U(:,:,i,:) = U(:,:,bw+1,:)
+              U(:,:,nz-i+1,:) = U(:,:,nz-bw,:)
+
 c     Spherical
-            case(1,11)
+            case(1)
 c     Radial singularity at center and outflow at edge
               do j = 1, ny
                 k = mod(j + (nz-2*bw) / 2 - 1, nz) + 1
@@ -195,6 +228,14 @@ c     Theta direction
                 U(:,ny-i+1,j,:) = U(:,ny+i-bw-1,k,:)
                 U(:,ny-i+1,j,py_i) = -U(:,ny+i-bw-1,k,py_i)
               enddo
+
+c       post-bound
+        do dm = 1, 3
+          if( veldim(dm) ) then
+            U(:,:,:,px_i+dm-1) = U(:,:,:,px_i+dm-1) +
+     &               U(:,:,:,rho_i)*X(:,:,:,px_i+dm-1) / t
+          endif
+        enddo
 
 c     Cylindrical
             case(2)
@@ -241,6 +282,15 @@ c     Compute contribution to dudt in each flux direction
 
 c     Reconstruct face values (piecewise constant only)
 c     TODO: HIGHER ORDER RECONSTRUCTIONS
+
+c         pre-recon
+            do i = 0, 2
+              U(:,:,:,px_i+i) = U(:,:,:,px_i+i) / U(:,:,:,rho_i)
+              if( veldim(i+1) ) then
+                 U(:,:,:,px_i+i) = U(:,:,:,px_i+i) - X(:,:,:,i+1) / t
+              endif
+            enddo
+
             if( bw .eq. 1 ) then
               UR = U
               select case( dm )
@@ -252,6 +302,20 @@ c     TODO: HIGHER ORDER RECONSTRUCTIONS
                 UL(:,:,2:nz,:) = U(:,:,1:nz-1,:)
               end select
             endif
+
+c         post-recon
+            do i = 0, 2
+              if( veldim(i+1) ) then
+                 U (:,:,:,px_i+i) = U (:,:,:,px_i+i) + X (:,:,:,i+1) / t
+                 UR(:,:,:,px_i+i) = UR(:,:,:,px_i+i) + Xf(:,:,:,i+1) / t
+                 UL(:,:,:,px_i+i) = UL(:,:,:,px_i+i) + Xf(:,:,:,i+1) / t
+              endif
+              U (:,:,:,px_i+i) = U (:,:,:,px_i+i) * U (:,:,:,rho_i)
+              UR(:,:,:,px_i+i) = UR(:,:,:,px_i+i) * UR(:,:,:,rho_i)
+              UL(:,:,:,px_i+i) = UL(:,:,:,px_i+i) * UL(:,:,:,rho_i)
+            enddo
+
+
 c     Compute face kinetic and internal energies and velocities
             if( grd_igeom .eq. 11 ) then
               kinL = 0.5d0 * UL(:,:,:,px_i)**2 / UL(:,:,:,rho_i)
@@ -266,11 +330,14 @@ c     Compute face kinetic and internal energies and velocities
             einR = UR(:,:,:,egas_i) - kinR
             velL = UL(:,:,:,px_i+dm-1) / UL(:,:,:,rho_i)
             velR = UR(:,:,:,px_i+dm-1) / UR(:,:,:,rho_i)
+            j = hydro_bw+1
+            k = hydro_bw+1
 c     Remove grid velocity
             if( veldim(dm) ) then
               velL = velL - Xf(:,:,:,dm) / t
               velR = velR - Xf(:,:,:,dm) / t
             endif
+
 c     Apply dual energy formalism to compute final value for internal
 c     energy
             do i = 1, nx
@@ -286,46 +353,31 @@ c     energy
             enddo
             enddo
 c     Compute signal speeds
-            A = max(
-     &              sqrt((gamma-1.0d0)*einL) + abs( velL ),
-     &              sqrt((gamma-1.0d0)*einR) + abs( velR )
-     &                       )
+            cL = sqrt((gamma-1.0d0)*gamma*einL/UL(:,:,:,rho_i))
+            cR = sqrt((gamma-1.0d0)*gamma*einR/UR(:,:,:,rho_i))
+            A = max(cL + abs( velL ),cR + abs( velR ))
 
-c      do i = 1,nx
-c      do j = bw+1,ny-bw+1
-c      do k = bw+1,nz-bw+1
-c        write(*,*) i, j, k, U(i,j,k, rho_i),
-c     &         U(i,j,k, egas_i)
-c      enddo
-c      enddo
-c      enddo
-c      call abort()
 c     Compute maximum dt inverse
-            xb = bw + 1
-            yb = bw + 1
-            zb = bw + 1
-            xe = nx - bw
-            ye = ny - bw
-            ze = nz - bw
             dtinv_max = max(dtinv_max,maxval(A(xb:xe,yb:ye,zb:ze) /
-     &          scle(xb:xe,yb:ye,zb:ze, dm)*dX(xb:xe,yb:ye,zb:ze, dm)))
+     &          scle(xb:xe,yb:ye,zb:ze, dm)/dX(xb:xe,yb:ye,zb:ze, dm)))
             select case(dm)
               case(1)
                 dtinv_max=max(dtinv_max,maxval(A(xb+1:xe+1,yb:ye,zb:ze)/
-     &          scle(xb:xe,yb:ye,zb:ze, dm)*dX(xb:xe,yb:ye,zb:ze, dm)))
+     &          scle(xb:xe,yb:ye,zb:ze, dm)/dX(xb:xe,yb:ye,zb:ze, dm)))
               case(2)
                 dtinv_max=max(dtinv_max,maxval(A(xb:xe,yb+1:ye+1,zb:ze)/
-     &          scle(xb:xe,yb:ye,zb:ze, dm)*dX(xb:xe,yb:ye,zb:ze, dm)))
+     &          scle(xb:xe,yb:ye,zb:ze, dm)/dX(xb:xe,yb:ye,zb:ze, dm)))
               case(3)
                 dtinv_max=max(dtinv_max,maxval(A(xb:xe,yb:ye,zb+1:ze+1)/
-     &          scle(xb:xe,yb:ye,zb:ze, dm)*dX(xb:xe,yb:ye,zb:ze, dm)))
+     &          scle(xb:xe,yb:ye,zb:ze, dm)/dX(xb:xe,yb:ye,zb:ze, dm)))
             end select
 
 
 c     Compute advection terms for vector flux
             do i = 1, nf
-              Fv(:,:,:,i) = ((velL * UL(:,:,:,i) + velR * UR(:,:,:,i)) -
-     &                         A * (UR(:,:,:,i) - UL(:,:,:,i))) * 0.5d0
+              Fv(:,:,:,i)=(velL * UL(:,:,:,i)+velR * UR(:,:,:,i))*0.5d0
+              Fv(:,:,:,i) = Fv(:,:,:,i) -
+     &            A * (UR(:,:,:,i) - UL(:,:,:,i)) * 0.5d0
             enddo
 
 c     Add work term for energy
@@ -342,12 +394,10 @@ c     Compute scalar fluxes
             Fs = 0.0d0
             Fs(:,:,:,px_i+dm-1) =
      &                           0.5d0*(gamma-1.0d0)*(einL + einR)
-
 c     Apply face areas to vector fluxes
             do i = 1, nf
               Fv(:,:,:,i) = Fv(:,:,:,i) * area(:,:,:,dm)
             enddo
-
 
 c     Add flux contribution to dudt
             do i = 1, nf
@@ -379,8 +429,6 @@ c     Add flux contribution to dudt
           endif
 
         enddo
-
-
 c       Geometrical source terms
         if( grd_igeom .ne. 11 ) then
           if( grd_igeom .ne. 3 ) then
@@ -403,12 +451,11 @@ c       Geometrical source terms
         endif
 
 
-c     If grid is moving, volume increases
-        if( grd_isvelocity ) then
-          dU = dU - 3.0d0 * U / t
-        endif
-
 c     Compute timestep
+        dtinv_max = max(
+     &              maxval(dU(xb:xe,yb:ye,zb:ze,(/rho_i,tau_i/)) /
+     &                      -U(xb:xe,yb:ye,zb:ze,(/rho_i,tau_i/))),
+     &                  dtinv_max)
         dt = 0.4d0 / dtinv_max
         if( dt .ge. t1 - t ) then
           dt = t1 - t
@@ -417,6 +464,30 @@ c     Compute timestep
 
 c     Apply dudt
         U = U + dU * dt
+
+
+
+c     Apply dual energy formalism to update tau
+        kin = U(:,:,:,px_i)**2+U(:,:,:,py_i)**2+U(:,:,:,pz_i)**2
+        kin = 0.5d0 / U(:,:,:,rho_i)
+        ein = U(:,:,:,egas_i) - kin
+        do i = 1, nx
+        do j = 1, ny
+        do k = 1, nz
+          if( ein(i,j,k) .ge. U(i,j,k,egas_i) * 0.1d0 ) then
+            U(i,j,k,tau_i) = ein(i,j,k)**(1.0d0/gamma)
+          endif
+        enddo
+        enddo
+        enddo
+
+        if(any(U(xb:xe,yb:ye,zb:ze,rho_i).le.0.0d0)) then
+           write(*,*) 'rho < 0.0'
+           call abort()
+        endif
+        if(any(U(xb:xe,yb:ye,zb:ze,tau_i).le.0.0d0)) then
+           write(*,*) 'tau < 0.0'
+        endif
 
 c     Upate X, Xf, and dX for moving grids
         do i = 1, 3
@@ -427,6 +498,11 @@ c     Upate X, Xf, and dX for moving grids
           endif
         enddo
 
+c     If grid is moving, volume increases
+        if( grd_isvelocity ) then
+           U = U * (1.0d0 + dt / t)**3
+        endif
+
         t = t + dt
         write(*,*) t, t1, dt, dtinv_max
 
@@ -435,6 +511,7 @@ c     Upate X, Xf, and dX for moving grids
 
 
       hydro_state = U
+      call hydro_output()
 
       call scatter_hydro
 

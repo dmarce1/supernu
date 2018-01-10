@@ -29,7 +29,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ************************************************************************
       logical,save :: lfirst=.true.
       logical :: do_output,lexist
-      integer :: i,j,l,istat
+      integer :: i,j,l,istat, k
       real*8 :: help
       real*8 :: dtempfrac = 0.99d0
       real*8 :: natom1fr(-2*gas_nchain:gas_nelem,gas_ncell)
@@ -140,6 +140,7 @@ c-- temperature
       gas_ur = pc_acoef*gas_temp**4
 c
 c-- sanity check temperatures
+
       if(any(gas_temp/=gas_temp)) stop 'gas_temp NaN'
       if(any(gas_temp<=0d0)) stop 'gas_temp<=0'
 

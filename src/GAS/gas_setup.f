@@ -122,6 +122,7 @@ c-- warn if renormalization factor is abnormal
 c
 c-- partial mass
        gas_natom1fr(:,i) = mass0fr(:,i)*gas_mass(i)
+
 c
 c-- take out radioactive part
        gas_natom1fr(28,i) = gas_natom1fr(28,i) -
@@ -208,12 +209,11 @@ c-- add radioactive part to stable again
 c
 c-- total natom
        gas_natom(i) = sum(gas_natom1fr(1:,i))
-c
 c-- convert natoms to natom fractions
        gas_natom1fr(:,i) = gas_natom1fr(:,i)/gas_natom(i)
        gas_natom0fr(:,i,:) = gas_natom0fr(:,i,:)/gas_natom(i)
 c
       enddo !i
-c!}}}
+c !}}}
       end subroutine massfr2natomfr
 c vim: fdm=marker
