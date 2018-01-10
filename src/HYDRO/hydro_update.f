@@ -44,9 +44,13 @@
       integer :: nx, ny, nz, bw, nf
       real(8) :: gamma
       logical :: done
+      logical, save :: first_call = .true.
 
       call gather_hydro
-      call hydro_output()
+      if( first_call ) then
+        call hydro_output()
+        first_call = .false.
+      endif
 
       gamma = hydro_gamma
       nx = hydro_nx
@@ -501,7 +505,7 @@ c     Upate X, Xf, and dX for moving grids
 
 c     If grid is moving, volume increases
         if( grd_isvelocity ) then
-           U = U * (1.0d0 + dt / t)**3
+           U = U / (1.0d0 + dt / t)**3
         endif
 
         t = t + dt
@@ -512,10 +516,10 @@ c     If grid is moving, volume increases
 
 
       hydro_state = U
-      call hydro_output()
 
       call scatter_hydro
 
+      call hydro_output()
 
 
       end subroutine
