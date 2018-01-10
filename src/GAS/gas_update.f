@@ -180,11 +180,6 @@ c-- change back
 !}}}
         endif
 
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c     HYDRO LSU
-      endif
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
 c
 c
 c
@@ -193,6 +188,11 @@ c===============================
       do_output = (in_io_pdensdump=='each' .or.
      &  (in_io_pdensdump=='one' .and. tsp_it==1))
       if(.not.in_noeos) call eos_update(do_output)
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     HYDRO LSU
+      endif
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
       if(in_gas_cvcoef>0d0) then
 c-- calculate power law heat capacity

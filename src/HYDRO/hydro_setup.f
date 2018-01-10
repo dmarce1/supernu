@@ -52,7 +52,7 @@ c..input parameters in cgs
 c..number of grid points, spatial domain, spatial step size.
 c..to match hydrocode output, use the mid-cell points.
       zlo   = 0.0d0
-      zhi   = 1.2d0
+      zhi   = 10.0d0
       zstep = (zhi - zlo)/float(nstep)
       do i=1,nstep
        zpos(i)   = zlo + 0.5d0*zstep + float(i-1)*zstep

@@ -263,10 +263,6 @@ program supernu
      call temperature_update
      call reduce_gastemp !MPI  !for output
 
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!     MODIFICATION BY LSU
-     endif !( in_radiation_on ) then
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !-- output
      if(lmpi0) then
@@ -292,6 +288,10 @@ program supernu
         endif
      endif !impi
 
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!     MODIFICATION BY LSU
+     endif !( in_radiation_on ) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !-- write timestep timing to file
      call timing_cycle(impi,it<=0)

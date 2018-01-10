@@ -175,10 +175,11 @@ c     (in units of dX)
 
       done = .false.
 c     Main loop - loop until desired time is reached
+      U = hydro_state
+
       do while (.not. done)
         dU = 0.0d0
         dtinv_max = 0.0d0
-        U = hydro_state
 
 c     Boundaries
 
@@ -469,7 +470,7 @@ c     Apply dudt
 
 c     Apply dual energy formalism to update tau
         kin = U(:,:,:,px_i)**2+U(:,:,:,py_i)**2+U(:,:,:,pz_i)**2
-        kin = 0.5d0 / U(:,:,:,rho_i)
+        kin = kin * 0.5d0 / U(:,:,:,rho_i)
         ein = U(:,:,:,egas_i) - kin
         do i = 1, nx
         do j = 1, ny

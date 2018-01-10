@@ -141,13 +141,19 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
          k0 = k - hydro_bw
          l = grd_icell(i0, j0, k0)
          if( grd_isvelocity) then
-           gas_vol(l) = gas_vol(l) * (1.0d0 + tsp_dt / tsp_t )
+           gas_vol(l) = gas_vol(l) * (1.0d0 + tsp_dt / tsp_t )**3
          endif
          gas_rho(l) = hydro_state(i,j,k,rho_i)
          grd_vx(l) = hydro_state(i,j,k,px_i) / gas_rho(l)
          grd_vy(l) = hydro_state(i,j,k,py_i) / gas_rho(l)
          grd_vz(l) = hydro_state(i,j,k,pz_i) / gas_rho(l)
-         eint = hydro_state(i,j,k,tau_i)**(hydro_gamma)
+         eint = hydro_state(i,j,k,egas_i) -
+     &          (grd_vx(l)**2+grd_vy(l)**2+grd_vz(l)**2)*0.50d0*
+     &              hydro_state(i,j,k,rho_i)
+         if( eint .le. hydro_state(i,j,k,egas_i) * 0.001d0 ) then
+           eint = hydro_state(i,j,k,tau_i)**(hydro_gamma)
+         endif
+
 
          f = frac_i
          do f0 = -2*gas_nchain, -1
@@ -172,7 +178,6 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
          gas_bcoef(l) = 1.5d0*pc_kb*(1d0+gas_nelec(l))
      &              * gas_natom(l) / gas_vol(l)
          gas_temp(l) =    eint / gas_bcoef(l)
-         write(*,*) gas_temp(l), gas_vol(l), gas_rho(l), gas_nelec(l)
       enddo
       enddo
       enddo
