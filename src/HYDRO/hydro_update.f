@@ -6,6 +6,7 @@
       use gridmod
       use mpimod
       implicit none
+      logical, parameter :: allow_inflow = .true.
       real(8), intent(in) :: t0, t1
 
       real(8) :: t, dt
@@ -25,7 +26,7 @@
       real(8) :: area(hydro_nx,hydro_ny,hydro_nz,3)
       real(8) :: volinv(hydro_nx,hydro_ny,hydro_nz)
       real(8) :: X(hydro_nx,hydro_ny,hydro_nz,3)
-      real(8) :: Xf(hydro_nx,hydro_ny,hydro_nz,3)
+      real(8) :: Xf(hydro_nx+1,hydro_ny+1,hydro_nz+1,3)
       real(8) :: dX(hydro_nx,hydro_ny,hydro_nz,3)
       real(8) :: kin(hydro_nx,hydro_ny,hydro_nz)
       real(8) :: ein(hydro_nx,hydro_ny,hydro_nz)
@@ -107,16 +108,14 @@ c     Get face X from grd_?arr
           Xf(:,bw-i,:,2) = 2.0d0*Xf(:,bw-i+1,:,2) - Xf(:,bw-i+2,:,2)
           Xf(:,:,bw-i,3) = 2.0d0*Xf(:,:,bw-i+1,3) - Xf(:,:,bw-i+2,3)
       enddo
-      if( bw .gt. 1 ) then
-        do i = 1, bw-1
-          Xf(nx-bw+i+1,:,:,1) =
-     &      2.0d0*Xf(nx-bw+i,:,:,1) - Xf(nx-bw+i-1,:,:,1)
-          Xf(:,ny-bw+i+1,:,2) =
-     &      2.0d0*Xf(:,ny-bw+i,:,2) - Xf(:,ny-bw+i-1,:,2)
-          Xf(:,:,nz-bw+i+1,3) =
-     &      2.0d0*Xf(:,:,nz-bw+i,3) - Xf(:,:,nz-bw+i-1,3)
-        enddo
-      endif
+      do i = 1, bw
+        Xf(nx-bw+i+1,:,:,1) =
+     &    2.0d0*Xf(nx-bw+i,:,:,1) - Xf(nx-bw+i-1,:,:,1)
+        Xf(:,ny-bw+i+1,:,2) =
+     &    2.0d0*Xf(:,ny-bw+i,:,2) - Xf(:,ny-bw+i-1,:,2)
+        Xf(:,:,nz-bw+i+1,3) =
+     &    2.0d0*Xf(:,:,nz-bw+i,3) - Xf(:,:,nz-bw+i-1,3)
+      enddo
 
 c     Select dimensions where grid is in velocity space
       select case( grd_igeom )
@@ -137,14 +136,13 @@ c     Select dimensions where grid is in velocity space
 
 c     Compute cell centered X and dX from face X
 
-      X(1:nx-1,:,:,1) = (Xf(2:nx,:,:,1) + Xf(1:nx-1,:,:,1))*0.5d0
-      dX(1:nx-1,:,:,1) = Xf(2:nx,:,:,1) - Xf(1:nx-1,:,:,1)
+      X(:,:,:,1) = (Xf(2:nx+1,1:ny,1:nz,1)+Xf(1:nx,1:ny,1:nz,1))*0.5d0
+      X(:,:,:,2) = (Xf(1:nx,2:ny+1,1:nz,2)+Xf(1:nx,1:ny,1:nz,2))*0.5d0
+      X(:,:,:,3) = (Xf(1:nx,1:ny,2:nz+1,3)+Xf(1:nx,1:ny,1:nz,3))*0.5d0
 
-      X(:,1:ny-1,:,2) = (Xf(:,2:ny,:,2) + Xf(:,1:ny-1,:,2))*0.5d0
-      dX(:,1:ny-1,:,2) = Xf(:,2:ny,:,2) - Xf(:,1:ny-1,:,2)
-
-      X(:,:,1:nz-1,3) = (Xf(:,:,2:nz,3) + Xf(:,:,1:nz-1,3))*0.5d0
-      dX(:,:,1:nz-1,3) = Xf(:,:,2:nz,3) - Xf(:,:,1:nz-1,3)
+      dX(:,:,:,1) = (Xf(2:nx+1,1:ny,1:nz,1)-Xf(1:nx,1:ny,1:nz,1))
+      dX(:,:,:,2) = (Xf(1:nx,2:ny+1,1:nz,2)-Xf(1:nx,1:ny,1:nz,2))
+      dX(:,:,:,3) = (Xf(1:nx,1:ny,2:nz+1,3)-Xf(1:nx,1:ny,1:nz,3))
 
 c     Compute geometrical scale, face area, and inverse cell volumes
 c     (in units of dX)
@@ -155,22 +153,22 @@ c     (in units of dX)
           scle(:,:,:,1) = 1.0d0
           scle(:,:,:,2) = abs(X(:,:,:,1)) * tmp
           scle(:,:,:,3) = abs(X(:,:,:,1))
-          area(:,:,:,1) = Xf(:,:,:,1)**2 * tmp
-          area(:,:,:,2) = abs(Xf(:,:,:,1))
-          area(:,:,:,3) = abs(Xf(:,:,:,1)) * tmp
+          area(:,:,:,1) = Xf(1:nx,1:ny,1:nz,1)**2 * tmp
+          area(:,:,:,2) = abs(Xf(1:nx,1:ny,1:nz,1))
+          area(:,:,:,3) = abs(Xf(1:nx,1:ny,1:nz,1)) * tmp
           j = hydro_bw + 1
           k = j
         case(2)
           scle(:,:,:,(/1,3/)) = 1.0d0
           scle(:,:,:,2) = X(:,:,:,1)
-          area(:,:,:,1) = Xf(:,:,:,1)
+          area(:,:,:,1) = Xf(1:nx,1:ny,1:nz,1)
           area(:,:,:,2) = 1.0d0
-          area(:,:,:,3) = Xf(:,:,:,1)
+          area(:,:,:,3) = Xf(1:nx,1:ny,1:nz,1)
         case(3)
           scle = 1.0d0
           area = 1.0d0
       end select
-      tmp = Xf(:,:,:,2)
+      tmp = Xf(1:nx,1:ny,1:nz,2)
 
       volinv(1:nx-1,1:ny-1,1:nz-1) = 1.0d0 /
      &                               scle(1:nx-1,1:ny-1,1:nz-1,1) /
@@ -188,12 +186,16 @@ c     Main loop - loop until desired time is reached
 c     Boundaries
 
 c       pre-bound
-        do dm = 1, 3
-          if( veldim(dm) ) then
-            U(:,:,:,px_i+dm-1) = U(:,:,:,px_i+dm-1) -
-     &               U(:,:,:,rho_i)*X(:,:,:,px_i+dm-1) / t
-          endif
-        enddo
+        if(.not.allow_inflow) then
+          do dm = 1, 3
+            if( veldim(dm) ) then
+              U(:,:,:,egas_i) = U(:,:,:,egas_i) -
+     &                 U(:,:,:,px_i+dm-1)**2 * 0.5d0 / U(:,:,:,rho_i)
+              U(:,:,:,px_i+dm-1) = U(:,:,:,px_i+dm-1) -
+     &                 U(:,:,:,rho_i)*X(:,:,:,px_i+dm-1) / t
+            endif
+          enddo
+        endif
 
         do i = 1, bw
           select case( grd_igeom )
@@ -203,13 +205,14 @@ c     1D Spherical
               U(i,:,:,:) = U(2*bw-i+1,:,:,:)
               U(nx - i + 1,:, :, :) = U(nx-bw,:,:,:)
               U(i,:,:,px_i) = -U(i,:,:,px_i)
-              U(nx - i + 1, :, :, px_i) =
-     &          max( U(nx - i + 1, :, :, px_i), 0.d0 )
               U(:,i,:,:) = U(:,bw+1,:,:)
               U(:,ny-i+1,:,:) = U(:,ny-bw,:,:)
               U(:,:,i,:) = U(:,:,bw+1,:)
               U(:,:,nz-i+1,:) = U(:,:,nz-bw,:)
-
+              if(.not.allow_inflow) then
+                U(nx - i + 1, :, :, px_i) =
+     &            max( U(nx - i + 1, :, :, px_i), 0.d0 )
+              endif
 c     Spherical
             case(1)
 c     Radial singularity at center and outflow at edge
@@ -219,9 +222,10 @@ c     Radial singularity at center and outflow at edge
                 U(i,j,:,px_i) = -U(i,k,:,px_i)
               enddo
               U(nx - i + 1,:, :, :) = U(nx-bw,:,:,:)
-              U(nx - i + 1, :, :, px_i) =
-     &          max( U(nx - i + 1, :, :, px_i), 0.d0 )
-
+              if(.not.allow_inflow) then
+                U(nx - i + 1, :, :, px_i) =
+     &            max( U(nx - i + 1, :, :, px_i), 0.d0 )
+              endif
 c     Azimuthal periodic
               U(:, :, i, :) = U(:, :, nz - bw - 1 + i, :)
               U(:, :, nz - i + 1, :) = U(:, :, bw + i, :)
@@ -234,13 +238,6 @@ c     Theta direction
                 U(:,ny-i+1,j,py_i) = -U(:,ny+i-bw-1,k,py_i)
               enddo
 
-c       post-bound
-        do dm = 1, 3
-          if( veldim(dm) ) then
-            U(:,:,:,px_i+dm-1) = U(:,:,:,px_i+dm-1) +
-     &               U(:,:,:,rho_i)*X(:,:,:,px_i+dm-1) / t
-          endif
-        enddo
 
 c     Cylindrical
             case(2)
@@ -251,16 +248,20 @@ c     Radial singularity at center and outflow at edge
                 U(i,j,:,px_i) = -U(i,k,:,px_i)
               enddo
               U(nx-i+1,:,:,:) = U(nx-bw,:,:,:)
-              U(nx-i+1,:,:,px_i) =
-     &          max( U(nx - i + 1, :,:,px_i), 0.d0 )
+              if(.not.allow_inflow) then
+                U(nx-i+1,:,:,px_i) =
+     &            max( U(nx - i + 1, :,:,px_i), 0.d0 )
+              endif
 c     Azimuthal periodic
               U(:,i,:,:) = U(:,ny-bw-1+i,:,:)
               U(:,ny-i+1,:,:) = U(:,bw+i,:,:)
 c     Vertical outflow both directions
               U(:,:,i,:) = U(:,:,bw+1,:)
-              U(:,:,i,pz_i) = min( U(:,:,i,pz_i), 0.0d0 )
               U(:,:,nz-i+1,:) = U(:,:,nz-bw,:)
-              U(:,:,nz-i+1,pz_i) = max( U(:,:,nz-i+1,pz_i), 0.0d0 )
+              if(.not.allow_inflow) then
+                U(:,:,i,pz_i) = min( U(:,:,i,pz_i), 0.0d0 )
+                U(:,:,nz-i+1,pz_i) = max( U(:,:,nz-i+1,pz_i), 0.0d0 )
+              endif
 
 c     Cartesian
             case(3)
@@ -271,15 +272,28 @@ c     All dims are outflow
               U(:,ny-i+1,:,:) = U(:,ny-bw,:,:)
               U(:,:,i,:) = U(:,:,bw+1,:)
               U(:,:,nz-i+1,:) = U(:,:,nz-bw,:)
-              U(i,:,:,px_i) = min( U(i,:,:,px_i), 0.0d0 )
-              U(:,i,:,py_i) = min( U(:,i,:,py_i), 0.0d0 )
-              U(:,:,i,pz_i) = min( U(:,:,i,pz_i), 0.0d0 )
-              U(nx-i+1,:,:,px_i) = max( U(nx-i+1,:,:,px_i), 0.0d0 )
-              U(:,ny-i+1,:,py_i) = max( U(:,ny-i+1,:,py_i), 0.0d0 )
-              U(:,:,nz-i+1,pz_i) = max( U(:,:,nz-i+1,pz_i), 0.0d0 )
+              if(.not.allow_inflow) then
+                U(i,:,:,px_i) = min( U(i,:,:,px_i), 0.0d0 )
+                U(:,i,:,py_i) = min( U(:,i,:,py_i), 0.0d0 )
+                U(:,:,i,pz_i) = min( U(:,:,i,pz_i), 0.0d0 )
+                U(nx-i+1,:,:,px_i) = max( U(nx-i+1,:,:,px_i), 0.0d0 )
+                U(:,ny-i+1,:,py_i) = max( U(:,ny-i+1,:,py_i), 0.0d0 )
+                U(:,:,nz-i+1,pz_i) = max( U(:,:,nz-i+1,pz_i), 0.0d0 )
+              endif
           end select
         enddo
 
+c       post-bound
+        if(.not.allow_inflow) then
+          do dm = 1, 3
+            if( veldim(dm) ) then
+              U(:,:,:,px_i+dm-1) = U(:,:,:,px_i+dm-1) +
+     &                 U(:,:,:,rho_i)*X(:,:,:,px_i+dm-1) / t
+              U(:,:,:,egas_i) = U(:,:,:,egas_i) +
+     &                 U(:,:,:,px_i+dm-1)**2 * 0.5d0 / U(:,:,:,rho_i)
+            endif
+          enddo
+        endif
 
 c     Compute contribution to dudt in each flux direction
         do dm = 1, 3
@@ -312,8 +326,10 @@ c         post-recon
             do i = 0, 2
               if( veldim(i+1) ) then
                  U (:,:,:,px_i+i) = U (:,:,:,px_i+i) + X (:,:,:,i+1) / t
-                 UR(:,:,:,px_i+i) = UR(:,:,:,px_i+i) + Xf(:,:,:,i+1) / t
-                 UL(:,:,:,px_i+i) = UL(:,:,:,px_i+i) + Xf(:,:,:,i+1) / t
+                 UR(:,:,:,px_i+i) = UR(:,:,:,px_i+i) +
+     &                                        Xf(1:nx,1:ny,1:nz,i+1) / t
+                 UL(:,:,:,px_i+i) = UL(:,:,:,px_i+i) +
+     &                                        Xf(1:nx,1:ny,1:nz,i+1) / t
               endif
               U (:,:,:,px_i+i) = U (:,:,:,px_i+i) * U (:,:,:,rho_i)
               UR(:,:,:,px_i+i) = UR(:,:,:,px_i+i) * UR(:,:,:,rho_i)
@@ -339,8 +355,8 @@ c     Compute face kinetic and internal energies and velocities
             k = hydro_bw+1
 c     Remove grid velocity
             if( veldim(dm) ) then
-              velL = velL - Xf(:,:,:,dm) / t
-              velR = velR - Xf(:,:,:,dm) / t
+              velL = velL - Xf(1:nx,1:ny,1:nz,dm) / t
+              velR = velR - Xf(1:nx,1:ny,1:nz,dm) / t
             endif
 
 c     Apply dual energy formalism to compute final value for internal
@@ -391,9 +407,17 @@ c     Add work term for energy
 
             if( veldim(dm) ) then
               Fv(:,:,:,egas_i) = Fv(:,:,:,egas_i) +
-     &               0.5d0*(gamma-1.0d0)*(einL * Xf(:,:,:,dm) +
-     &                                          einR * Xf(:,:,:,dm)) / t
+     &               0.5d0*(gamma-1.0d0)*(einL * Xf(1:nx,1:ny,1:nz,dm) +
+     &                               einR * Xf(1:nx,1:ny,1:nz,dm)) / t
             endif
+
+c        do i=1, nx
+c        j = 1+hydro_bw
+c        k = j
+c        write(*,*) i, UL(i,j,k,px_i), UR(i,j,k,px_i), velL(i,j,k),
+c     &                         velR(i,j,k)
+c        enddo
+c        call abort()
 
 c     Compute scalar fluxes
             Fs = 0.0d0
@@ -459,14 +483,13 @@ c       Geometrical source terms
 c     Compute timestep
         dtinv_max = max(
      &              maxval(dU(xb:xe,yb:ye,zb:ze,(/rho_i,tau_i/)) /
-     &                      -U(xb:xe,yb:ye,zb:ze,(/rho_i,tau_i/))),
+     &                      (-U(xb:xe,yb:ye,zb:ze,(/rho_i,tau_i/)))),
      &                  dtinv_max)
         dt = 0.4d0 / dtinv_max
         if( dt .ge. t1 - t ) then
           dt = t1 - t
           done = .true.
         endif
-
 c     Apply dudt
         U = U + dU * dt
 
