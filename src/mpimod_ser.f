@@ -108,14 +108,12 @@ c         write(*,*) gas_nelec(l), gas_natom(l), gas_vol(l), gas_temp(l)
          endif
          f = frac_i
          do f0 = -2*gas_nchain, -1
-           hydro_state(i,j,k,f) =
-     &               gas_natom1fr(f0,l) / gas_vol(l)
+           hydro_state(i,j,k,f) = gas_natom1fr(f0,l) * gas_rho(l)
            f = f + 1
          enddo
-         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
+c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
          do f0 = 1, gas_nelem
-           hydro_state(i,j,k,f) =
-     &               gas_natom1fr(f0,l) / gas_vol(l)
+           hydro_state(i,j,k,f) = gas_natom1fr(f0,l) * gas_rho(l)
            f = f + 1
          enddo
       enddo
@@ -156,11 +154,11 @@ c         write(*,*) gas_nelec(l), gas_natom(l), gas_vol(l), gas_temp(l)
 
          f = frac_i
          do f0 = -2*gas_nchain, -1
-           gas_natom1fr(f0,l) = hydro_state(i,j,k,f) * gas_vol(l)
+           gas_natom1fr(f0,l) = hydro_state(i,j,k,f) / gas_rho(l)
            f = f + 1
          enddo
          do f0 = 1, gas_nelem
-           gas_natom1fr(f0,l) = hydro_state(i,j,k,f) * gas_vol(l)
+           gas_natom1fr(f0,l) = hydro_state(i,j,k,f) / gas_rho(l)
            f = f + 1
          enddo
          gas_natom(l) = sum(gas_natom1fr(1:gas_nelem,l))

@@ -448,7 +448,7 @@ c     LSU MODIFICATION
          allocate(str_vx(nx,ny,nz))
          allocate(str_vy(nx,ny,nz))
          allocate(str_vz(nx,ny,nz))
-
+         call elnam2elcode(ini56)
         select case(in_test_problem)
           case(1)
             write(*,*) 'Setting up Sedov-Taylor blast wave'

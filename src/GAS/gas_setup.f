@@ -49,7 +49,13 @@ c-- temp and ur
 c
 c-- adopt partial masses from input file
       mass0fr = 0d0
-      if(.not.in_noreadstruct) then
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     LSU MODIFICATION
+c     old line
+c     if(.not.in_noreadstruct) then
+c     new line
+      if(.not.in_noreadstruct.or.in_test_problem.ne.0) then
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        if(.not.allocated(str_massfrdd)) stop 'input.str data not avail'
        do l=1,str_nabund
         i = str_iabund(l)
