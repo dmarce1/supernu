@@ -41,6 +41,8 @@
       real(8) :: gamma
       logical :: done
 
+      call gather_hydro
+      call hydro_output()
 
       gamma = hydro_gamma
       nx = hydro_nx
@@ -49,7 +51,6 @@
       bw = hydro_bw
       nf = hydro_nf
 
-      call gather_hydro
       t = t0
 
 

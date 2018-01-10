@@ -112,6 +112,7 @@ c         write(*,*) gas_nelec(l), gas_natom(l), gas_vol(l), gas_temp(l)
      &               gas_natom1fr(f0,l) / gas_vol(l)
            f = f + 1
          enddo
+         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
          do f0 = 1, gas_nelem
            hydro_state(i,j,k,f) =
      &               gas_natom1fr(f0,l) / gas_vol(l)

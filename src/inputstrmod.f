@@ -422,6 +422,7 @@ c     LSU MODIFICATION
       use inputparmod
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc      implicit none
       integer,intent(in) :: igeomin
+      integer :: ini56
 ************************************************************************
 * wrapper around routines for different geometries
 **********************************
@@ -435,7 +436,7 @@ c     LSU MODIFICATION
          nz = in_ndim(3)
          str_nabund = 1
          allocate(str_abundlabl(1))
-         str_abundlabl(1) = 'h       '
+         str_abundlabl(1) = 'h'
          str_ltemp=.true.
          allocate(str_mass(nx,ny,nz))
          allocate(str_massfr(str_nabund,nx,ny,nz))
@@ -453,6 +454,8 @@ c     LSU MODIFICATION
             write(*,*) 'Setting up Sedov-Taylor blast wave'
             call sedov_setup
         end select
+
+
       else
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
@@ -845,7 +848,6 @@ c-- verify hit
         iabund = j
        endselect
        !write(6,*) 'el found: ',elname,iabund
-c
 c-- store element code (pointer to mass0fr)
        str_iabund(l) = iabund
       enddo!}}}
