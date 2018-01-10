@@ -28,7 +28,7 @@ c
       use gridmod
       implicit none
 
-      hydro_bw = 1
+      hydro_bw = 2
       hydro_nx = grd_nx + 2 * hydro_bw
       hydro_ny = grd_ny + 2 * hydro_bw
       hydro_nz = grd_nz + 2 * hydro_bw
