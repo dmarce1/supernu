@@ -95,7 +95,7 @@ c      HYDRO LSU
          hydro_state(i,j,k,px_i) = grd_vx(l) * gas_rho(l)
          hydro_state(i,j,k,py_i) = grd_vy(l) * gas_rho(l)
          hydro_state(i,j,k,pz_i) = grd_vz(l) * gas_rho(l)
-         eint =  1.5d0*pc_kb*(1d0+gas_nelec(l))
+         eint =  1.5d0*pc_kb*(1.0d0+gas_nelec(l))
      &              * gas_natom(l) / gas_vol(l) * gas_temp(l)
          hydro_state(i,j,k,tau_i) = eint**(1.0d0 / hydro_gamma)
          if( grd_igeom .eq. 11 ) then
@@ -132,6 +132,7 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
 
       integer :: i, j, k, l, f
       integer :: i0, j0, k0, f0
+      real*8 :: natom, nelec
       real*8 :: eint, nnuc
       do i = hydro_bw+1, hydro_nx - hydro_bw
       do j = hydro_bw+1, hydro_ny - hydro_bw
@@ -168,19 +169,24 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
          gas_nelec(l) = 0.0d0
          nnuc = 0.0d0
          do f = 1, gas_nelem
-           gas_natom(l) = gas_natom(l) +
-     &          gas_rho(l) * gas_natom1fr(f,l) / (elem_data(f)%m*pc_amu)
-           gas_nelec(l) = gas_nelec(l) + f * gas_natom1fr(f,l)
-           nnuc = nnuc + elem_data(f)%m * gas_natom1fr(f,l)
+           natom = gas_rho(l) * gas_vol(l) * gas_natom1fr(f,l)
+     &                                       / (elem_data(f)%m*pc_amu)
+           nelec = natom * f
+           nnuc = nnuc + natom * elem_data(f)%m
+           gas_natom(l) = gas_natom(l) + natom
+           gas_nelec(l) = gas_nelec(l) + nelec
          enddo
          gas_ye(l) = gas_nelec(l) / nnuc
          gas_nelec(l) = gas_nelec(l) / gas_natom(l)
          gas_bcoef(l) = 1.5d0*pc_kb*(1d0+gas_nelec(l))
      &              * gas_natom(l) / gas_vol(l)
          gas_temp(l) =    eint / gas_bcoef(l)
+c         write(*,*) l, gas_temp(l), eint, gas_bcoef(l)
       enddo
       enddo
       enddo
+
+c      call abort()
 
       end subroutine scatter_hydro
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

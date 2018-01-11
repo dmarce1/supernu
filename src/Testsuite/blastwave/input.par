@@ -9,9 +9,9 @@
  in_radiation_on = f
  
 !-- time step
- in_tsp_nt = 999
+ in_tsp_nt = 25
  in_tsp_tfirst = 3.3353413112755281
- in_tsp_tlast = 6.6666666666666666666
+ in_tsp_tlast = 4.3353413112755281
  
  in_grp_ng = 100
  in_src_ns = 1
@@ -19,6 +19,6 @@
 
 !-- gas grid settings
  in_grd_igeom = 11
- in_ndim = 256, 1, 1
+ in_ndim = 200, 1, 1
  in_isvelocity = t
 /

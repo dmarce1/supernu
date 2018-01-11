@@ -44,7 +44,7 @@ c..input parameters in cgs
       ener0  = 0.0d0
       pres0  = 0.0d0
       cs0    = 0.0d0
-      gamma  = 5.0d0/3.0d0
+      gamma  = hydro_gamma
 
 
 
@@ -89,7 +89,7 @@ c..get the solution for all spatial points at once
         str_vx(i,j,k) = vel(i)
         str_vy(i,j,k) = 0.0d0
         str_vz(i,j,k) = 0.0d0
-        str_temp(i,j,k) = ener(i) / (1.5d0*pc_kb/pc_mh)
+        str_temp(i,j,k) = ener(i) / (3.0d0*pc_kb/pc_mh)
         str_massfr(:,i,j,k) = 0.0d0
         str_massfr(1,i,j,k) = str_mass(i,j,k)
         str_ye(i,j,k) = 1.0d0
@@ -100,7 +100,7 @@ c..get the solution for all spatial points at once
       enddo
       enddo
       mint = mint / (1.5d0*pc_kb/pc_mh)
-      str_temp = max(str_temp, mint/10.0d0)
+      str_temp = max(str_temp, mint/1000.0d0)
       str_mass = max(str_mass,1.0e-20)
 
       end subroutine

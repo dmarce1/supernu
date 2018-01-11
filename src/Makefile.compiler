@@ -2,9 +2,8 @@
 #FC = gfortran
 FC = mpif90
 
-#-- opt or debug
+
 FCFLAGS = -O3 
-#-- gfortran 4.4.3 debug flags:
 #FCFLAGS = -g -O0 -Wall -fbounds-check -fbacktrace -fstack-protector-all -Wno-real-q-constant  -ffpe-trap=zero -ffpe-trap=overflow -ffpe-trap=underflow
 
 

@@ -13,7 +13,7 @@
       real(8) :: dtinv_max
 
       integer :: dm, rk
-      integer :: i, j, k
+      integer :: i, j, k, f
 
       real(8) :: U(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
       real(8) :: U0(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
@@ -47,7 +47,7 @@
       logical :: dimused(3)
       integer :: xb, xe, yb, ye, zb, ze
       integer :: nx, ny, nz, bw, nf
-      real(8) :: gamma
+      real(8) :: gamma, tfactor
       logical :: done
       logical, save :: first_call = .true.
 
@@ -122,19 +122,23 @@ c     Get face X from grd_?arr
       enddo
 
 c     Select dimensions where grid is in velocity space
-      select case( grd_igeom )
-        case(11 , 1)
-          veldim(1) = .true. .and. grd_isvelocity
-          veldim(2:3) = .false.
-          Xf(:,:,:,1) = Xf(:,:,:,1) * t
-        case(2)
-          veldim((/1,3/)) = .true. .and. grd_isvelocity
-          veldim(2) = .false.
-          Xf(:,:,:,(/1,3/)) = Xf(:,:,:,(/1,3/)) * t
-        case(3)
-          veldim = .true. .and. grd_isvelocity
-          Xf = Xf * t
-      end select
+      if( grd_isvelocity ) then
+        select case( grd_igeom )
+          case(11 , 1)
+            veldim(1) = .true.
+            veldim(2:3) = .false.
+            Xf(:,:,:,1) = Xf(:,:,:,1) * t
+          case(2)
+            veldim((/1,3/)) = .true.
+            veldim(2) = .false.
+            Xf(:,:,:,(/1,3/)) = Xf(:,:,:,(/1,3/)) * t
+          case(3)
+            veldim = .true.
+            Xf = Xf * t
+        end select
+      else
+        veldim = .false.
+      endif
 
       veldim = veldim .and. dimused
 
@@ -160,19 +164,16 @@ c     (in units of dX)
           area(:,:,:,1) = Xf(1:nx,1:ny,1:nz,1)**2 * tmp
           area(:,:,:,2) = abs(Xf(1:nx,1:ny,1:nz,1))
           area(:,:,:,3) = abs(Xf(1:nx,1:ny,1:nz,1)) * tmp
-          j = hydro_bw + 1
-          k = j
         case(2)
           scle(:,:,:,(/1,3/)) = 1.0d0
-          scle(:,:,:,2) = X(:,:,:,1)
-          area(:,:,:,1) = Xf(1:nx,1:ny,1:nz,1)
+          scle(:,:,:,2) = abs(X(:,:,:,1))
+          area(:,:,:,1) = abs(Xf(1:nx,1:ny,1:nz,1))
           area(:,:,:,2) = 1.0d0
-          area(:,:,:,3) = Xf(1:nx,1:ny,1:nz,1)
+          area(:,:,:,3) = abs(Xf(1:nx,1:ny,1:nz,1))
         case(3)
           scle = 1.0d0
           area = 1.0d0
       end select
-      tmp = Xf(1:nx,1:ny,1:nz,2)
 
       volinv(1:nx-1,1:ny-1,1:nz-1) = 1.0d0 /
      &                               scle(1:nx-1,1:ny-1,1:nz-1,1) /
@@ -184,25 +185,27 @@ c     Main loop - loop until desired time is reached
       U = hydro_state
 
       do while (.not. done)
+
         U0 = U
 
         do rk = 1,bw
+
           dU = 0.0d0
           dtinv_max = 0.0d0
 
 c     Boundaries
 
 c       pre-bound
-          if(.not.allow_inflow) then
-            do dm = 1, 3
-              if( veldim(dm) ) then
-                U(:,:,:,egas_i) = U(:,:,:,egas_i) -
-     &                  U(:,:,:,px_i+dm-1)**2 * 0.5d0 / U(:,:,:,rho_i)
-                U(: ,:,:,px_i+dm-1) = U(:,:,:,px_i+dm-1) -
-     &                   U(:,:,:,rho_i)*X(:,:,:,px_i+dm-1) / t
-              endif
-            enddo
-          endif
+c          if(.not.allow_inflow) then
+c            do dm = 1, 3
+c              if( veldim(dm) ) then
+c                U(:,:,:,egas_i) = U(:,:,:,egas_i) -
+c     &                  U(:,:,:,px_i+dm-1)**2 * 0.5d0 / U(:,:,:,rho_i)
+c                U(: ,:,:,px_i+dm-1) = U(:,:,:,px_i+dm-1) -
+c     &                   U(:,:,:,rho_i)*X(:,:,:,dm) / t
+c              endif
+c            enddo
+c          endif
 
           do i = 1, bw
             select case( grd_igeom )
@@ -291,16 +294,16 @@ c     All dims are outflow
           enddo
 
 c       post-bound
-          if(.not.allow_inflow) then
-            do dm = 1, 3
-              if( veldim(dm) ) then
-                U(:,:,:,px_i+dm-1) = U(:,:,:,px_i+dm-1) +
-     &                   U(:,:,:,rho_i)*X(:,:,:,px_i+dm-1) / t
-                U(:,:,:,egas_i) = U(:,:,:,egas_i) +
-     &                   U(:,:,:,px_i+dm-1)**2 * 0.5d0 / U(:,:,:,rho_i)
-              endif
-            enddo
-          endif
+c          if(.not.allow_inflow) then
+c            do dm = 1, 3
+c              if( veldim(dm) ) then
+c                U(:,:,:,px_i+dm-1) = U(:,:,:,px_i+dm-1) +
+c     &                   U(:,:,:,rho_i)*X(:,:,:,dm) / t
+c                U(:,:,:,egas_i) = U(:,:,:,egas_i) +
+c     &                   U(:,:,:,px_i+dm-1)**2 * 0.5d0 / U(:,:,:,rho_i)
+c              endif
+c            enddo
+c          endif
 
 c     Compute contribution to dudt in each flux direction
           do dm = 1, 3
@@ -309,8 +312,12 @@ c     Compute contribution to dudt in each flux direction
 c     Reconstruct face values
 
 c         pre-recon
+              do f = 1, nf
+                if( (f .ne. rho_i) .and. (f .ne. tau_i) ) then
+                  U(:,:,:,f) = U(:,:,:,f) / U(:,:,:,rho_i)
+                endif
+              enddo
               do i = 0, 2
-                U(:,:,:,px_i+i) = U(:,:,:,px_i+i) / U(:,:,:,rho_i)
                 if( veldim(i+1) ) then
                    U(:,:,:,px_i+i) = U(:,:,:,px_i+i) - X(:,:,:,i+1) / t
                 endif
@@ -345,7 +352,7 @@ c     Piecwise linear
                 end select
                 slp = (sign(0.25d0,slp_m)+sign(0.25d0,slp_p))*
      &                   min(abs(slp_p),abs(slp_m))
-                select case(dm)
+                 select case(dm)
                   case(1)
                     UR(xb:xe+1,yb:ye,zb:ze,:) =
      &               U(xb:xe+1,yb:ye,zb:ze,:)-slp(xb:xe+1,yb:ye,zb:ze,:)
@@ -377,9 +384,13 @@ c         post-recon
                    UL(:,:,:,px_i+i) = UL(:,:,:,px_i+i) +
      &                                          Xf(1:nx,1:ny,1:nz,i+1)/t
                 endif
-                U (:,:,:,px_i+i) = U (:,:,:,px_i+i) * U (:,:,:,rho_i)
-                UR(:,:,:,px_i+i) = UR(:,:,:,px_i+i) * UR(:,:,:,rho_i)
-                UL(:,:,:,px_i+i) = UL(:,:,:,px_i+i) * UL(:,:,:,rho_i)
+              enddo
+              do f = 1, nf
+                if( (f .ne. rho_i) .and. (f .ne. tau_i) ) then
+                  U(:,:,:,f) = U(:,:,:,f) * U(:,:,:,rho_i)
+                  UR(:,:,:,f) = UR(:,:,:,f) * UR(:,:,:,rho_i)
+                  UL(:,:,:,f) = UL(:,:,:,f) * UL(:,:,:,rho_i)
+                endif
               enddo
 
 
@@ -455,8 +466,8 @@ c     Add work term for energy
 
               if( veldim(dm) ) then
                 Fv(:,:,:,egas_i) = Fv(:,:,:,egas_i) +
-     &                 0.5d0*(gamma-1.0d0)*(einL*Xf(1:nx,1:ny,1:nz,dm) +
-     &                                 einR * Xf(1:nx,1:ny,1:nz,dm)) / t
+     &                 0.5d0*(gamma-1.0d0)*
+     &      (einL + einR)*Xf(1:nx,1:ny,1:nz,dm)/t
               endif
 
 
@@ -464,6 +475,9 @@ c     Compute scalar fluxes
               Fs = 0.0d0
               Fs(:,:,:,px_i+dm-1) =
      &                             0.5d0*(gamma-1.0d0)*(einL + einR)
+
+
+
 c     Apply face areas to vector fluxes
               do i = 1, nf
                 Fv(:,:,:,i) = Fv(:,:,:,i) * area(:,:,:,dm)
@@ -520,6 +534,11 @@ c       Geometrical source terms
             endif
           endif
 
+c     If grid is moving, volume increases
+          if( grd_isvelocity ) then
+             dU = dU - 3.0d0 * U / t
+          endif
+
 
 c     Compute timestep
           if( rk .eq. 1 ) then
@@ -534,17 +553,13 @@ c     Compute timestep
             endif
           endif
 
-c     If grid is moving, volume increases
-          if( grd_isvelocity ) then
-             dU = dU - 3.0d0 * U / t
-          endif
-
 c     Apply dudt
           if( rk .eq. 1 ) then
             U = U0 + dU * dt
           else
-            U = U0 + (dU + U - U0) * 0.5d0 * dt
+            U = (U0 + U + dU*dt) * 0.5d0
           endif
+
 
           if( rk .eq. 1 ) then
 
@@ -556,14 +571,35 @@ c     Apply dudt
                write(*,*) 'tau < 0.0'
             endif
 
+            tfactor = 1.0d0 + dt / t
+
 c     Upate X, Xf, and dX for moving grids
             do i = 1, 3
               if( veldim(i) ) then
-                X(:,:,:,i) = X(:,:,:,i) * (1.0d0 + dt / t)
-                Xf(:,:,:,i) = Xf(:,:,:,i) * (1.0d0 + dt / t)
-                dX(:,:,:,i) = dX(:,:,:,i) * (1.0d0 + dt / t)
+                X(:,:,:,i) = X(:,:,:,i) * tfactor
+                Xf(:,:,:,i) = Xf(:,:,:,i) * tfactor
+                dX(:,:,:,i) = dX(:,:,:,i) * tfactor
               endif
             enddo
+
+c     Update geometrical quantities for moving grid
+            if( grd_isvelocity ) then
+              select case( grd_igeom )
+                case(1,11)
+                  scle(:,:,:,2) = scle(:,:,:,2) * tfactor
+                  scle(:,:,:,3) = scle(:,:,:,3) * tfactor
+                  area(:,:,:,1) = area(:,:,:,1) * tfactor**2
+                  area(:,:,:,2) = area(:,:,:,2) * tfactor
+                  area(:,:,:,3) = area(:,:,:,3) * tfactor
+                  volinv = volinv / (tfactor**2)
+                case(2)
+                  scle(:,:,:,2) = scle(:,:,:,2) * tfactor
+                  area(:,:,:,1) = area(:,:,:,1) * tfactor
+                  area(:,:,:,3) = area(:,:,:,3) * tfactor
+                  volinv = volinv / tfactor
+                case(3)
+              end select
+            endif
 
             t = t + dt
           endif
