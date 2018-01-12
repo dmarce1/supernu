@@ -4,7 +4,7 @@ include $(TOP)/Makefile.compiler
 include $(TOP)/Makefile.include
 
 LIBRARY = hydro.a
-FILES = hydro_setup.o hydro_update.o sedov.o hydro_output.o hydro_boundaries.o
+FILES = hydro_setup.o hydro_update.o sedov.o hydro_output.o hydro_boundaries.o hydro_velinterp.o
 
 .PHONY: all clean
 
