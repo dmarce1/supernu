@@ -520,7 +520,9 @@ c     Apply dual energy formalism to update tau
 
       call scatter_hydro
 
-      call hydro_output()
+      call hydro_velinterp
+
+      call hydro_output
 
 
       end subroutine
