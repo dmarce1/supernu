@@ -129,9 +129,9 @@ c     Select dimensions where grid is in velocity space
             veldim(2:3) = .false.
             Xf(:,:,:,1) = Xf(:,:,:,1) * t
           case(2)
-            veldim((/1,3/)) = .true.
-            veldim(2) = .false.
-            Xf(:,:,:,(/1,3/)) = Xf(:,:,:,(/1,3/)) * t
+            veldim(1:2) = .true.
+            veldim(3) = .false.
+            Xf(:,:,:,1:2) = Xf(:,:,:,1:2) * t
           case(3)
             veldim = .true.
             Xf = Xf * t
@@ -165,11 +165,11 @@ c     (in units of dX)
           area(:,:,:,2) = abs(Xf(1:nx,1:ny,1:nz,1))
           area(:,:,:,3) = abs(Xf(1:nx,1:ny,1:nz,1)) * tmp
         case(2)
-          scle(:,:,:,(/1,3/)) = 1.0d0
-          scle(:,:,:,2) = abs(X(:,:,:,1))
+          scle(:,:,:,1:2) = 1.0d0
+          scle(:,:,:,3) = abs(X(:,:,:,1))
           area(:,:,:,1) = abs(Xf(1:nx,1:ny,1:nz,1))
-          area(:,:,:,2) = 1.0d0
-          area(:,:,:,3) = abs(Xf(1:nx,1:ny,1:nz,1))
+          area(:,:,:,3) = 1.0d0
+          area(:,:,:,2) = abs(Xf(1:nx,1:ny,1:nz,1))
         case(3)
           scle = 1.0d0
           area = 1.0d0
@@ -252,10 +252,10 @@ c     Theta direction
 c     Cylindrical
               case(2)
 c     Radial singularity at center and outflow at edge
-                do j = 1, ny
-                  k = mod(j + (ny-2*bw) / 2 - 1, ny) + 1
-                  U(i,j,:,:) = U(2*bw-i+1,k,:,:)
-                  U(i,j,:,px_i) = -U(i,k,:,px_i)
+                do j = 1, nz
+                  k = mod(j + (nz-2*bw) / 2 - 1, nz) + 1
+                  U(i,:,j,:) = U(2*bw-i+1,:,k,:)
+                  U(i,:,j,px_i) = -U(i,:,k,px_i)
                 enddo
                 U(nx-i+1,:,:,:) = U(nx-bw,:,:,:)
                 if(.not.allow_inflow) then
@@ -263,14 +263,14 @@ c     Radial singularity at center and outflow at edge
      &              max( U(nx - i + 1, :,:,px_i), 0.d0 )
                 endif
 c     Azimuthal periodic
-                U(:,i,:,:) = U(:,ny-bw-1+i,:,:)
-                U(:,ny-i+1,:,:) = U(:,bw+i,:,:)
+                U(:,:,i,:) = U(:,:,nz-bw-1+i,:)
+                U(:,:,nz-i+1,:) = U(:,:,bw+i,:)
 c     Vertical outflow both directions
-                U(:,:,i,:) = U(:,:,bw+1,:)
-                U(:,:,nz-i+1,:) = U(:,:,nz-bw,:)
+                U(:,i,:,:) = U(:,bw+1,:,:)
+                U(:,ny-i+1,:,:) = U(:,ny-bw,:,:)
                 if(.not.allow_inflow) then
-                  U(:,:,i,pz_i) = min( U(:,:,i,pz_i), 0.0d0 )
-                  U(:,:,nz-i+1,pz_i) = max( U(:,:,nz-i+1,pz_i), 0.0d0 )
+                  U(:,i,:,py_i) = min( U(:,i,:,py_i), 0.0d0 )
+                  U(:,ny-i+1,:,py_i) = max( U(:,ny-i+1,:,py_i), 0.0d0 )
                 endif
 
 c     Cartesian
@@ -593,9 +593,9 @@ c     Update geometrical quantities for moving grid
                   area(:,:,:,3) = area(:,:,:,3) * tfactor
                   volinv = volinv / (tfactor**2)
                 case(2)
-                  scle(:,:,:,2) = scle(:,:,:,2) * tfactor
+                  scle(:,:,:,3) = scle(:,:,:,3) * tfactor
                   area(:,:,:,1) = area(:,:,:,1) * tfactor
-                  area(:,:,:,3) = area(:,:,:,3) * tfactor
+                  area(:,:,:,2) = area(:,:,:,2) * tfactor
                   volinv = volinv / tfactor
                 case(3)
               end select
