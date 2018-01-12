@@ -28,6 +28,8 @@ c        HYDRO LSU
       real*8,allocatable :: grd_vx(:)
       real*8,allocatable :: grd_vy(:)
       real*8,allocatable :: grd_vz(:)
+      real*8,allocatable :: grd_v(:,:,:,:)
+      real*8,allocatable :: grd_dvdx(:,:,:,:,:)
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c-- maximum radial grid velocity
@@ -140,7 +142,9 @@ c        HYDRO LSU
       allocate(grd_vx(grd_ncell))
       allocate(grd_vy(grd_ncell))
       allocate(grd_vz(grd_ncell))
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      allocate(grd_v(grd_nx,grd_nx,grd_nz,3))
+      allocate(grd_dvdx(grd_nx,grd_nx,grd_nz,3,3))
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c-- polar
       if(grd_igeom==1) allocate(grd_yacos(grd_ny+1))
 c
@@ -227,6 +231,8 @@ c        HYDRO LSU
       deallocate(grd_vx)
       deallocate(grd_vy)
       deallocate(grd_vz)
+      deallocate(grd_v)
+      deallocate(grd_dvdx)
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       end subroutine grid_dealloc
 c
