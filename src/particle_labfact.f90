@@ -72,7 +72,7 @@ subroutine particle_dopfact( part1, part2, dopfact )
 
   select case(grd_igeom)
     case(11)
-      n_dot_dvdx_dot_n = 1.0d0
+      n_dot_dvdx_dot_n = mu * mu * dvdx(1,1) + sqrt(1.0d0-mu*mu) * dvdx(2,2)
     case(1,2)
       n_dot_dvdx(1) = mu * dvdx(1,1) + eta * dvdx(2,1) + xi * dvdx(3,1)
       n_dot_dvdx(2) = mu * dvdx(1,2) + eta * dvdx(2,2) + xi * dvdx(3,2)
