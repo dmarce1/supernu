@@ -236,5 +236,55 @@ c        HYDRO LSU
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       end subroutine grid_dealloc
 c
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c        HYDRO LSU
+      pure subroutine hydro_velocity_at( x, y, z, vx, vy, vz, xi, yi,zi)
+      implicit none
+
+      real*8, intent(in) :: x, y, z
+      real*8, intent(out) ::vx, vy, vz
+      integer, intent(in) :: xi, yi, zi
+
+      real*8 :: dx, dy, dz
+
+      if( grd_hydro_on ) then
+        if( grd_igeom .ne. 11 ) then
+          dx = 0.5d0 * (x - grd_xarr(xi)) /
+     &                 (grd_xarr(xi+1) - grd_xarr(xi))
+          dy = 0.5d0 * (y - grd_yarr(yi)) /
+     &                 (grd_yarr(yi+1) - grd_yarr(yi))
+          dz = 0.5d0 * (z - grd_zarr(zi)) /
+     &                 (grd_zarr(zi+1) - grd_zarr(zi))
+          vx = grd_v(xi,yi,zi,1)
+          vy = grd_v(xi,yi,zi,2)
+          vz = grd_v(xi,yi,zi,3)
+          vx = vx + grd_dvdx(xi,yi,zi,1,1) * dx
+          vy = vy + grd_dvdx(xi,yi,zi,2,1) * dx
+          vz = vz + grd_dvdx(xi,yi,zi,3,1) * dx
+          vx = vx + grd_dvdx(xi,yi,zi,1,2) * dy
+          vy = vy + grd_dvdx(xi,yi,zi,2,2) * dy
+          vz = vz + grd_dvdx(xi,yi,zi,3,2) * dy
+          vx = vx + grd_dvdx(xi,yi,zi,1,3) * dz
+          vy = vy + grd_dvdx(xi,yi,zi,2,3) * dz
+          vz = vz + grd_dvdx(xi,yi,zi,3,3) * dz
+        else
+          dx = 0.5d0 * (x - grd_xarr(xi)) /
+     &                 (grd_xarr(xi+1) - grd_xarr(xi))
+          vx = grd_v(xi,yi,zi,1)
+          vx = vx + grd_dvdx(xi,yi,zi,1,1) * dx
+          vy = 0.0d0
+          vz = 0.0d0
+        endif
+      else
+        vx = 0.0d0
+        vy = 0.0d0
+        vz = 0.0d0
+       endif
+
+
+      end subroutine
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
       end module gridmod
 c vim: fdm=marker

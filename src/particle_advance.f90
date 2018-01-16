@@ -527,7 +527,13 @@ subroutine particle_advance
            call rnd_r(r1,rndstate)
            om = pc_pi2*r1
 !
-           if(grd_isvelocity) call direction2lab(x,y,z,mu,om)
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! MODIFIED BY LSU
+! Old code -
+!           if(grd_isvelocity) call direction2lab(x,y,z,mu,om)
+! New code -
+           if(grd_isvelocity) call direction2lab(vx,vy,vz,mu,om)
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         endif
 
 !
