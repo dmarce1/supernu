@@ -33,6 +33,10 @@ pure subroutine transport2(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
   integer :: ixnext,iynext,iznext
   real*8 :: elabfact, dirdotu, mu0, gm, xi
   real*8,pointer :: mux,muy,muz
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!    LSU MODIFICATION
+  real*8, pointer :: vx, vy, vz
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   real*8 :: thelp, thelpinv, help, zhelp
   real*8 :: dcen,dcol,dthm,dbx,dby,dbz,ddop
   real*8 :: darr(7)
@@ -68,6 +72,12 @@ pure subroutine transport2(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
   x => ptcl%x
   y => ptcl%y
   z => ptcl%z
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!    LSU MODIFICATION
+  vx => ptcl2%vx
+  vy => ptcl2%vy
+  vz => ptcl2%vz
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   mu => ptcl%mu
   om => ptcl%om
   e => ptcl%e

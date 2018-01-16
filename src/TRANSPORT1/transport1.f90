@@ -2,6 +2,11 @@
 !Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
 pure subroutine transport1(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+  use hydromod
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   use randommod
   use miscmod
   use gridmod
@@ -30,6 +35,10 @@ pure subroutine transport1(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
   logical :: lredir !direction resampled
   logical :: lout
   real*8 :: elabfact, eta, xi
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!    LSU MODIFICATION
+  real*8, pointer :: vx, vy, vz
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   real*8,pointer :: mux,muy,muz
   real*8 :: thelp, thelpinv, help
   real*8 :: dcen,dcol,dthm,dbx,dby,dbz,ddop
@@ -63,6 +72,12 @@ pure subroutine transport1(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
   x => ptcl%x
   y => ptcl%y
   z => ptcl%z
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!    LSU MODIFICATION
+  vx => ptcl2%vx
+  vy => ptcl2%vy
+  vz => ptcl2%vz
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   mu => ptcl%mu
   om => ptcl%om
   e => ptcl%e
@@ -690,6 +705,11 @@ pure subroutine transport1(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
         iy = iynext
         iz = iznext
         ic = grd_icell(ix,iy,iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+       call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      else
 !-- DDMC in adjacent cell
         if(grd_isvelocity) then
@@ -730,6 +750,11 @@ pure subroutine transport1(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
            iy = iynext
            iz = iznext
            ic = grd_icell(ix,iy,iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+           call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         else
 !-- resampling x-cosine
            lredir = .true.
@@ -757,6 +782,11 @@ pure subroutine transport1(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
         iy = iynext
         iz = iznext
         ic = grd_icell(ix,iy,iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+       call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      else
 !-- DDMC in adjacent cell
         if(grd_isvelocity) then
@@ -783,6 +813,11 @@ pure subroutine transport1(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
            iy = iynext
            iz = iznext
            ic = grd_icell(ix,iy,iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+           call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         else
            call rnd_r(r1,rndstate)
            call rnd_r(r2,rndstate)
@@ -832,6 +867,11 @@ pure subroutine transport1(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
         iy = iynext
         iz = iznext
         ic = grd_icell(ix,iy,iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+       call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      else
 !-- DDMC in adjacent cell
         if(grd_isvelocity) then
@@ -858,6 +898,11 @@ pure subroutine transport1(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
            iy = iynext
            iz = iznext
            ic = grd_icell(ix,iy,iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+           call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         else
            call rnd_r(r1,rndstate)
            call rnd_r(r2,rndstate)
@@ -984,3 +1029,4 @@ pure subroutine transport1(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 
 end subroutine transport1
 ! vim: fdm=marker
+

@@ -4,6 +4,10 @@
 subroutine particle_advance
 
 !$ use omp_lib
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!    LSU MODIFICATION
+  use hydromod
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   use randommod
   use transportmod
   use miscmod
@@ -39,6 +43,10 @@ subroutine particle_advance
   integer, pointer :: ig, ic
   integer, pointer :: ix, iy, iz
   real*8, pointer :: x,y,z, mu, e, e0, wl, om
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!    LSU MODIFICATION
+  real*8, pointer :: vx, vy, vz
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   real*8 :: eta, xi
   real*8 :: t0,t1  !timing
   real*8 :: labfact, mu1, mu2
@@ -138,6 +146,12 @@ subroutine particle_advance
   x => ptcl%x
   y => ptcl%y
   z => ptcl%z
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!    LSU MODIFICATION
+  vx => ptcl2%vx
+  vy => ptcl2%vy
+  vz => ptcl2%vz
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   mu => ptcl%mu
   om => ptcl%om
   wl => ptcl%wl
@@ -184,6 +198,12 @@ subroutine particle_advance
      !if(ptcl%t<tsp_t) write(0,*) ptcl%t,tsp_t,(ptcl%t-tsp_t)/(ptcl%t+tsp_t),x
      if(ptcl%t<tsp_t) stop 'particle_advance: ptcl%t < tsp_t'
 
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+     call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 !
 !-- determine particle type
      select case(grd_igeom)
@@ -207,17 +227,37 @@ subroutine particle_advance
 !
 !-- transform IMC particle into lab frame
      if(grd_isvelocity.and.ptcl2%itype==1) then
-        select case(grd_igeom)
-        case(1,11)
-           labfact = 1d0-x*mu/pc_c
-        case(2)
-           labfact = 1d0-(mu*y + sqrt(1d0-mu**2) * cos(om)*x)/pc_c
-        case(3)
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! MODIFIED BY LSU
+! Old code -
+!        select case(grd_igeom)
+!        case(1,11)
+!           labfact = 1d0-x*mu/pc_c
+!        case(2)
+!           labfact = 1d0-(mu*y + sqrt(1d0-mu**2) * cos(om)*x)/pc_c
+!        case(3)
+!           help = sqrt(1d0-mu**2)
+!           mu1 = help*cos(om)
+!           mu2 = help*sin(om)
+!           labfact = 1d0-(mu*z + mu1*x + mu2*y)/pc_c
+!        endselect
+! New code -
+        if( grd_igeom .eq. 11 ) then
+          labfact = 1d0 - mu*vx/pc_c
+        else
            help = sqrt(1d0-mu**2)
            mu1 = help*cos(om)
            mu2 = help*sin(om)
-           labfact = 1d0-(mu*z + mu1*x + mu2*y)/pc_c
-        endselect
+          select case(grd_igeom)
+          case(1)
+             labfact = 1d0-(mu*vx + mu1*vy + mu2*vz)/pc_c
+          case(2)
+             labfact = 1d0-(mu*vy + mu1*vx + mu2*vz)/pc_c
+          case(3)
+             labfact = 1d0-(mu*vz + mu1*vx + mu2*vy)/pc_c
+          endselect
+        endif
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !-- transform into lab frame
         wl = wl*labfact
         e = e/labfact
@@ -288,16 +328,36 @@ subroutine particle_advance
            if(.not.grd_isvelocity .or. ptcl2%itype==2) then
               labfact = 1d0
            else
-              select case(grd_igeom)
-              case(1,11)
-                 labfact = 1d0 - mu*x/pc_c
-              case(2)
-                 labfact = 1d0-(mu*y+sqrt(1d0-mu**2) * &
-                    cos(om)*x)/pc_c
-              case(3)
-                 labfact = 1d0-(mu*z+sqrt(1d0-mu**2) * &
-                    (cos(om)*x+sin(om)*y))/pc_c
-              endselect
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! MODIFIED BY LSU
+! Old code -
+!              select case(grd_igeom)
+!              case(1,11)
+!                 labfact = 1d0 - mu*x/pc_c
+!              case(2)
+!                 labfact = 1d0-(mu*y+sqrt(1d0-mu**2) * &
+!                    cos(om)*x)/pc_c
+!              case(3)
+!                 labfact = 1d0-(mu*z+sqrt(1d0-mu**2) * &
+!                    (cos(om)*x+sin(om)*y))/pc_c
+!              endselect
+! New code -
+             if( grd_igeom .eq. 11 ) then
+               labfact = 1d0 - mu*vx/pc_c
+             else
+               help = sqrt(1d0-mu**2)
+               mu1 = help*cos(om)
+               mu2 = help*sin(om)
+               select case(grd_igeom)
+                 case(1)
+                   labfact = 1d0-(mu*vx + mu1*vy + mu2*vz)/pc_c
+                 case(2)
+                   labfact = 1d0-(mu*vy + mu1*vx + mu2*vz)/pc_c
+                 case(3)
+                   labfact = 1d0-(mu*vz + mu1*vx + mu2*vy)/pc_c
+               endselect
+             endif
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            endif
 !
            call rnd_r(r1,rndstate)
@@ -473,19 +533,39 @@ subroutine particle_advance
 !
 !-- transform IMC particle energy to comoving frame for storage
         if(grd_isvelocity.and.ptcl2%itype==1) then
-           select case(grd_igeom)
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! MODIFIED BY LSU
+! Old code -
+!           select case(grd_igeom)
 !-- [123]D spherical
-           case(1,11)
-              labfact = 1d0-x*mu/pc_c
+!           case(1,11)
+!              labfact = 1d0-x*mu/pc_c
 !-- 2D
-           case(2)
-              labfact = 1d0-(mu*y+sqrt(1d0-mu**2) * cos(om)*x)/pc_c
+!           case(2)
+!              labfact = 1d0-(mu*y+sqrt(1d0-mu**2) * cos(om)*x)/pc_c
 !-- 3D
-           case(3)
-              mu1 = sqrt(1d0-mu**2)*cos(om)
-              mu2 = sqrt(1d0-mu**2)*sin(om)
-              labfact = 1d0-(mu*z+mu1*x+mu2*y)/pc_c
-           endselect
+!           case(3)
+!              mu1 = sqrt(1d0-mu**2)*cos(om)
+!              mu2 = sqrt(1d0-mu**2)*sin(om)
+!              labfact = 1d0-(mu*z+mu1*x+mu2*y)/pc_c
+!           endselect
+! New code -
+           if( grd_igeom .eq. 11 ) then
+             labfact = 1d0 - mu*vx/pc_c
+           else
+             help = sqrt(1d0-mu**2)
+             mu1 = help*cos(om)
+             mu2 = help*sin(om)
+             select case(grd_igeom)
+               case(1)
+                 labfact = 1d0-(mu*vx + mu1*vy + mu2*vz)/pc_c
+               case(2)
+                 labfact = 1d0-(mu*vy + mu1*vx + mu2*vz)/pc_c
+               case(3)
+                 labfact = 1d0-(mu*vz + mu1*vx + mu2*vy)/pc_c
+             endselect
+           endif
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !-- apply inverse labfact for symmetry (since gamma factor is missing)
            wl = wl/labfact

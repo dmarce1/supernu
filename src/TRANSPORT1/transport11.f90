@@ -18,6 +18,10 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
   type(rnd_t),intent(inout) :: rndstate
   real*8,intent(out) :: edep, eraddens, eamp
   real*8,intent(inout) :: totevelo
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!    LSU MODIFICATION
+  real*8, pointer :: vx
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   integer,intent(out) :: ierr
 !##################################################
 !This subroutine passes particle parameters as input and modifies
@@ -53,6 +57,10 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
   ig => ptcl2%ig
   d => ptcl2%dist
   x => ptcl%x
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!    LSU MODIFICATION
+  vx => ptcl2%vx
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   mu => ptcl%mu
   e => ptcl%e
   e0 => ptcl%e0

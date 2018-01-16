@@ -33,6 +33,10 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
   real*8 :: thelp, thelpinv, help
   real*8 :: alb, eps, beta, pp
   real*8 :: dcen,dcol,dthm,dbx,dby,dbz,ddop
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!    LSU MODIFICATION
+  real*8, pointer :: vx, vy, vz
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   real*8 :: darr(7)
   real*8 :: r1, r2
 !-- distance out of physical reach
@@ -61,6 +65,12 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
   x => ptcl%x
   y => ptcl%y
   z => ptcl%z
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!    LSU MODIFICATION
+  vx => ptcl2%vx
+  vy => ptcl2%vy
+  vz => ptcl2%vz
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   mu => ptcl%mu
   om => ptcl%om
   e => ptcl%e
