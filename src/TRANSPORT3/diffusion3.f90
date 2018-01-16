@@ -57,6 +57,13 @@ pure subroutine diffusion3(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr
   dx(l) = grd_xarr(l+1) - grd_xarr(l)
   dy(l) = grd_yarr(l+1) - grd_yarr(l)
   dz(l) = grd_zarr(l+1) - grd_zarr(l)
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+  real*8,pointer :: vx, vy, vz
+  vx => ptcl2%vx
+  vy => ptcl2%vy
+  vz => ptcl2%vz
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
   ix => ptcl2%ix
   iy => ptcl2%iy
@@ -499,26 +506,42 @@ pure subroutine diffusion3(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr
         om = atan2(eta,xi)
         if(om<0d0) om=om+pc_pi2
         if(grd_isvelocity) then
-           elabfact = 1d0+(x*xi+y*eta+z*mu)*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!           elabfact = 1d0+(x*xi+y*eta+z*mu)*cinv
+! New code
+           elabfact = 1d0+(vx*xi+vy*eta+vz*mu)*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         else
            elabfact = 1d0
         endif
 !-- changing from comoving frame to observer frame
         if(grd_isvelocity) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
 !-- transforming mu to lab
-           mu = (mu+z*cinv)/elabfact
-           if(mu>1d0) then
-              mu = 1d0
-           elseif(mu<-1d0) then
-              mu = -1d0
-           endif
+!           mu = (mu+z*cinv)/elabfact
+!           if(mu>1d0) then
+!              mu = 1d0
+!           elseif(mu<-1d0) then
+!              mu = -1d0
+!           endif
 !-- transforming om to lab
-           om = atan2(eta+y*cinv,xi+x*cinv)
-           if(om<0d0) om=om+pc_pi2
+!           om = atan2(eta+y*cinv,xi+x*cinv)
+!           if(om<0d0) om=om+pc_pi2
 !-- ELABFACT LAB RESET
+!           xi = sqrt(1d0-mu**2)*cos(om)
+!           eta= sqrt(1d0-mu**2)*sin(om)
+!           elabfact=1d0-(x*xi+y*eta+z*mu)*cinv
+! New code
+!-- transforming mu to lab
+           call direction2lab3(vx,vy,vz,mu,om)
            xi = sqrt(1d0-mu**2)*cos(om)
            eta= sqrt(1d0-mu**2)*sin(om)
            elabfact=1d0-(x*xi+y*eta+z*mu)*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            help = 1d0/elabfact
 !-- transforming wl to lab
            wl = wl*elabfact
@@ -626,26 +649,42 @@ pure subroutine diffusion3(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr
         om = atan2(eta,xi)
         if(om<0d0) om=om+pc_pi2
         if(grd_isvelocity) then
-           elabfact = 1d0+(x*xi+y*eta+z*mu)*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!           elabfact = 1d0+(x*xi+y*eta+z*mu)*cinv
+! New code
+           elabfact = 1d0+(vx*xi+vy*eta+vz*mu)*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         else
            elabfact = 1d0
         endif
 !-- changing from comoving frame to observer frame
         if(grd_isvelocity) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
 !-- transforming mu to lab
-           mu = (mu+z*cinv)/elabfact
-           if(mu>1d0) then
-              mu = 1d0
-           elseif(mu<-1d0) then
-              mu = -1d0
-           endif
+!           mu = (mu+z*cinv)/elabfact
+!           if(mu>1d0) then
+!              mu = 1d0
+!           elseif(mu<-1d0) then
+!              mu = -1d0
+!           endif
 !-- transforming om to lab
-           om = atan2(eta+y*cinv,xi+x*cinv)
-           if(om<0d0) om=om+pc_pi2
+!           om = atan2(eta+y*cinv,xi+x*cinv)
+!           if(om<0d0) om=om+pc_pi2
 !-- ELABFACT LAB RESET
+!           xi = sqrt(1d0-mu**2)*cos(om)
+!           eta= sqrt(1d0-mu**2)*sin(om)
+!           elabfact=1d0-(x*xi+y*eta+z*mu)*cinv
+! New code
+!-- transforming mu to lab
+           call direction2lab3(vx,vy,vz,mu,om)
            xi = sqrt(1d0-mu**2)*cos(om)
            eta= sqrt(1d0-mu**2)*sin(om)
            elabfact=1d0-(x*xi+y*eta+z*mu)*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            help = 1d0/elabfact
 !-- transforming wl to lab
            wl = wl*elabfact
@@ -751,26 +790,42 @@ pure subroutine diffusion3(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr
         om = atan2(eta,xi)
         if(om<0d0) om=om+pc_pi2
         if(grd_isvelocity) then
-           elabfact = 1d0+(x*xi+y*eta+z*mu)*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!           elabfact = 1d0+(x*xi+y*eta+z*mu)*cinv
+! New code
+           elabfact = 1d0+(vx*xi+vy*eta+vz*mu)*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         else
            elabfact = 1d0
         endif
 !-- changing from comoving frame to observer frame
         if(grd_isvelocity) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
 !-- transforming mu to lab
-           mu = (mu+z*cinv)/elabfact
-           if(mu>1d0) then
-              mu = 1d0
-           elseif(mu<-1d0) then
-              mu = -1d0
-           endif
+!           mu = (mu+z*cinv)/elabfact
+!           if(mu>1d0) then
+!              mu = 1d0
+!           elseif(mu<-1d0) then
+!              mu = -1d0
+!           endif
 !-- transforming om to lab
-           om = atan2(eta+y*cinv,xi+x*cinv)
-           if(om<0d0) om=om+pc_pi2
+!           om = atan2(eta+y*cinv,xi+x*cinv)
+!           if(om<0d0) om=om+pc_pi2
 !-- ELABFACT LAB RESET
+!           xi = sqrt(1d0-mu**2)*cos(om)
+!           eta= sqrt(1d0-mu**2)*sin(om)
+!           elabfact=1d0-(x*xi+y*eta+z*mu)*cinv
+! New code
+!-- transforming mu to lab
+           call direction2lab3(vx,vy,vz,mu,om)
            xi = sqrt(1d0-mu**2)*cos(om)
            eta= sqrt(1d0-mu**2)*sin(om)
            elabfact=1d0-(x*xi+y*eta+z*mu)*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            help = 1d0/elabfact
 !-- transforming wl to lab
            wl = wl*elabfact
@@ -877,26 +932,42 @@ pure subroutine diffusion3(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr
         om = atan2(eta,xi)
         if(om<0d0) om=om+pc_pi2
         if(grd_isvelocity) then
-           elabfact = 1d0+(x*xi+y*eta+z*mu)*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!           elabfact = 1d0+(x*xi+y*eta+z*mu)*cinv
+! New code
+           elabfact = 1d0+(vx*xi+vy*eta+vz*mu)*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         else
            elabfact = 1d0
         endif
 !-- changing from comoving frame to observer frame
         if(grd_isvelocity) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
 !-- transforming mu to lab
-           mu = (mu+z*cinv)/elabfact
-           if(mu>1d0) then
-              mu = 1d0
-           elseif(mu<-1d0) then
-              mu = -1d0
-           endif
+!           mu = (mu+z*cinv)/elabfact
+!           if(mu>1d0) then
+!              mu = 1d0
+!           elseif(mu<-1d0) then
+!              mu = -1d0
+!           endif
 !-- transforming om to lab
-           om = atan2(eta+y*cinv,xi+x*cinv)
-           if(om<0d0) om=om+pc_pi2
+!           om = atan2(eta+y*cinv,xi+x*cinv)
+!           if(om<0d0) om=om+pc_pi2
 !-- ELABFACT LAB RESET
+!           xi = sqrt(1d0-mu**2)*cos(om)
+!           eta= sqrt(1d0-mu**2)*sin(om)
+!           elabfact=1d0-(x*xi+y*eta+z*mu)*cinv
+! New code
+!-- transforming mu to lab
+           call direction2lab3(vx,vy,vz,mu,om)
            xi = sqrt(1d0-mu**2)*cos(om)
            eta= sqrt(1d0-mu**2)*sin(om)
            elabfact=1d0-(x*xi+y*eta+z*mu)*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            help = 1d0/elabfact
 !-- transforming wl to lab
            wl = wl*elabfact
@@ -1002,26 +1073,42 @@ pure subroutine diffusion3(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr
         xi = sqrt(1d0-mu**2)*cos(om)
         eta = sqrt(1d0-mu**2)*sin(om)
         if(grd_isvelocity) then
-           elabfact = 1d0+(x*xi+y*eta+z*mu)*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!           elabfact = 1d0+(x*xi+y*eta+z*mu)*cinv
+! New code
+           elabfact = 1d0+(vx*xi+vy*eta+vz*mu)*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         else
            elabfact = 1d0
         endif
 !-- changing from comoving frame to observer frame
         if(grd_isvelocity) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
 !-- transforming mu to lab
-           mu = (mu+z*cinv)/elabfact
-           if(mu>1d0) then
-              mu = 1d0
-           elseif(mu<-1d0) then
-              mu = -1d0
-           endif
+!           mu = (mu+z*cinv)/elabfact
+!           if(mu>1d0) then
+!              mu = 1d0
+!           elseif(mu<-1d0) then
+!              mu = -1d0
+!           endif
 !-- transforming om to lab
-           om = atan2(eta+y*cinv,xi+x*cinv)
-           if(om<0d0) om=om+pc_pi2
+!           om = atan2(eta+y*cinv,xi+x*cinv)
+!           if(om<0d0) om=om+pc_pi2
 !-- ELABFACT LAB RESET
+!           xi = sqrt(1d0-mu**2)*cos(om)
+!           eta= sqrt(1d0-mu**2)*sin(om)
+!           elabfact=1d0-(x*xi+y*eta+z*mu)*cinv
+! New code
+!-- transforming mu to lab
+           call direction2lab3(vx,vy,vz,mu,om)
            xi = sqrt(1d0-mu**2)*cos(om)
            eta= sqrt(1d0-mu**2)*sin(om)
            elabfact=1d0-(x*xi+y*eta+z*mu)*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            help = 1d0/elabfact
 !-- transforming wl to lab
            wl = wl*elabfact
@@ -1127,26 +1214,42 @@ pure subroutine diffusion3(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr
         xi = sqrt(1d0-mu**2)*cos(om)
         eta = sqrt(1d0-mu**2)*sin(om)
         if(grd_isvelocity) then
-           elabfact = 1d0+(x*xi+y*eta+z*mu)*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!           elabfact = 1d0+(x*xi+y*eta+z*mu)*cinv
+! New code
+           elabfact = 1d0+(vx*xi+vy*eta+vz*mu)*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         else
            elabfact = 1d0
         endif
 !-- changing from comoving frame to observer frame
         if(grd_isvelocity) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
 !-- transforming mu to lab
-           mu = (mu+z*cinv)/elabfact
-           if(mu>1d0) then
-              mu = 1d0
-           elseif(mu<-1d0) then
-              mu = -1d0
-           endif
+!           mu = (mu+z*cinv)/elabfact
+!           if(mu>1d0) then
+!              mu = 1d0
+!           elseif(mu<-1d0) then
+!              mu = -1d0
+!           endif
 !-- transforming om to lab
-           om = atan2(eta+y*cinv,xi+x*cinv)
-           if(om<0d0) om=om+pc_pi2
+!           om = atan2(eta+y*cinv,xi+x*cinv)
+!           if(om<0d0) om=om+pc_pi2
 !-- ELABFACT LAB RESET
+!           xi = sqrt(1d0-mu**2)*cos(om)
+!           eta= sqrt(1d0-mu**2)*sin(om)
+!           elabfact=1d0-(x*xi+y*eta+z*mu)*cinv
+! New code
+!-- transforming mu to lab
+           call direction2lab3(vx,vy,vz,mu,om)
            xi = sqrt(1d0-mu**2)*cos(om)
            eta= sqrt(1d0-mu**2)*sin(om)
            elabfact=1d0-(x*xi+y*eta+z*mu)*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            help = 1d0/elabfact
 !-- transforming wl to lab
            wl = wl*elabfact

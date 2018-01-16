@@ -324,7 +324,7 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !        om = atan2(eta+y*cinv,xi+x*cinv)
 !        if(om<0d0) om=om+pc_pi2
 ! New Code
-        call direction2lab2(vx,vy,vz,mu,om)
+        call direction2lab3(vx,vy,vz,mu,om)
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !-- x,y lab direction cosines
         eta = sqrt(1d0-mu**2)*sin(om)
@@ -574,7 +574,7 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !              om = atan2(eta+y*cinv,xi+x*cinv)
 !              if(om<0d0) om=om+pc_pi2
 ! New code
-              call direction2lab2(vx, vy, vz, mu, om)
+              call direction2lab3(vx, vy, vz, mu, om)
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            endif
         endif
@@ -674,7 +674,7 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !              om = atan2(eta+y*cinv,xi+x*cinv)
 !              if(om<0d0) om=om+pc_pi2
 ! New code
-              call direction2lab2(vx, vy, vz, mu, om)
+              call direction2lab3(vx, vy, vz, mu, om)
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            endif
         endif
@@ -773,7 +773,7 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !              om = atan2(eta+y*cinv,xi+x*cinv)
 !              if(om<0d0) om=om+pc_pi2
 ! New code
-              call direction2lab2(vx, vy, vz, mu, om)
+              call direction2lab3(vx, vy, vz, mu, om)
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            endif
         endif

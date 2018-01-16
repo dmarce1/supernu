@@ -55,8 +55,14 @@ pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ier
 !-- statement function
   integer :: l
   real*8 :: dx,dx3
+
   dx(l) = grd_xarr(l+1) - grd_xarr(l)
   dx3(l) = grd_xarr(l+1)**3 - grd_xarr(l)**3
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+  real*8,pointer :: vx
+  vx => ptcl2%vx
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
   ix => ptcl2%ix
   ic => ptcl2%ic
