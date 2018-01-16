@@ -402,7 +402,7 @@ c      mu0 = mu
 c      om0 = om
 c      end subroutine direction2lab3
 
-      subroutine direction2lab1(vx0,vy0,vz0,mu0,om0)
+      pure subroutine direction2lab1(vx0,vy0,vz0,mu0,om0)
 c     -------------------------------------------
       implicit none
       real*8,intent(in) :: vx0,vy0,vz0
@@ -423,7 +423,7 @@ c
       end subroutine direction2lab1
 c
 c
-      subroutine direction2lab2(vx0,vy0,vz0,mu0,om0)
+      pure subroutine direction2lab2(vx0,vy0,vz0,mu0,om0)
 c     -------------------------------------------
       implicit none
       real*8,intent(in) :: vx0,vy0,vz0
@@ -446,7 +446,7 @@ c
       end subroutine direction2lab2
 c
 c
-      subroutine direction2lab3(vx0,vy0,vz0,mu0,om0)
+      pure subroutine direction2lab3(vx0,vy0,vz0,mu0,om0)
 c     -------------------------------------------
       implicit none
       real*8,intent(in) :: vx0,vy0,vz0

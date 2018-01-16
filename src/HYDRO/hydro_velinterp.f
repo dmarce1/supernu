@@ -117,38 +117,6 @@
           grd_dvdx(:,:,i,:,2) = grd_dvdx(:,:,i,:,3) * dxinv
         enddo
 
-        select case(grd_igeom)
-          case(2)
-             do i = 1, nx
-               r = (grd_xarr(i+1) + grd_xarr(i))/2.0d0 / tfact
-               grd_dvdx(i,:,:,1,3) =
-     &                (grd_dvdx(i,:,:,1,3) - grd_v(i,:,:,3)) / r
-               grd_dvdx(i,:,:,3,3) =
-     &                (grd_dvdx(i,:,:,3,3) + grd_v(i,:,:,1)) / r
-             enddo
-          case(1)
-             do i = 1, nx
-             do j = 1, ny
-               r  = (grd_xarr(i+1) + grd_xarr(i))/2.0d0 / tfact
-               mu = (grd_yarr(i+1) + grd_yarr(i))/2.0d0
-               rsin0 = r*sqrt(1.0d0-mu*mu)
-               grd_dvdx(i,j,:,1,2) =
-     &             (grd_dvdx(i,j,:,1,2) - grd_v(i,j,:,2))/r
-              grd_dvdx(i,j,:,1,3) =
-     &              (grd_dvdx(i,j,:,1,3) - grd_v(i,j,:,3))/rsin0
-               grd_dvdx(i,j,:,2,2) =
-     &             (grd_dvdx(i,j,:,2,2) + grd_v(i,j,:,1))/r
-               grd_dvdx(i,j,:,2,3) =
-     &             (grd_dvdx(i,j,:,2,3)-grd_v(i,j,:,3)*mu)/rsin0
-               grd_dvdx(i,j,:,3,3) =
-     &              grd_dvdx(i,j,:,3,3)/rsin0 +
-     &              grd_v(i,j,:,1)/r -
-     &              grd_v(i,j,:,2)*mu/rsin0
-               grd_dvdx(i,j,:,3,2) = grd_dvdx(i,j,:,3,2) / r
-             enddo
-             enddo
-        end select
-
       endif
 
       end subroutine

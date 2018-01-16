@@ -91,7 +91,13 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !-- setting vel-grid helper variables
   if(grd_isvelocity) then
 !-- calculating initial transformation factors
-     elabfact=1d0-(mu*z+eta*y+xi*x)*cinv
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! MODIFIED BY LSU
+! Old code -
+!     elabfact=1d0-(mu*z+eta*y+xi*x)*cinv
+! New code -
+      elabfact = 1d0-(mu*vz +eta*vx + xi*vy)/pc_c
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      thelp = tsp_t
   else
      elabfact = 1d0
@@ -149,7 +155,22 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !
 !-- Doppler shift distance
   if(grd_isvelocity.and.ig<grp_ng) then
-     ddop = pc_c*(elabfact-wl*grp_wlinv(ig+1))
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!    LSU MODIFICATION
+! Old code
+!     ddop = pc_c*(elabfact-wl*grp_wlinv(ig+1))
+! New code
+     eta = sqrt(1d0 - mu*mu) * cos(om)
+     xi  = sqrt(1d0 - mu*mu) * sin(om)
+     help =        mu * mu * grd_dvdx(ix,iy,iz,3,3)
+     help = help + eta*eta * grd_dvdx(ix,iy,iz,1,1)
+     help = help + xi * xi * grd_dvdx(ix,iy,iz,2,2)
+     help = help + mu *eta *(grd_dvdx(ix,iy,iz,3,1)+grd_dvdx(ix,iy,iz,1,3))
+     help = help + mu * xi *(grd_dvdx(ix,iy,iz,3,2)+grd_dvdx(ix,iy,iz,2,3))
+     help = help + eta* xi *(grd_dvdx(ix,iy,iz,2,1)+grd_dvdx(ix,iy,iz,1,3))
+     help = elabfact * help
+     ddop = pc_c*(elabfact-help*wl*grp_wlinv(ig+1))
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      if(ddop<0d0) then
         ddop = far
      endif
@@ -212,6 +233,12 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
      z = z + mu*d
   endif
 
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+     call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 !
 !-- updating time
   ptcl%t = ptcl%t + thelp*cinv*d
@@ -253,7 +280,13 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !
 !-- updating transformation factors
   if(grd_isvelocity) then
-     elabfact=1d0-(xi*x+eta*y+mu*z)*cinv
+ !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! MODIFIED BY LSU
+! Old code -
+!    elabfact=1d0-(xi*x+eta*y+mu*z)*cinv
+! New code -
+      elabfact = 1d0-(mu*vz +eta*vx + xi*vy)/pc_c
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   endif
 
 !
@@ -275,18 +308,24 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
      om = pc_pi2*r1
 !-- checking velocity dependence
      if(grd_isvelocity) then
-        eta = sqrt(1d0-mu**2)*sin(om)
-        xi = sqrt(1d0-mu**2)*cos(om)
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!       LSU MODIFICATION
+! Old code
+!        eta = sqrt(1d0-mu**2)*sin(om)
+!        xi = sqrt(1d0-mu**2)*cos(om)
 !-- transforming mu
-        mu = (mu+z*cinv)/(1d0+(mu*z+eta*y+xi*x)*cinv)
-        if(mu>1d0) then
-           mu = 1d0
-        elseif(mu<-1d0) then
-           mu = -1d0
-        endif
+!        mu = (mu+z*cinv)/(1d0+(mu*z+eta*y+xi*x)*cinv)
+!        if(mu>1d0) then
+!           mu = 1d0
+!        elseif(mu<-1d0) then
+!           mu = -1d0
+!        endif
 !-- transforming om
-        om = atan2(eta+y*cinv,xi+x*cinv)
-        if(om<0d0) om=om+pc_pi2
+!        om = atan2(eta+y*cinv,xi+x*cinv)
+!        if(om<0d0) om=om+pc_pi2
+! New Code
+        call direction2lab2(vx,vy,vz,mu,om)
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !-- x,y lab direction cosines
         eta = sqrt(1d0-mu**2)*sin(om)
         xi = sqrt(1d0-mu**2)*cos(om)
@@ -341,8 +380,15 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !-- checking velocity dependence
      if(grd_isvelocity) then
 !-- lab wavelength
-        wl = wl*(1d0-(mu*z+eta*y+xi*x)*cinv)/elabfact
-        help = elabfact/(1d0-(mu*z+eta*y+xi*x)*cinv)
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! MODIFIED BY LSU
+! Old code -
+!       wl = wl*(1d0-(mu*z+eta*y+xi*x)*cinv)/elabfact
+!       help = elabfact/(1d0-(mu*z+eta*y+xi*x)*cinv)
+! New code -
+       wl = wl*(1d0-(mu*vz+eta*vy+xi*vx)*cinv)/elabfact
+       help = elabfact/(1d0-(mu*vz+eta*vy+xi*vx)*cinv)
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !-- velocity effects accounting
         totevelo=totevelo+e*(1d0-help)
 !
@@ -369,7 +415,13 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !
 !-- transforming to lab
         if(grd_isvelocity) then
-           help = elabfact/(1d0-(mu*z+eta*y+xi*x)*cinv)
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! MODIFIED BY LSU
+! Old code -
+!           help = elabfact/(1d0-(mu*z+eta*y+xi*x)*cinv)
+! New code -
+           help = elabfact/(1d0-(mu*vz+eta*vy+xi*vx)*cinv)
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !-- velocity effects accounting
            totevelo=totevelo+e*(1d0-help)
 !-- energy weight
@@ -398,11 +450,19 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
         if(ptcl2%itype==2) then
 !-- transforming to cmf
            if(grd_isvelocity) then
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! MODIFIED BY LSU
+! Old code -
+!              totevelo=totevelo+e*(mu*z+eta*y+xi*x)*cinv
+!              e = e*(1d0-(mu*z+eta*y+xi*x)*cinv)
+!              e0 = e0*(1d0-(mu*z+eta*y+xi*x)*cinv)
+! New code -
+              totevelo=totevelo+e*(mu*vz+eta*vy+xi*vx)*cinv
+              e = e*(1d0-(mu*vz+eta*vy+xi*vx)*cinv)
+              e0 = e0*(1d0-(mu*vz+eta*vy+xi*vx)*cinv)
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !-- velocity effects accounting
-              totevelo=totevelo+e*(mu*z+eta*y+xi*x)*cinv
 !-- energy weight
-              e = e*(1d0-(mu*z+eta*y+xi*x)*cinv)
-              e0 = e0*(1d0-(mu*z+eta*y+xi*x)*cinv)
            endif
            wl = 0d0 !workaround ifort 13.1.3 bug
         else
@@ -410,7 +470,13 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
            call rnd_r(r1,rndstate)
            wl = 1d0/((1d0-r1)*grp_wlinv(ig)+r1*grp_wlinv(ig+1))
 !-- converting comoving wavelength to lab frame wavelength
-           if(grd_isvelocity) wl = wl*(1d0-(mu*z+eta*y+xi*x)*cinv)
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! MODIFIED BY LSU
+! Old code -
+!           if(grd_isvelocity) wl = wl*(1d0-(mu*z+eta*y+xi*x)*cinv)
+! New code -
+           if(grd_isvelocity) wl = wl*(1d0-(mu*vz+eta*vy+xi*vx)*cinv)
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         endif
      endif
 
@@ -429,7 +495,13 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !-- DDMC in adjacent cell
         if(grd_isvelocity) then
 !-- transforming x-cosine to cmf
-           xi = (xi-x*cinv)/elabfact
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!           xi = (xi-x*cinv)/elabfact
+! New code
+           xi = (xi-vx*cinv)/elabfact
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            if(xi>1d0) then
               xi = 1
            elseif(xi<-1d0) then
@@ -489,15 +561,21 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
            if(om<0d0) om=om+pc_pi2
            if(grd_isvelocity) then
 !-- transforming mu to lab
-              mu=(mu+z*cinv)/(1d0+(x*xi+y*eta+z*mu)*cinv)
-              if(mu>1d0) then
-                 mu = 1d0
-              elseif(mu<-1d0) then
-                 mu = -1d0
-              endif
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!              mu=(mu+z*cinv)/(1d0+(x*xi+y*eta+z*mu)*cinv)
+!              if(mu>1d0) then
+!                 mu = 1d0
+!              elseif(mu<-1d0) then
+!                 mu = -1d0
+!              endif
 !-- transforming om to lab
-              om = atan2(eta+y*cinv,xi+x*cinv)
-              if(om<0d0) om=om+pc_pi2
+!              om = atan2(eta+y*cinv,xi+x*cinv)
+!              if(om<0d0) om=om+pc_pi2
+! New code
+              call direction2lab2(vx, vy, vz, mu, om)
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            endif
         endif
      endif
@@ -517,7 +595,13 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !-- DDMC in adjacent cell
         if(grd_isvelocity) then
 !-- transforming y-cosine to cmf
-           eta = (eta-y*cinv)/elabfact
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!           eta = (eta-y*cinv)/elabfact
+! New code
+           eta = (eta-vy*cinv)/elabfact
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            if(eta>1d0) then
               eta = 1
            elseif(eta<-1d0) then
@@ -577,15 +661,21 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
            if(om<0d0) om=om+pc_pi2
            if(grd_isvelocity) then
 !-- transforming mu to lab
-              mu=(mu+z*cinv)/(1d0+(x*xi+y*eta+z*mu)*cinv)
-              if(mu>1d0) then
-                 mu = 1d0
-              elseif(mu<-1d0) then
-                 mu = -1d0
-              endif
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!              mu=(mu+z*cinv)/(1d0+(x*xi+y*eta+z*mu)*cinv)
+!              if(mu>1d0) then
+!                 mu = 1d0
+!              elseif(mu<-1d0) then
+!                 mu = -1d0
+!              endif
 !-- transforming om to lab
-              om = atan2(eta+y*cinv,xi+x*cinv)
-              if(om<0d0) om=om+pc_pi2
+!              om = atan2(eta+y*cinv,xi+x*cinv)
+!              if(om<0d0) om=om+pc_pi2
+! New code
+              call direction2lab2(vx, vy, vz, mu, om)
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            endif
         endif
      endif
@@ -605,7 +695,13 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !-- DDMC in adjacent cell
         if(grd_isvelocity) then
 !-- transforming z-cosine to cmf
-           mu = (mu-z*cinv)/elabfact
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!           mu = (mu-z*cinv)/elabfact
+! New code
+           mu = (mu-vz*cinv)/elabfact
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            if(mu>1d0) then
               mu = 1
            elseif(mu<-1d0) then
@@ -664,15 +760,21 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
            eta = sqrt(1d0-mu**2)*sin(om)
            if(grd_isvelocity) then
 !-- transforming mu to lab
-              mu=(mu+z*cinv)/(1d0+(x*xi+y*eta+z*mu)*cinv)
-              if(mu>1d0) then
-                 mu = 1d0
-              elseif(mu<-1d0) then
-                 mu = -1d0
-              endif
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!              mu=(mu+z*cinv)/(1d0+(x*xi+y*eta+z*mu)*cinv)
+!              if(mu>1d0) then
+!                 mu = 1d0
+!              elseif(mu<-1d0) then
+!                 mu = -1d0
+!              endif
 !-- transforming om to lab
-              om = atan2(eta+y*cinv,xi+x*cinv)
-              if(om<0d0) om=om+pc_pi2
+!              om = atan2(eta+y*cinv,xi+x*cinv)
+!              if(om<0d0) om=om+pc_pi2
+! New code
+              call direction2lab2(vx, vy, vz, mu, om)
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            endif
         endif
      endif
