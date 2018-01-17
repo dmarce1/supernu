@@ -35,7 +35,7 @@ pure subroutine transport2(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
   real*8,pointer :: mux,muy,muz
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !    LSU MODIFICATION
-  real*8, pointer :: vx, vy, vz
+  real*8, pointer :: vx, vy, vz, eta, R
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   real*8 :: thelp, thelpinv, help, zhelp
   real*8 :: dcen,dcol,dthm,dbx,dby,dbz,ddop
@@ -104,7 +104,13 @@ pure subroutine transport2(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !-- setting vel-grid helper variables
   if(grd_isvelocity) then
 !-- calculating initial transformation factors
-     dirdotu = mu*y+sqrt(1d0-mu**2)*cos(om)*x
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old Code
+!     dirdotu = mu*y+sqrt(1d0-mu**2)*cos(om)*x
+! New code
+     dirdotu = mu*vy+sqrt(1d0-mu**2)*(cos(om)*vx+sin(om)*vz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      elabfact = 1d0 - dirdotu*cinv
      thelp = tsp_t
   else
@@ -232,7 +238,26 @@ pure subroutine transport2(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !
 !-- Doppler shift distance
   if(grd_isvelocity.and.ig<grp_ng) then
-     ddop = pc_c*(elabfact-wl*grp_wlinv(ig+1))
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old Code
+!     ddop = pc_c*(elabfact-wl*grp_wlinv(ig+1))
+! New code
+     eta = sqrt(1d0 - mu*mu) * cos(om)
+     xi  = sqrt(1d0 - mu*mu) * sin(om)
+     R   = (grd_xarr(ix+1) + grd_xarr(ix)) * 0.5d0
+     help =        mu * mu * grd_dvdx(ix,iy,iz,2,2)
+     help = help + eta*eta * grd_dvdx(ix,iy,iz,1,1)
+     help = help + xi * xi * grd_dvdx(ix,iy,iz,3,3) / R
+     help = help + mu *eta *(grd_dvdx(ix,iy,iz,2,1)+grd_dvdx(ix,iy,iz,1,2))
+     help = help + mu * xi *(grd_dvdx(ix,iy,iz,3,2)+grd_dvdx(ix,iy,iz,2,3)/R)
+     help = help + eta* xi *(grd_dvdx(ix,iy,iz,3,1)+grd_dvdx(ix,iy,iz,1,3)/R)
+     help = help - mu * xi *grd_v(ix,iy,iz,3) / R
+     help = help + xi * xi *grd_v(ix,iy,iz,1) / R
+     help = elabfact * help
+     ddop = pc_c*(elabfact-help*wl*grp_wlinv(ig+1))
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
      if(ddop<0d0) then
         ddop = far
      endif
@@ -413,7 +438,13 @@ pure subroutine transport2(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !
 !-- updating transformation factors
   if(grd_isvelocity) then
-     dirdotu = mu*y+sqrt(1d0-mu**2)*cos(om)*x
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old Code
+!     dirdotu = mu*y+sqrt(1d0-mu**2)*cos(om)*x
+! New code
+     dirdotu = mu*vy+sqrt(1d0-mu**2)*(cos(om)*vx+sin(om)*vz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      elabfact = 1d0 - dirdotu*cinv
   endif
 
@@ -466,19 +497,26 @@ pure subroutine transport2(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
      om = pc_pi2*r1
 !-- checking velocity dependence
      if(grd_isvelocity) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old Code
 !-- calculating transformation factors
-        dirdotu = mu*y+sqrt(1d0-mu**2)*cos(om)*x
-        gm = 1d0/sqrt(1d0-(x**2+y**2)*cinv**2)
+!        dirdotu = mu*y+sqrt(1d0-mu**2)*cos(om)*x
+!        gm = 1d0/sqrt(1d0-(x**2+y**2)*cinv**2)
 !-- azimuthal direction angle
-        om = atan2(sqrt(1d0-mu**2)*sin(om) , &
-             sqrt(1d0-mu**2)*cos(om)+gm*x*cinv * &
-             (1d0+gm*dirdotu*cinv/(gm+1d0)))
-        if(om<0d0) om=om+pc_pi2
+!        om = atan2(sqrt(1d0-mu**2)*sin(om) , &
+!             sqrt(1d0-mu**2)*cos(om)+gm*x*cinv * &
+!             (1d0+gm*dirdotu*cinv/(gm+1d0)))
+!        if(om<0d0) om=om+pc_pi2
 !-- y-projection
-        mu = (mu+gm*y*cinv*(1d0+gm*dirdotu*cinv/(1d0+gm))) / &
-             (gm*(1d0+dirdotu*cinv))
+!        mu = (mu+gm*y*cinv*(1d0+gm*dirdotu*cinv/(1d0+gm))) / &
+!             (gm*(1d0+dirdotu*cinv))
 !-- recalculating dirdotu
-        dirdotu = mu*y+sqrt(1d0-mu**2)*cos(om)*x
+!        dirdotu = mu*y+sqrt(1d0-mu**2)*cos(om)*x
+! New Code
+       call direction2lab2(vx,vy,vz,mu,om)
+       dirdotu = mu*vy+sqrt(1d0-mu**2)*(cos(om)*vx+sin(om)*vz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      endif
   endif
 

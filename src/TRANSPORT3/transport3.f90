@@ -167,7 +167,7 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
      help = help + xi * xi * grd_dvdx(ix,iy,iz,2,2)
      help = help + mu *eta *(grd_dvdx(ix,iy,iz,3,1)+grd_dvdx(ix,iy,iz,1,3))
      help = help + mu * xi *(grd_dvdx(ix,iy,iz,3,2)+grd_dvdx(ix,iy,iz,2,3))
-     help = help + eta* xi *(grd_dvdx(ix,iy,iz,2,1)+grd_dvdx(ix,iy,iz,1,3))
+     help = help + eta* xi *(grd_dvdx(ix,iy,iz,2,1)+grd_dvdx(ix,iy,iz,1,2))
      help = elabfact * help
      ddop = pc_c*(elabfact-help*wl*grp_wlinv(ig+1))
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -491,6 +491,11 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !-- IMC in adjacent cell
         ix = ixnext
         ic = grd_icell(ix,iy,iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+        call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      else
 !-- DDMC in adjacent cell
         if(grd_isvelocity) then
@@ -591,6 +596,11 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !-- IMC in adjacent cell
         iy = iynext
         ic = grd_icell(ix,iy,iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+        call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      else
 !-- DDMC in adjacent cell
         if(grd_isvelocity) then
@@ -691,6 +701,11 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !-- IMC in adjacent cell
         iz = iznext
         ic = grd_icell(ix,iy,iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+        call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      else
 !-- DDMC in adjacent cell
         if(grd_isvelocity) then
