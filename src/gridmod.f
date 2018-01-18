@@ -239,10 +239,10 @@ c
 
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c        HYDRO LSU
-      pure subroutine hydro_velocity_at( x, y, z, vx, vy, vz, xi, yi,zi)
+      pure subroutine hydro_velocity_at( x, y, z, vx, vy, vz,xi,yi,zi,t)
       implicit none
 
-      real*8, intent(in) :: x, y, z
+      real*8, intent(in) :: x, y, z, t
       real*8, intent(out) ::vx, vy, vz
       integer, intent(in) :: xi, yi, zi
 
@@ -276,11 +276,46 @@ c        HYDRO LSU
           vy = 0.0d0
           vz = 0.0d0
         endif
+      else if( grd_isvelocity ) then
+        vx = x / t
+        if( grd_igeom .ne. 1 .and. grd_igeom .ne. 11 ) then
+          vy = y / t
+        else
+          vy = 0.0d0
+        endif
+        if( grd_igeom .eq. 3 ) then
+          vz = z / t
+        else
+          vz = 0.0d0
+        endif
       else
         vx = 0.0d0
         vy = 0.0d0
         vz = 0.0d0
        endif
+
+
+      end subroutine
+
+      pure subroutine hydro_velocity_at11( x, vx, xi, t )
+      implicit none
+
+      real*8, intent(in) :: x, t
+      real*8, intent(out) ::vx
+      integer, intent(in) :: xi
+
+      real*8 :: dx
+
+      if( grd_hydro_on ) then
+        dx = 0.5d0 * (x - grd_xarr(xi)) /
+     &                 (grd_xarr(xi+1) - grd_xarr(xi))
+        vx = grd_v(xi,1,1,1)
+        vx = vx + grd_dvdx(xi,1,1,1,1) * dx
+      else if( grd_isvelocity ) then
+        vx = x / t
+      else
+        vx = 0.0d0
+      endif
 
 
       end subroutine

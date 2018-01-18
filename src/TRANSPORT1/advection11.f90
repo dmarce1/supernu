@@ -86,5 +86,12 @@ pure subroutine advection11(pretrans,ptcl,ptcl2)
   endif
   ic = grd_icell(ix,iy,iz)
 
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+  call hydro_velocity_at11(x, ptcl2%vx, ix, tsp_t)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+
 end subroutine advection11
 ! vim: fdm=marker

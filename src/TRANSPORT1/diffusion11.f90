@@ -34,6 +34,10 @@ pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ier
   real*8 :: r1, r2, thelp
   real*8 :: denom, denom2, denom3
   real*8 :: ddmct, tau, tcensus, pa
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+  real :: v0, vr, vl
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !-- lumped quantities -----------------------------------------
 
   real*8 :: emitlump, caplump
@@ -216,6 +220,22 @@ pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ier
              (mfphelp*thelp**3*dx3(ix))
      endif!}}}
   endif
+
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+  if( grd_hydro_on ) then
+    if( grd_isvelocity ) then
+      v0 = grd_v(ix,iy,iz,1) - (grd_xarr(ix+1)+grd_xarr(ix)) * tsp_t / 2d0
+    else
+      v0 = grd_v(ix,iy,iz,1)
+    endif
+    if( v0 .gt. 0.0d0 ) then
+      opacleak(2) = opacleak(2) + v0 / (0.5d0*pc_c*(grd_xarr(ix+2)-grd_xarr(ix)  )*tsp_t)
+    else if( v0 .lt. 0.0d0 ) then
+      opacleak(1) = opacleak(1) - v0 / (0.5d0*pc_c*(grd_xarr(ix+1)-grd_xarr(ix-1))*tsp_t)
+    endif
+  endif
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
 !-------------------------------------------------------------
 !

@@ -74,14 +74,30 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
   eamp = 0d0
 !
 !-- setting vel-grid helper variables  
-  if(grd_isvelocity) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!LSU MODIFICATION
+! Old code
+!  if(grd_isvelocity) then
 !-- calculating initial transformation factors
-     elabfact = 1d0 - mu*x*cinv
+!     elabfact = 1d0 - mu*x*cinv
+!     thelp = tsp_t
+!  else
+!     elabfact = 1d0
+!     thelp = 1d0
+!  endif
+! New code
+  if(grd_isvelocity) then
      thelp = tsp_t
   else
-     elabfact = 1d0
      thelp = 1d0
   endif
+  if(grd_isvelocity .or. grd_hydro_on) then
+     elabfact = 1d0 - mu*vx*cinv
+  else
+     elabfact = 1d0
+  endif
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 !
 !-- inverting vel-grid factor
   thelpinv = 1d0/thelp
@@ -133,8 +149,16 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
   endif
 !
 !-- Doppler shift distance
-  if(grd_isvelocity.and.ig<grp_ng) then
-     ddop = pc_c*(elabfact-wl*grp_wlinv(ig+1))
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!  if(grd_isvelocity.and.ig<grp_ng) then
+!     ddop = pc_c*(elabfact-wl*grp_wlinv(ig+1))
+! New code
+  if((grd_isvelocity .or. grd_hydro_on) .and.ig<grp_ng) then
+     help = grd_dvdx(ix,iy,iz,1,1)
+     ddop = pc_c*(elabfact-wl*help*grp_wlinv(ig+1))
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      if(ddop<0d0) then
         ddop = far
      endif
@@ -198,9 +222,17 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
 
 !
 !-- updating transformation factors
-  if(grd_isvelocity) then
-     elabfact = 1d0 - mu*x*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!  if(grd_isvelocity) then
+!     elabfact = 1d0 - mu*x*cinv
+!  endif
+! New code
+  if(grd_isvelocity.or.grd_hydro_on) then
+     elabfact = 1d0 - mu*vx*cinv
   endif
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !
 !-- census
@@ -217,7 +249,15 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
         mu = 0.0000001d0
      endif
 !-- checking velocity dependence
-     if(grd_isvelocity) mu=(mu+x*cinv)/(1d0+x*mu*cinv)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!     if(grd_isvelocity) mu=(mu+x*cinv)/(1d0+x*mu*cinv)
+! New code
+     if(grd_isvelocity.or.grd_hydro_on) then
+       mu=(mu+vx*cinv)/(1d0+vx*mu*cinv)
+     endif
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   elseif(d==db) then
      lout = mu>=0d0.and.ix==grd_nx
      if(lout) then
@@ -233,10 +273,19 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
 !-- Thomson scatter
   if(d == dthm) then
 !-- checking velocity dependence
-     if(grd_isvelocity) then
 !-- lab wavelength
-        wl = wl*(1d0-mu*x*cinv)/elabfact        
-        help = elabfact/(1d0-mu*x*cinv)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!     if(grd_isvelocity) then
+!        wl = wl*(1d0-mu*x*cinv)/elabfact
+!        help = elabfact/(1d0-mu*x*cinv)
+! New code
+     if(grd_isvelocity .or. grd_hydro_on) then
+        wl = wl*(1d0-mu*vx*cinv)/elabfact
+        help = elabfact/(1d0-mu*vx*cinv)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 !-- velocity effects accounting
         totevelo=totevelo+e*(1d0-help)
 !-- energy weight
@@ -260,8 +309,15 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
      else
 !-- effective scattering
 !-- transforming to lab
-        if(grd_isvelocity) then
-           help = elabfact/(1d0-mu*x*cinv)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!        if(grd_isvelocity) then
+!           help = elabfact/(1d0-mu*x*cinv)
+! New code
+        if(grd_isvelocity.or.grd_hydro_on) then
+           help = elabfact/(1d0-mu*vx*cinv)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !-- velocity effects accounting
            totevelo = totevelo+e*(1d0-help)
 !-- energy weight
@@ -287,20 +343,40 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
 !-- checking for DDMC in new group
         if(ptcl2%itype==2) then
 !-- transforming to cmf
-           if(grd_isvelocity) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!           if(grd_isvelocity) then
 !-- velocity effects accounting
-              totevelo = totevelo+e*x*mu*cinv
+!              totevelo = totevelo+e*x*mu*cinv
 !-- energy weight
-              e = e*(1d0-x*mu*cinv)
-              e0 = e0*(1d0-x*mu*cinv)
+!              e = e*(1d0-x*mu*cinv)
+!              e0 = e0*(1d0-x*mu*cinv)
+!           endif
+! New code
+           if(grd_isvelocity.or.grd_hydro_on) then
+!-- velocity effects accounting
+              totevelo = totevelo+e*vx*mu*cinv
+!-- energy weight
+              e = e*(1d0-vx*mu*cinv)
+              e0 = e0*(1d0-vx*mu*cinv)
            endif
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            wl = 0d0 !workaround ifort 13.1.3 bug
         else
 !-- uniformly in new group
            call rnd_r(r1,rndstate)
            wl = 1d0/((1d0-r1)*grp_wlinv(ig)+r1*grp_wlinv(ig+1))
 !-- converting comoving wavelength to lab frame wavelength
-           if(grd_isvelocity) wl = wl*(1d0-x*mu*cinv)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!           if(grd_isvelocity) wl = wl*(1d0-x*mu*cinv)
+! New code
+           if(grd_isvelocity.or.grd_hydro_on) then
+             wl = wl*(1d0-vx*mu*cinv)
+           endif
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         endif
      endif
      
@@ -316,18 +392,37 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
         x = grd_xarr(ix+1)
         ix = ix+1
         ic = grd_icell(ix,iy,iz)    
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+        call hydro_velocity_at11(x, vx, ix, tsp_t)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      else
 !-- DDMC in adjacent cell
-        if(grd_isvelocity) then
-           mu = (mu-x*cinv)/(1d0-x*mu*cinv)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!        if(grd_isvelocity) then
+!           mu = (mu-x*cinv)/(1d0-x*mu*cinv)
+!        endif
+! New code
+        if(grd_isvelocity.or.grd_hydro_on) then
+          mu = (mu-vx*cinv)/(1d0-vx*mu*cinv)
         endif
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         help= (grd_cap(ig,l)+grd_sig(l))*dx(ix+1)*thelp
         help = 4d0/(3d0*help+6d0*pc_dext)
 !-- sampling
         call rnd_r(r1,rndstate)
         if (r1 < help*(1d0+1.5*abs(mu))) then
            ptcl2%itype = 2
-           if(grd_isvelocity) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!           if(grd_isvelocity) then
+! New code
+           if(grd_isvelocity.or.grd_hydro_on) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !-- velocity effects accounting
               totevelo=totevelo+e*(1d0-elabfact)
               e = e*elabfact
@@ -337,13 +432,26 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
 !-- update
            ix = ix+1
            ic = grd_icell(ix,iy,iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+     call hydro_velocity_at11(x, vx, ix, tsp_t)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         else
            call rnd_r(r1,rndstate)
            call rnd_r(r2,rndstate)
            mu = -max(r1,r2)
-           if(grd_isvelocity) then
-              mu = (mu+x*cinv)/(1d0+x*mu*cinv)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!           if(grd_isvelocity) then
+!              mu = (mu+x*cinv)/(1d0+x*mu*cinv)
+!           endif
+! New code
+           if(grd_isvelocity .or. grd_hydro_on) then
+              mu = (mu+vx*cinv)/(1d0+vx*mu*cinv)
            endif
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            x = grd_xarr(ix+1)
         endif
      endif!}}}
@@ -360,11 +468,24 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
         x = grd_xarr(ix)
         ix = ix-1
         ic = grd_icell(ix,iy,iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+        call hydro_velocity_at11(x, vx, ix, tsp_t)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      else
 !-- DDMC in adjacent cell
-        if(grd_isvelocity) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!        if(grd_isvelocity) then
 !-- transforming x-cosine to cmf
-           mu = (mu-x*cinv)/(1d0-x*mu*cinv)
+!           mu = (mu-x*cinv)/(1d0-x*mu*cinv)
+! New code
+        if(grd_isvelocity.or.grd_hydro_on) then
+!-- transforming x-cosine to cmf
+           mu = (mu-vx*cinv)/(1d0-vx*mu*cinv)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !-- amplification factor
            if(.not.trn_noampfact .and. mu<0d0) then
               help = 1d0/abs(mu)
@@ -387,7 +508,13 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
         call rnd_r(r1,rndstate)
         if (r1 < help*(1d0+1.5d0*abs(mu))) then
            ptcl2%itype = 2
-           if(grd_isvelocity) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!           if(grd_isvelocity) then
+! New code
+           if(grd_isvelocity.or.grd_hydro_on) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !-- velocity effects accounting
               totevelo = totevelo+e*(1d0-elabfact)
 !
@@ -397,13 +524,24 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
            endif
            ix = ix-1
            ic = grd_icell(ix,iy,iz)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+           call hydro_velocity_at11(x, vx, ix, tsp_t)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         else
 !-- resampling direction
            call rnd_r(r1,rndstate)
            call rnd_r(r2,rndstate)
            mu = max(r1,r2)
 !-- transforming mu to lab
-           if(grd_isvelocity) mu=(mu+x*cinv)/(1d0+x*mu*cinv)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!           if(grd_isvelocity) mu=(mu+x*cinv)/(1d0+x*mu*cinv)
+! New code
+           if(grd_isvelocity.or.grd_hydro_on) mu=(mu+vx*cinv)/(1d0+vx*mu*cinv)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            x = grd_xarr(ix)
         endif
      endif!}}}
@@ -411,7 +549,13 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
 !
 !-- Doppler shift
   elseif(d == ddop) then
-     if(.not.grd_isvelocity) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!     if(.not.grd_isvelocity) then
+! New code
+     if((.not.grd_isvelocity).and.(.not.grd_hydro_on)) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !       stop 'transport11: ddop and no velocity'
         ierr = 16
         return
@@ -433,7 +577,13 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
         ptcl2%itype = 2
         if(grd_isvelocity) then
 !-- velocity effects accounting
-           totevelo=totevelo+e*x*mu*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!           totevelo=totevelo+e*x*mu*cinv
+! New code
+           totevelo=totevelo+e*vx*mu*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
            e = e*elabfact
            e0 = e0*elabfact

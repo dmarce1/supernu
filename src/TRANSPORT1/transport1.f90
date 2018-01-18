@@ -708,7 +708,7 @@ pure subroutine transport1(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
 ! compute fluid velocity at particle position
-       call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+       call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      else
 !-- DDMC in adjacent cell
@@ -753,7 +753,7 @@ pure subroutine transport1(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
 ! compute fluid velocity at particle position
-           call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+           call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         else
 !-- resampling x-cosine
@@ -785,7 +785,7 @@ pure subroutine transport1(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
 ! compute fluid velocity at particle position
-       call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+       call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      else
 !-- DDMC in adjacent cell
@@ -816,7 +816,7 @@ pure subroutine transport1(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
 ! compute fluid velocity at particle position
-           call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+           call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         else
            call rnd_r(r1,rndstate)
@@ -870,7 +870,7 @@ pure subroutine transport1(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
 ! compute fluid velocity at particle position
-       call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+       call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      else
 !-- DDMC in adjacent cell
@@ -901,7 +901,7 @@ pure subroutine transport1(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
 ! compute fluid velocity at particle position
-           call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+           call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         else
            call rnd_r(r1,rndstate)

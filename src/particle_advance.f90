@@ -201,7 +201,7 @@ subroutine particle_advance
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
 ! compute fluid velocity at particle position
-     call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+     call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !
@@ -457,14 +457,26 @@ subroutine particle_advance
 
 !
 !-- Redshifting DDMC particle energy weights and wavelengths
-        if(ptcl2%itype==2 .and. grd_isvelocity) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!        if(ptcl2%itype==2 .and. grd_isvelocity) then
 !-- r   edshifting energy weight!{{{
-           tot_evelo = tot_evelo + e*(1d0-exp(-tsp_dt/tsp_t))
-           e = e*exp(-tsp_dt/tsp_t)
-           e0 = e0*exp(-tsp_dt/tsp_t)
-           !
+!           tot_evelo = tot_evelo + e*(1d0-exp(-tsp_dt/tsp_t))
+!           e = e*exp(-tsp_dt/tsp_t)
+!           e0 = e0*exp(-tsp_dt/tsp_t)
+! New code
+        if(ptcl2%itype==2 .and. (grd_isvelocity.or.grd_hydro_on)) then
+!-- r   edshifting energy weight!{{{
+           help = 4d0/(grd_xarr(ix+1)+grd_xarr(ix))
+           help = grd_dvdx(ix,iy,iz,1,1) + grd_v(ix,iy,iz,1)*help
+           tot_evelo = tot_evelo + e*(1d0-exp(-tsp_dt*help))
+           e = e*exp(-tsp_dt*help)
+           e0 = e0*exp(-tsp_dt*help)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
-!-- f   ind group
+!
+!-- find group
            ig = binsrch(wl,grp_wl,grp_ng+1,.false.)
 !
            call rnd_r(r1,rndstate)

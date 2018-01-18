@@ -236,7 +236,7 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
 ! compute fluid velocity at particle position
-     call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+     call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !
@@ -494,7 +494,7 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
 ! compute fluid velocity at particle position
-        call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+        call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      else
 !-- DDMC in adjacent cell
@@ -599,7 +599,7 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
 ! compute fluid velocity at particle position
-        call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+        call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      else
 !-- DDMC in adjacent cell
@@ -704,7 +704,7 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
 ! compute fluid velocity at particle position
-        call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz)
+        call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      else
 !-- DDMC in adjacent cell
