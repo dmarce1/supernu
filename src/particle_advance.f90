@@ -226,10 +226,10 @@ subroutine particle_advance
 
 !
 !-- transform IMC particle into lab frame
-     if(grd_isvelocity.and.ptcl2%itype==1) then
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! MODIFIED BY LSU
 ! Old code -
+!     if(grd_isvelocity.and.ptcl2%itype==1) then
 !        select case(grd_igeom)
 !        case(1,11)
 !           labfact = 1d0-x*mu/pc_c
@@ -242,6 +242,7 @@ subroutine particle_advance
 !           labfact = 1d0-(mu*z + mu1*x + mu2*y)/pc_c
 !        endselect
 ! New code -
+     if((grd_isvelocity.or.grd_hydro_on).and.ptcl2%itype==1) then
         if( grd_igeom .eq. 11 ) then
           labfact = 1d0 - mu*vx/pc_c
         else
@@ -544,7 +545,7 @@ subroutine particle_advance
 ! Old code -
 !           if(grd_isvelocity) call direction2lab(x,y,z,mu,om)
 ! New code -
-           if(grd_isvelocity) call direction2lab(vx,vy,vz,mu,om)
+           if(grd_isvelocity.or.grd_hydro_on) call direction2lab(vx,vy,vz,mu,om)
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         endif
 

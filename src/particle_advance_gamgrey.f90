@@ -39,6 +39,10 @@ subroutine particle_advance_gamgrey(nmpi)
   real*8 :: labfact, cmffact, mu1, mu2, gm
   real*8 :: etot,pwr
   real*8 :: om0, mu0, x0, y0, z0
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+  real*8,pointer :: vx, vy, vz
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
   integer :: nvol(grd_ncell)
 !
@@ -139,6 +143,12 @@ subroutine particle_advance_gamgrey(nmpi)
   x => ptcl%x
   y => ptcl%y
   z => ptcl%z
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+  vx => ptcl2%vx
+  vy => ptcl2%vy
+  vz => ptcl2%vz
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   mu => ptcl%mu
   om => ptcl%om
   e => ptcl%e
@@ -190,6 +200,13 @@ subroutine particle_advance_gamgrey(nmpi)
      call rnd_r(r1,rndstate)
      z = r1*grd_zarr(k+1) + (1d0-r1) * grd_zarr(k)
 
+
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+     call hydro_velocity_at11(x, vx, ix, tsp_t)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 !-- direction cosine (comoving)
      call rnd_r(r1,rndstate)
      mu0 = 1d0-2d0*r1
@@ -197,50 +214,65 @@ subroutine particle_advance_gamgrey(nmpi)
      om0 = pc_pi2*r1
 
 !-- transform direction
-     if(.not.grd_isvelocity) then
+
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+
+! Old
+!     if(.not.grd_isvelocity) then
+!         mu = mu0
+!         om = om0
+!     else
+!        select case(grd_igeom)!{{{
+!        case(1,11)
+!           x0 = x
+!           cmffact = 1d0+mu0*x0/pc_c !-- 1+dir*v/c
+!           mu = (mu0+x0/pc_c)/cmffact
+!           om = om0
+!        case(2)
+!           x0 = x
+!           y0 = y
+!-- 1+dir*v/c
+!           cmffact = 1d0+(mu0*y0+sqrt(1d0-mu0**2)*cos(om0)*x0)/pc_c
+!           gm = 1d0/sqrt(1d0-(x**2+y**2)/pc_c**2)
+!-- om
+!           om = atan2(sqrt(1d0-mu0**2)*sin(om0) , &
+!                sqrt(1d0-mu0**2)*cos(om0)+(gm*x/pc_c) * &
+!                (1d0+gm*(cmffact-1d0)/(gm+1d0)))
+!           if(om<0d0) om = om+pc_pi2
+!-- mu
+!           mu = (mu0+(gm*y/pc_c)*(1d0+gm*(cmffact-1d0)/(1d0+gm))) / &
+!                (gm*cmffact)
+!        case(3)
+!           x0 = x
+!           y0 = y
+!           z0 = z
+!-- 1+dir*v/c
+!           mu1 = sqrt(1d0-mu0**2)*cos(om0)
+!           mu2 = sqrt(1d0-mu0**2)*sin(om0)
+!           cmffact = 1d0+(mu0*z0+mu1*x0+mu2*y0)/pc_c
+!-- mu
+!           mu = (mu0+z0/pc_c)/cmffact
+!           if(mu>1d0) then
+!              mu = 1d0
+!           elseif(mu<-1d0) then
+!              mu = -1d0
+!           endif
+!-- om
+!           om = atan2(mu2+y0/pc_c,mu1+x0/pc_c)
+!           if(om<0d0) om = om+pc_pi2
+!        endselect!}}}
+!     endif
+
+! New code
+     if(grd_isvelocity.or.grd_hydro_on) then
+       call direction2lab(vx,vy,vz,mu,om)
+     else
          mu = mu0
          om = om0
-     else
-        select case(grd_igeom)!{{{
-        case(1,11)
-           x0 = x
-           cmffact = 1d0+mu0*x0/pc_c !-- 1+dir*v/c
-           mu = (mu0+x0/pc_c)/cmffact
-           om = om0
-        case(2)
-           x0 = x
-           y0 = y
-!-- 1+dir*v/c
-           cmffact = 1d0+(mu0*y0+sqrt(1d0-mu0**2)*cos(om0)*x0)/pc_c
-           gm = 1d0/sqrt(1d0-(x**2+y**2)/pc_c**2)
-!-- om
-           om = atan2(sqrt(1d0-mu0**2)*sin(om0) , &
-                sqrt(1d0-mu0**2)*cos(om0)+(gm*x/pc_c) * &
-                (1d0+gm*(cmffact-1d0)/(gm+1d0)))
-           if(om<0d0) om = om+pc_pi2
-!-- mu
-           mu = (mu0+(gm*y/pc_c)*(1d0+gm*(cmffact-1d0)/(1d0+gm))) / &
-                (gm*cmffact)
-        case(3)
-           x0 = x
-           y0 = y
-           z0 = z
-!-- 1+dir*v/c
-           mu1 = sqrt(1d0-mu0**2)*cos(om0)
-           mu2 = sqrt(1d0-mu0**2)*sin(om0)
-           cmffact = 1d0+(mu0*z0+mu1*x0+mu2*y0)/pc_c
-!-- mu
-           mu = (mu0+z0/pc_c)/cmffact
-           if(mu>1d0) then
-              mu = 1d0
-           elseif(mu<-1d0) then
-              mu = -1d0
-           endif
-!-- om
-           om = atan2(mu2+y0/pc_c,mu1+x0/pc_c)
-           if(om<0d0) om = om+pc_pi2
-        endselect!}}}
      endif
+
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !-- velocity components in cartesian basis
      if(grd_igeom==1) then
@@ -263,7 +295,30 @@ subroutine particle_advance_gamgrey(nmpi)
 !
 !-- emission energy per particle
      e = grd_emitex(ic)/nvol(ic)
-     if(grd_isvelocity) e = e*cmffact
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+        if( grd_igeom .eq. 11 ) then
+          cmffact = 1d0 + mu*vx/pc_c
+        else
+           help = sqrt(1d0-mu**2)
+           mu1 = help*cos(om)
+           mu2 = help*sin(om)
+          select case(grd_igeom)
+          case(1)
+             cmffact = 1d0+(mu*vx + mu1*vy + mu2*vz)/pc_c
+          case(2)
+             cmffact = 1d0+(mu*vy + mu1*vx + mu2*vz)/pc_c
+          case(3)
+             cmffact = 1d0+(mu*vz + mu1*vx + mu2*vy)/pc_c
+          endselect
+        endif
+
+! Old code
+!     if(grd_isvelocity) e = e*cmffact
+
+! New code
+     if(grd_isvelocity.or.grd_hydro_on) e = e*cmffact
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      e0 = e
 
 !-----------------------------------------------------------------------
@@ -286,17 +341,38 @@ subroutine particle_advance_gamgrey(nmpi)
            call rnd_r(r1,rndstate)!{{{
            if(r1<0.5d0) then
 !-- transformation factor
-              if(grd_isvelocity) then
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!             if(grd_isvelocity) then
+!                 select case(grd_igeom)
+!                 case(1,11)
+!                    labfact = 1.0d0 - mu*x/pc_c
+!                 case(2)
+!                    labfact = 1d0-(mu*y+sqrt(1d0-mu**2) * &
+!                         cos(om)*x)/pc_c
+!                 case(3)
+!                    labfact = 1d0-(mu*z+sqrt(1d0-mu**2) * &
+!                         (cos(om)*x+sin(om)*y))/pc_c
+!                 endselect
+! New code
+             if((grd_isvelocity.or.grd_hydro_on).and.ptcl2%itype==1) then
+               if( grd_igeom .eq. 11 ) then
+                 labfact = 1d0 - mu*vx/pc_c
+               else
+                 help = sqrt(1d0-mu**2)
+                 mu1 = help*cos(om)
+                 mu2 = help*sin(om)
                  select case(grd_igeom)
-                 case(1,11)
-                    labfact = 1.0d0 - mu*x/pc_c
-                 case(2)
-                    labfact = 1d0-(mu*y+sqrt(1d0-mu**2) * &
-                         cos(om)*x)/pc_c
-                 case(3)
-                    labfact = 1d0-(mu*z+sqrt(1d0-mu**2) * &
-                         (cos(om)*x+sin(om)*y))/pc_c
+                   case(1)
+                     labfact = 1d0-(mu*vx + mu1*vy + mu2*vz)/pc_c
+                   case(2)
+                     labfact = 1d0-(mu*vy + mu1*vx + mu2*vz)/pc_c
+                   case(3)
+                     labfact = 1d0-(mu*vz + mu1*vx + mu2*vy)/pc_c
                  endselect
+               endif
+ !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
               else
                  labfact = 1d0
               endif
@@ -363,6 +439,9 @@ subroutine particle_advance_gamgrey(nmpi)
            labfact = (mu*z+sqrt(1d0-mu**2) * &
                 (cos(om)*x+sin(om)*y))/pc_c
         endselect
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         if(grd_isvelocity) labfact=labfact*tsp_t
         help=help-labfact
 !-- tally outbound luminosity        
