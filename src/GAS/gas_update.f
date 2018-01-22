@@ -29,7 +29,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ************************************************************************
       logical,save :: lfirst=.true.
       logical :: do_output,lexist
-      integer :: i,j,l,istat, k
+      integer :: i,j,l,istat
       real*8 :: help
       real*8 :: dtempfrac = 0.99d0
       real*8 :: natom1fr(-2*gas_nchain:gas_nelem,gas_ncell)

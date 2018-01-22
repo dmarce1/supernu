@@ -35,7 +35,8 @@ pure subroutine transport2(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
   real*8,pointer :: mux,muy,muz
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !    LSU MODIFICATION
-  real*8, pointer :: vx, vy, vz, eta, R
+  real*8, pointer :: vx, vy, vz
+  real*8 :: eta, R
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   real*8 :: thelp, thelpinv, help, zhelp
   real*8 :: dcen,dcol,dthm,dbx,dby,dbz,ddop

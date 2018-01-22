@@ -14,7 +14,7 @@ c     --------------------
 * temperature. The part that changes is done in gas_grid_update.
 ************************************************************************
       integer :: l
-      integer :: i,j,k
+      integer :: i
       real*8 :: mass0fr(-2*gas_nchain:gas_nelem,gas_ncell)
 
 c-- agnostic mass setup

@@ -14,9 +14,7 @@
      2                 xgeom,
      3                 den(grd_nx),ener(grd_nx),
      4                 pres(grd_nx),vel(grd_nx),
-     5                 cs(grd_nx),zlo,zhi,value
-      integer :: j, k
-      real*16 :: h_time, vol, mint
+     5                 cs(grd_nx)
       integer, intent(in) :: onum
       character*17 :: filename
 
@@ -83,7 +81,7 @@ c..get the solution for all spatial points at once
       integer, save :: onum = 0
       character*15 :: filename
       integer :: i, j
-      real :: x
+      real*8 :: x
 
 
       if( grd_igeom .eq. 11 ) then

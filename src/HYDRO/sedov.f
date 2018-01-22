@@ -78,7 +78,7 @@ c..local variables
       integer          i
       real*16          efun01,efun02,eval1,eval2
       real*16          v0,v2,vstar,vmin,
-     1                 alpha,vstep,us,u2,rho2,p2,e2,cs2,
+     1                 alpha,us,u2,rho2,p2,e2,cs2,
      2                 zeroin,sed_v_find,sed_r_find,
      3                 vat,l_fun,dlamdv,f_fun,g_fun,h_fun,
      4                 denom2,denom3,rho1
@@ -117,7 +117,6 @@ c..common block communication with the integration stepper
 
 
 c..popular formats
- 87   format(1x,1p10e14.6)
  88   format(1x,8(a7,1pe14.6,' '))
 
 
@@ -885,7 +884,7 @@ c..the external choose may be any of the above drivers, i.e midpnt,midinf...
 
 c..declare
       external          choose,func
-      integer           j,jmax,jmaxp,k,km,i
+      integer           j,jmax,jmaxp,k,km
       parameter         (jmax=14, jmaxp=jmax+1, k=5, km=k-1)
       real*16           a,b,ss,s(jmaxp),h(jmaxp),eps,dss,func
 

@@ -410,8 +410,8 @@ c     -------------------------------------------
       real*8 :: cmffact,mu,sin0,om
 c
 c
-      sin0 = sqrt(1d0 - mu*mu)
-      cmffact = 1d0+(mu0*vx0+sin0*(cos(om)*vx0+sin(om)*vz0))*cinv
+      sin0 = sqrt(1d0 - mu0*mu0)
+      cmffact = 1d0+(mu0*vx0+sin0*(cos(om0)*vx0+sin(om0)*vz0))*cinv
       mu = (mu0+vx0*cinv)/cmffact
       mu = min(mu,1d0)
       mu = max(mu,-1d0)
@@ -428,10 +428,10 @@ c     -------------------------------------------
       implicit none
       real*8,intent(in) :: vx0,vy0,vz0
       real*8,intent(inout) :: mu0,om0
-      real*8 :: cmffact,gm,mu,om
+      real*8 :: cmffact,mu,om
       real*8 :: sin0
 c
-      sin0 = sqrt(1d0-mu*mu)
+      sin0 = sqrt(1d0-mu0*mu0)
       cmffact = 1d0+(mu0*vy0+sin0*(cos(om0)*vx0+sin(om0)*vz0))*cinv
 ! -- om
       om = atan2(sin0*sin(om0)+vz0*cinv,

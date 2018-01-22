@@ -8,8 +8,8 @@
       integer :: nx, ny, nz
       real*8 :: vc(grd_nx+1,grd_ny+1,grd_nz+1)
       real*8 :: u(0:grd_nx+1,0:grd_ny+1,0:grd_nz+1)
-      integer :: xb, xe, yb, ye, zb, ze, dm, i, j
-      real :: dxinv, tfact, mu, r, dr, rsin0
+      integer :: xb, xe, yb, ye, zb, ze, dm, i
+      real*8 :: dxinv, tfact, r, dr
       nx = grd_nx
       ny = grd_ny
       nz = grd_nz

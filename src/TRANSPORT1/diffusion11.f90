@@ -36,7 +36,7 @@ pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ier
   real*8 :: ddmct, tau, tcensus, pa
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
-  real :: v0, vr, vl
+  real*8 :: v0
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !-- lumped quantities -----------------------------------------
 
