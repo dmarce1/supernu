@@ -225,14 +225,14 @@ pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ier
 ! LSU MODIFICATION
   if( grd_hydro_on ) then
     if( grd_isvelocity ) then
-      v0 = grd_v(ix,iy,iz,1) - (grd_xarr(ix+1)+grd_xarr(ix)) * tsp_t / 2d0
+      v0 = grd_v(ix,iy,iz,1) - (grd_xarr(ix+1)+grd_xarr(ix)) / (tsp_t * 2d0)
     else
       v0 = grd_v(ix,iy,iz,1)
     endif
     if( v0 .gt. 0.0d0 ) then
-      opacleak(2) = opacleak(2) + v0 / (0.5d0*pc_c*(grd_xarr(ix+2)-grd_xarr(ix)  )*tsp_t)
+      opacleak(2) = opacleak(2) + v0 / (pc_c * dx(ix))
     else if( v0 .lt. 0.0d0 ) then
-      opacleak(1) = opacleak(1) - v0 / (0.5d0*pc_c*(grd_xarr(ix+1)-grd_xarr(ix-1))*tsp_t)
+      opacleak(1) = opacleak(1) - v0 / (pc_c * dx(ix))
     endif
   endif
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
