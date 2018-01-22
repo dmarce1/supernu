@@ -189,6 +189,13 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
      mu = (xold*mu+d)/x
   endif
 
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+  call hydro_velocity_at11(x, vx, ix, tsp_t)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+
 !
 !-- updating time
   ptcl%t = ptcl%t + thelp*cinv*d
@@ -432,11 +439,6 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
 !-- update
            ix = ix+1
            ic = grd_icell(ix,iy,iz)
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
-! compute fluid velocity at particle position
-     call hydro_velocity_at11(x, vx, ix, tsp_t)
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         else
            call rnd_r(r1,rndstate)
            call rnd_r(r2,rndstate)
@@ -453,6 +455,11 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
            endif
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            x = grd_xarr(ix+1)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+           call hydro_velocity_at11(x, vx, ix, tsp_t)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         endif
      endif!}}}
 
@@ -524,11 +531,6 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
            endif
            ix = ix-1
            ic = grd_icell(ix,iy,iz)
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
-! compute fluid velocity at particle position
-           call hydro_velocity_at11(x, vx, ix, tsp_t)
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         else
 !-- resampling direction
            call rnd_r(r1,rndstate)
@@ -543,6 +545,11 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
            if(grd_isvelocity.or.grd_hydro_on) mu=(mu+vx*cinv)/(1d0+vx*mu*cinv)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            x = grd_xarr(ix)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+           call hydro_velocity_at11(x, vx, ix, tsp_t)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         endif
      endif!}}}
 
