@@ -157,7 +157,7 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
 ! New code
   if((grd_isvelocity .or. grd_hydro_on) .and.ig<grp_ng) then
      help = grd_dvdx(ix,iy,iz,1,1)
-     ddop = pc_c*(elabfact-wl*help*grp_wlinv(ig+1))
+     ddop = pc_c*(elabfact-wl*help*grp_wlinv(ig+1))*thelpinv
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      if(ddop<0d0) then
         ddop = far

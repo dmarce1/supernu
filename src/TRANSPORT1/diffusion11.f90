@@ -224,16 +224,13 @@ pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ier
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
   if( grd_hydro_on ) then
+    v0 = grd_v(ix,iy,iz,1)
     if( grd_isvelocity ) then
-      v0 = grd_v(ix,iy,iz,1) - (grd_xarr(ix+1)+grd_xarr(ix)) / (tsp_t * 2d0)
-    else
-      v0 = grd_v(ix,iy,iz,1)
+      v0 = v0 - (grd_xarr(ix+1)+grd_xarr(ix)) / (tsp_t * 2d0)
     endif
-    if( v0 .gt. 0.0d0 ) then
-      opacleak(2) = opacleak(2) + v0 / (pc_c * dx(ix))
-    else if( v0 .lt. 0.0d0 ) then
-      opacleak(1) = opacleak(1) - v0 / (pc_c * dx(ix))
-    endif
+    v0 = v0 / (pc_c * dx(ix))
+    opacleak(2) = opacleak(2) + max(v0,0d0)
+    opacleak(1) = opacleak(1) + min(v0,0d0)
   endif
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
@@ -375,16 +372,31 @@ pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ier
            call rnd_r(r2,rndstate)
            mu = -max(r1,r2)
 !-- doppler and aberration corrections
-           if(grd_isvelocity) then
-              mu = (mu+x*cinv)/(1.0+x*mu*cinv)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!           if(grd_isvelocity) then
+!              mu = (mu+x*cinv)/(1.0+x*mu*cinv)
 !-- velocity effects accounting
-              help = 1d0/(1.0-x*mu*cinv)
+!              help = 1d0/(1.0-x*mu*cinv)
+!              totevelo = totevelo+e*(1d0 - help)
+!
+!              e = e*help
+!              e0 = e0*help
+!              wl = wl*(1.0-x*mu*cinv)
+!           endif
+! New code
+           if(grd_isvelocity.or.grd_hydro_on) then
+              mu = (mu+vx*cinv)/(1.0+vx*mu*cinv)
+!-- velocity effects accounting
+              help = 1d0/(1.0-vx*mu*cinv)
               totevelo = totevelo+e*(1d0 - help)
 !
               e = e*help
               e0 = e0*help
-              wl = wl*(1.0-x*mu*cinv)
+              wl = wl*(1.0-vx*mu*cinv)
            endif
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         endif
 !
 !-- update particle
@@ -432,15 +444,29 @@ pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ier
 !-- position
         x=grd_xarr(grd_nx+1)
 !-- changing from comoving frame to observer frame
-        if(grd_isvelocity) then
-           help = 1d0+mu*x*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!        if(grd_isvelocity) then
+!           help = 1d0+mu*x*cinv
+!-- velocity effects accounting
+!           totevelo = totevelo+e*(1d0 - help)
+!           wl = wl/help
+!           e = e*help
+!           e0 = e0*help
+!           mu = (mu+x*cinv)/(1d0+x*mu*cinv)
+!        endif
+! New code
+        if(grd_isvelocity.or.grd_hydro_on) then
+           help = 1d0+mu*vx*cinv
 !-- velocity effects accounting
            totevelo = totevelo+e*(1d0 - help)
            wl = wl/help
            e = e*help
            e0 = e0*help
-           mu = (mu+x*cinv)/(1d0+x*mu*cinv)
+           mu = (mu+vx*cinv)/(1d0+vx*mu*cinv)
         endif
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !-- observer time correction
         ptcl%t=ptcl%t-mu*x*thelp*cinv
         return
@@ -496,16 +522,31 @@ pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ier
            mu = max(r1,r2)
 !
 !-- doppler and aberration corrections
-           if(grd_isvelocity) then
-              mu = (mu+x*cinv)/(1.0+x*mu*cinv)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!           if(grd_isvelocity) then
+!              mu = (mu+x*cinv)/(1.0+x*mu*cinv)
 !-- velocity effects accounting
-              help = 1d0/(1.0-x*mu*cinv)
+!              help = 1d0/(1.0-x*mu*cinv)
+!              totevelo = totevelo+e*(1d0 - help)
+!
+!              e = e*help
+!              e0 = e0*help
+!              wl = wl*(1.0-x*mu*cinv)
+!           endif
+! New code
+           if(grd_isvelocity.or.grd_hydro_on) then
+              mu = (mu+vx*cinv)/(1.0+vx*mu*cinv)
+!-- velocity effects accounting
+              help = 1d0/(1.0-vx*mu*cinv)
               totevelo = totevelo+e*(1d0 - help)
 !
               e = e*help
               e0 = e0*help
-              wl = wl*(1.0-x*mu*cinv)
+              wl = wl*(1.0-vx*mu*cinv)
            endif
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         endif
 !
 !-- update particle
@@ -572,16 +613,31 @@ pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ier
         x = min(x,grd_xarr(ix+1))
         x = max(x,grd_xarr(ix))
 !-- doppler and aberration corrections
-        if(grd_isvelocity) then
-           mu = (mu+x*cinv)/(1.0+x*mu*cinv)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!        if(grd_isvelocity) then
+!           mu = (mu+x*cinv)/(1.0+x*mu*cinv)
 !-- velocity effects accounting
-           help = 1d0/(1d0-x*mu*cinv)
+!           help = 1d0/(1d0-x*mu*cinv)
+!           totevelo = totevelo+e*(1d0 - help)
+!
+!           e = e*help
+!           e0 = e0*help
+!           wl = wl*(1.0-x*mu*cinv)
+!        endif
+! New code
+        if(grd_isvelocity.or.grd_hydro_on) then
+           mu = (mu+vx*cinv)/(1.0+vx*mu*cinv)
+!-- velocity effects accounting
+           help = 1d0/(1d0-vx*mu*cinv)
            totevelo = totevelo+e*(1d0 - help)
 !
            e = e*help
            e0 = e0*help
-           wl = wl*(1.0-x*mu*cinv)
+           wl = wl*(1.0-vx*mu*cinv)
         endif
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      endif
 !}}}
   endif

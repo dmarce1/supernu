@@ -154,12 +154,14 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
   endif
 !
 !-- Doppler shift distance
-  if(grd_isvelocity.and.ig<grp_ng) then
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !    LSU MODIFICATION
 ! Old code
+!  if((grd_isvelocity.or.grd_hydro_in).and.ig<grp_ng) then
+
 !     ddop = pc_c*(elabfact-wl*grp_wlinv(ig+1))
 ! New code
+  if(grd_isvelocity.and.ig<grp_ng) then
      eta = sqrt(1d0 - mu*mu) * cos(om)
      xi  = sqrt(1d0 - mu*mu) * sin(om)
      help =        mu * mu * grd_dvdx(ix,iy,iz,3,3)
@@ -169,7 +171,7 @@ pure subroutine transport3(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
      help = help + mu * xi *(grd_dvdx(ix,iy,iz,3,2)+grd_dvdx(ix,iy,iz,2,3))
      help = help + eta* xi *(grd_dvdx(ix,iy,iz,2,1)+grd_dvdx(ix,iy,iz,1,2))
      help = elabfact * help
-     ddop = pc_c*(elabfact-help*wl*grp_wlinv(ig+1))
+     ddop = pc_c*(elabfact-help*wl*grp_wlinv(ig+1))*thelpinv
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      if(ddop<0d0) then
         ddop = far

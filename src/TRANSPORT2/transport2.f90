@@ -237,12 +237,13 @@ pure subroutine transport2(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
   endif
 !
 !-- Doppler shift distance
-  if(grd_isvelocity.and.ig<grp_ng) then
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
 ! Old Code
+!  if(grd_isvelocity.and.ig<grp_ng) then
 !     ddop = pc_c*(elabfact-wl*grp_wlinv(ig+1))
 ! New code
+  if((grd_isvelocity.or.grd_hydro_on).and.ig<grp_ng) then
      eta = sqrt(1d0 - mu*mu) * cos(om)
      xi  = sqrt(1d0 - mu*mu) * sin(om)
      R   = (grd_xarr(ix+1) + grd_xarr(ix)) * 0.5d0
@@ -255,7 +256,7 @@ pure subroutine transport2(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
      help = help - mu * xi *grd_v(ix,iy,iz,3) / R
      help = help + xi * xi *grd_v(ix,iy,iz,1) / R
      help = elabfact * help
-     ddop = pc_c*(elabfact-help*wl*grp_wlinv(ig+1))
+     ddop = pc_c*(elabfact-help*wl*grp_wlinv(ig+1))*thelpinv
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
      if(ddop<0d0) then
