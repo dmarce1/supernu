@@ -23,28 +23,28 @@ c-- explicit interfaces
       interface
 c!{{{
 c-- advection
-      pure subroutine advection1(pretrans,ptcl,ptcl2)
+      subroutine advection1(pretrans,ptcl,ptcl2)
       use particlemod
       logical,intent(in) :: pretrans
       type(packet),target,intent(inout) :: ptcl
       type(packet2),target,intent(inout) :: ptcl2
       end subroutine advection1
 c
-      pure subroutine advection2(pretrans,ptcl,ptcl2)
+      subroutine advection2(pretrans,ptcl,ptcl2)
       use particlemod
       logical,intent(in) :: pretrans
       type(packet),target,intent(inout) :: ptcl
       type(packet2),target,intent(inout) :: ptcl2
       end subroutine advection2
 c
-      pure subroutine advection3(pretrans,ptcl,ptcl2)
+      subroutine advection3(pretrans,ptcl,ptcl2)
       use particlemod
       logical,intent(in) :: pretrans
       type(packet),target,intent(inout) :: ptcl
       type(packet2),target,intent(inout) :: ptcl2
       end subroutine advection3
 c
-      pure subroutine advection11(pretrans,ptcl,ptcl2)
+      subroutine advection11(pretrans,ptcl,ptcl2)
       use particlemod
       logical,intent(in) :: pretrans
       type(packet),target,intent(inout) :: ptcl
@@ -52,7 +52,7 @@ c
       end subroutine advection11
 c
 c-- transport_gamgrey
-      pure subroutine transport1_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
+      subroutine transport1_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
       use randommod
       use particlemod
       type(packet),target,intent(inout) :: ptcl
@@ -62,7 +62,7 @@ c-- transport_gamgrey
       integer,intent(out) :: ierr
       end subroutine transport1_gamgrey
 c
-      pure subroutine transport2_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
+      subroutine transport2_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
       use randommod
       use particlemod
       type(packet),target,intent(inout) :: ptcl
@@ -72,7 +72,7 @@ c
       integer,intent(out) :: ierr
       end subroutine transport2_gamgrey
 c
-      pure subroutine transport3_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
+      subroutine transport3_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
       use randommod
       use particlemod
       type(packet),target,intent(inout) :: ptcl
@@ -82,7 +82,7 @@ c
       integer,intent(out) :: ierr
       end subroutine transport3_gamgrey
 c
-      pure subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
+      subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
       use randommod
       use particlemod
       type(packet),target,intent(inout) :: ptcl
@@ -93,7 +93,7 @@ c
       end subroutine transport11_gamgrey
 c
 c-- transport
-      pure subroutine transport1(ptcl,ptcl2,rndstate,
+      subroutine transport1(ptcl,ptcl2,rndstate,
      &  edep,eraddens,eamp,totevelo,ierr)
       use randommod
       use particlemod
@@ -105,7 +105,7 @@ c-- transport
       integer,intent(out) :: ierr
       end subroutine transport1
 c
-      pure subroutine transport2(ptcl,ptcl2,rndstate,
+      subroutine transport2(ptcl,ptcl2,rndstate,
      &  edep,eraddens,eamp,totevelo,ierr)
       use randommod
       use particlemod
@@ -117,7 +117,7 @@ c
       integer,intent(out) :: ierr
       end subroutine transport2
 c
-      pure subroutine transport3(ptcl,ptcl2,rndstate,
+      subroutine transport3(ptcl,ptcl2,rndstate,
      &  edep,eraddens,eamp,totevelo,ierr)
       use randommod
       use particlemod
@@ -129,7 +129,7 @@ c
       integer,intent(out) :: ierr
       end subroutine transport3
 c
-      pure subroutine transport11(ptcl,ptcl2,rndstate,
+      subroutine transport11(ptcl,ptcl2,rndstate,
      &  edep,eraddens,eamp,totevelo,ierr)
       use randommod
       use particlemod
@@ -142,7 +142,7 @@ c
       end subroutine transport11
 c
 c-- diffusion
-      pure subroutine diffusion1(ptcl,ptcl2,cache,rndstate,
+      subroutine diffusion1(ptcl,ptcl2,cache,rndstate,
      &  edep,eraddens,totevelo,ierr)
       use randommod
       use groupmod
@@ -156,7 +156,7 @@ c-- diffusion
       integer,intent(out) :: ierr
       end subroutine diffusion1
 c
-      pure subroutine diffusion2(ptcl,ptcl2,cache,rndstate,
+      subroutine diffusion2(ptcl,ptcl2,cache,rndstate,
      &  edep,eraddens,totevelo,ierr)
       use randommod
       use groupmod
@@ -170,7 +170,7 @@ c
       integer,intent(out) :: ierr
       end subroutine diffusion2
 c
-      pure subroutine diffusion3(ptcl,ptcl2,cache,rndstate,
+      subroutine diffusion3(ptcl,ptcl2,cache,rndstate,
      &  edep,eraddens,totevelo,ierr)
       use randommod
       use groupmod
@@ -184,7 +184,7 @@ c
       integer,intent(out) :: ierr
       end subroutine diffusion3
 c
-      pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,
+      subroutine diffusion11(ptcl,ptcl2,cache,rndstate,
      &  edep,eraddens,totevelo,ierr)
       use randommod
       use groupmod
@@ -218,7 +218,7 @@ c     -------------------------------------------
       end subroutine direction2lab_
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
-      pure subroutine advection_(pretrans,ptcl,ptcl2)
+      subroutine advection_(pretrans,ptcl,ptcl2)
 c     -----------------------------------------------
       use particlemod
       logical,intent(in) :: pretrans
@@ -226,7 +226,7 @@ c     -----------------------------------------------
       type(packet2),target,intent(inout) :: ptcl2
       end subroutine advection_
 c
-      pure subroutine transport_gamgrey_(ptcl,ptcl2,rndstate,edep,ierr)
+      subroutine transport_gamgrey_(ptcl,ptcl2,rndstate,edep,ierr)
       use randommod
       use groupmod
       use particlemod
@@ -237,7 +237,7 @@ c
       integer,intent(out) :: ierr
       end subroutine transport_gamgrey_
 c
-      pure subroutine transport_(ptcl,ptcl2,rndstate,
+      subroutine transport_(ptcl,ptcl2,rndstate,
      &  edep,eraddens,eamp,totevelo,ierr)
       use randommod
       use groupmod
@@ -250,7 +250,7 @@ c
       integer,intent(out) :: ierr
       end subroutine transport_
 c
-      pure subroutine diffusion_(ptcl,ptcl2,cache,rndstate,
+      subroutine diffusion_(ptcl,ptcl2,cache,rndstate,
      &  edep,eraddens,totevelo,ierr)
       use randommod
       use groupmod
@@ -402,7 +402,7 @@ c      mu0 = mu
 c      om0 = om
 c      end subroutine direction2lab3
 
-      pure subroutine direction2lab11(vx0,mu0)
+      subroutine direction2lab11(vx0,mu0)
 c     -------------------------------------------
       implicit none
       real*8,intent(in) :: vx0
@@ -416,7 +416,7 @@ c
       mu0 = mu
       end subroutine direction2lab11
 c
-      pure subroutine direction2lab1(vx0,vy0,vz0,mu0,om0)
+      subroutine direction2lab1(vx0,vy0,vz0,mu0,om0)
 c     -------------------------------------------
       implicit none
       real*8,intent(in) :: vx0,vy0,vz0
@@ -437,7 +437,7 @@ c
       end subroutine direction2lab1
 c
 c
-      pure subroutine direction2lab2(vx0,vy0,vz0,mu0,om0)
+      subroutine direction2lab2(vx0,vy0,vz0,mu0,om0)
 c     -------------------------------------------
       implicit none
       real*8,intent(in) :: vx0,vy0,vz0
@@ -460,7 +460,7 @@ c
       end subroutine direction2lab2
 c
 c
-      pure subroutine direction2lab3(vx0,vy0,vz0,mu0,om0)
+      subroutine direction2lab3(vx0,vy0,vz0,mu0,om0)
 c     -------------------------------------------
       implicit none
       real*8,intent(in) :: vx0,vy0,vz0

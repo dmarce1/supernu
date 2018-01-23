@@ -494,6 +494,7 @@ c     Update geometrical quantities for moving grid
             t = t + dt
           endif
 
+
         enddo
 
 
@@ -515,6 +516,7 @@ c     Apply dual energy formalism to update tau
 
       enddo
 
+      call hydro_boundaries(U,nx,ny,nz,nf,bw)
 
       hydro_state = U
 

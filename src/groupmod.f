@@ -139,7 +139,7 @@ c!}}}
       end function specint0
 c
 c
-      pure subroutine specintv(tempinv,n,ss,offset,mode,mask,maskval)
+      subroutine specintv(tempinv,n,ss,offset,mode,mask,maskval)
 c     -----------------------------------------------!{{{
       use physconstmod
       implicit none

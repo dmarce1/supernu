@@ -53,7 +53,7 @@ c
 c
 c
 c
-      pure function planck(wl,temp) result(b)
+      function planck(wl,temp) result(b)
 c     ---------------------------------------
       implicit none
       real*8,intent(in) :: wl(:)
@@ -75,7 +75,7 @@ c-- optimized form
 c
 c
 c
-      pure function dplanckdtemp(wl,temp) result(b)
+      function dplanckdtemp(wl,temp) result(b)
 c     ---------------------------------------------
       implicit none
       real*8,intent(in) :: wl(:)

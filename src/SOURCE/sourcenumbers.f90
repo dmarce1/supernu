@@ -55,7 +55,6 @@ subroutine sourcenumbers(keephigh)
   nstot = min(nstot,nvacantall)
 
 !-- etot
-  write(*,*) grd_emit
   etot = sum(grd_emit**pwr) + sum(grd_emitex**pwr) + tot_esurf**pwr
   if(etot/=etot) stop 'sourcenumbers: etot nan'
 
