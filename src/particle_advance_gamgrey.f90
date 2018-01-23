@@ -36,9 +36,9 @@ subroutine particle_advance_gamgrey(nmpi)
   real*8,pointer :: x,y,z,mu,om,e,e0
   real*8 :: eta, xi
   real*8 :: t0,t1  !timing
-  real*8 :: labfact, cmffact, mu1, mu2, gm
+  real*8 :: labfact, cmffact, mu1, mu2!, gm
   real*8 :: etot,pwr
-  real*8 :: om0, mu0, x0, y0, z0
+  real*8 :: om0, mu0!, x0, y0, z0
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
   real*8,pointer :: vx, vy, vz
@@ -266,11 +266,15 @@ subroutine particle_advance_gamgrey(nmpi)
 
 ! New code
      if(grd_isvelocity.or.grd_hydro_on) then
-       call direction2lab(vx,vy,vz,mu,om)
-     else
-         mu = mu0
-         om = om0
+       if( grd_igeom .eq. 11 ) then
+         call direction2lab11(vx,mu0)
+         om0 = 0d0
+       else
+         call direction2lab(vx,vy,vz,mu0,om0)
+       endif
      endif
+     mu = mu0
+     om = om0
 
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
@@ -440,7 +444,7 @@ subroutine particle_advance_gamgrey(nmpi)
                 (cos(om)*x+sin(om)*y))/pc_c
         endselect
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
+! LSU MODIFICATION (pending)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         if(grd_isvelocity) labfact=labfact*tsp_t
         help=help-labfact

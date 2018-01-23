@@ -402,6 +402,20 @@ c      mu0 = mu
 c      om0 = om
 c      end subroutine direction2lab3
 
+      pure subroutine direction2lab11(vx0,mu0)
+c     -------------------------------------------
+      implicit none
+      real*8,intent(in) :: vx0
+      real*8,intent(inout) :: mu0
+      real*8 :: cmffact,mu
+c
+      cmffact = 1d0+(mu0*vx0)*cinv
+      mu = (mu0+vx0*cinv)/cmffact
+      mu = min(mu,1d0)
+      mu = max(mu,-1d0)
+      mu0 = mu
+      end subroutine direction2lab11
+c
       pure subroutine direction2lab1(vx0,vy0,vz0,mu0,om0)
 c     -------------------------------------------
       implicit none
@@ -411,7 +425,7 @@ c     -------------------------------------------
 c
 c
       sin0 = sqrt(1d0 - mu0*mu0)
-      cmffact = 1d0+(mu0*vx0+sin0*(cos(om0)*vx0+sin(om0)*vz0))*cinv
+      cmffact = 1d0+(mu0*vx0+sin0*(cos(om0)*vy0+sin(om0)*vz0))*cinv
       mu = (mu0+vx0*cinv)/cmffact
       mu = min(mu,1d0)
       mu = max(mu,-1d0)
