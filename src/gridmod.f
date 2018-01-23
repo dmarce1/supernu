@@ -96,7 +96,7 @@ c-- temperature structure history (allocated only if used)
       real*8,allocatable :: grd_temppreset(:,:) !(ncell,tim_nt)
 c
       interface
-      function emitgroup(r,ic) result(ig)
+      pure function emitgroup(r,ic) result(ig)
       integer :: ig
       real*8,intent(in) :: r
       integer,intent(in) :: ic
@@ -239,7 +239,7 @@ c
 
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c        HYDRO LSU
-      subroutine hydro_velocity_at( x, y, z, vx, vy, vz,xi,yi,zi,t)
+      pure subroutine hydro_velocity_at( x, y, z, vx, vy, vz,xi,yi,zi,t)
       implicit none
 
       real*8, intent(in) :: x, y, z, t
@@ -292,12 +292,12 @@ c        HYDRO LSU
         vx = 0.0d0
         vy = 0.0d0
         vz = 0.0d0
-      endif
+       endif
 
 
       end subroutine
 
-      subroutine hydro_velocity_at11( x, vx, xi, t )
+      pure subroutine hydro_velocity_at11( x, vx, xi, t )
       implicit none
 
       real*8, intent(in) :: x, t

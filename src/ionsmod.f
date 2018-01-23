@@ -252,7 +252,7 @@ c-- newton raphson, but not aways perfect, as it may repeatedly minimize one sid
         if((ihelp/=iprev) .and.
      &    help<1d5 .and. help>1d-5) then !bigger error is to too big
          ynew = 0d0 !perfect newton raphson
-        else !sides are not flipping, depart from newton-raphson
+        else !sides are not flipping, depart from pure newton-raphson
          ynew = .001d0*nec%err(ihelp) !minimize the bigger gap irrespective of the smaller
         endif
         iprev = ihelp !remember which side was reduced

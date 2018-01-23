@@ -30,7 +30,7 @@ c
       integer,intent(in),optional :: m
       end function specint
 c
-      function binsrch(x,arr,ng,widerange)
+      pure function binsrch(x,arr,ng,widerange)
       integer :: binsrch
       integer,intent(in) :: ng
       real*8,intent(in) :: x

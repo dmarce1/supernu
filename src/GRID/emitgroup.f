@@ -1,6 +1,6 @@
 *This file is part of SuperNu.  SuperNu is released under the terms of the GNU GPLv3, see COPYING.
 *Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
-      function emitgroup(r,ic) result(ig)
+      pure function emitgroup(r,ic) result(ig)
 c     --------------------------------------
       use miscmod
       use groupmod

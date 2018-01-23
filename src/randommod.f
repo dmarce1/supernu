@@ -48,7 +48,7 @@ c-- draw four random numbers per state
       end subroutine rnd_init
 c
 c
-      subroutine rnd_i(i,state)
+      pure subroutine rnd_i(i,state)
 c     -------------------------------!{{{
       implicit none
       integer*4,intent(out) :: i
@@ -70,7 +70,7 @@ c
       end subroutine rnd_i
 c
 c
-      subroutine rnd_r(x,state)
+      pure subroutine rnd_r(x,state)
 c     ----------------------------!{{{
       implicit none
       real*8,intent(out) :: x
@@ -92,7 +92,7 @@ c
       end subroutine rnd_r
 c
 c
-      subroutine rnd_advance(state,n)
+      pure subroutine rnd_advance(state,n)
 c     -------------------------------!{{{
       implicit none
       type(rnd_t),intent(inout) :: state

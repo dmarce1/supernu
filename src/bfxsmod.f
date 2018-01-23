@@ -62,7 +62,7 @@ c-- parse
 c
 c
 c
-      function bfxs(nz,ne,e) result(xs)
+      pure function bfxs(nz,ne,e) result(xs)
 c     ---------------------------
       implicit none
       integer,intent(in) :: nz,ne

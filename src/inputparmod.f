@@ -126,7 +126,7 @@ c
 c-- physical opacities
       real*8 :: in_opcapgam = .06d0   ![cm^2/g] extinction coefficient for gamma radiation
       logical :: in_noplanckweighting = .false. !disable planck weighting of rosseland opacities within group
-      real*8 :: in_opacmixrossel = 0d0 !mix rosseland with planck average, 1=rosseland
+      real*8 :: in_opacmixrossel = 0d0 !mix rosseland with planck average, 1=pure rosseland
 c-- physical opacities debuging
       logical :: in_nobbopac = .false.  !turn off bound-bound opacity
       logical :: in_nobfopac = .false.  !turn off bound-bound opacity
