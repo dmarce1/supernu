@@ -77,8 +77,8 @@ pure subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
      thelp = 1d0
   endif
   if(grd_isvelocity .or. grd_hydro_on) then
-     siglabfact = 1.0d0 - mu*x*cinv
-     dcollabfact = tsp_t*(1d0-mu*x*cinv)
+     siglabfact = 1.0d0 - mu*vx*cinv
+     dcollabfact = tsp_t*(1d0-mu*vx*cinv)
   else
      siglabfact = 1d0
      dcollabfact = 1d0
@@ -219,7 +219,7 @@ pure subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
 !       endif
 ! New code
         if(grd_isvelocity.or.grd_hydro_on) then
-           mu = (mu+x*cinv)/(1d0+x*mu*cinv)
+           mu = (mu+vx*cinv)/(1d0+vx*mu*cinv)
 !-- velocity effects accounting
            help = 1d0/(1d0-mu*vx*cinv)
 !

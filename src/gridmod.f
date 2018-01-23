@@ -142,8 +142,8 @@ c        HYDRO LSU
       allocate(grd_vx(grd_ncell))
       allocate(grd_vy(grd_ncell))
       allocate(grd_vz(grd_ncell))
-      allocate(grd_v(grd_nx,grd_nx,grd_nz,3))
-      allocate(grd_dvdx(grd_nx,grd_nx,grd_nz,3,3))
+      allocate(grd_v(grd_nx,grd_ny,grd_nz,3))
+      allocate(grd_dvdx(grd_nx,grd_ny,grd_nz,3,3))
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c-- polar
       if(grd_igeom==1) allocate(grd_yacos(grd_ny+1))
