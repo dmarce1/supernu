@@ -91,59 +91,173 @@ c
       real*8,intent(out) :: edep
       integer,intent(out) :: ierr
       end subroutine transport11_gamgrey
+
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     LSU MODIFICATION
+!     Old code
+
+c
+c-- transport
+c      pure subroutine transport1(ptcl,ptcl2,rndstate,
+c     &  edep,eraddens,eamp,totevelo,ierr)
+c      use randommod
+c      use particlemod
+c      type(packet),target,intent(inout) :: ptcl
+c      type(packet2),target,intent(inout) :: ptcl2
+c      type(rnd_t),intent(inout) :: rndstate
+c      real*8,intent(out) :: edep, eraddens, eamp
+c      real*8,intent(inout) :: totevelo
+c      integer,intent(out) :: ierr
+c      end subroutine transport1
+c
+c      pure subroutine transport2(ptcl,ptcl2,rndstate,
+c     &  edep,eraddens,eamp,totevelo,ierr)
+c      use randommod
+c      use particlemod
+c      type(packet),target,intent(inout) :: ptcl
+c      type(packet2),target,intent(inout) :: ptcl2
+c      type(rnd_t),intent(inout) :: rndstate
+c      real*8,intent(out) :: edep, eraddens, eamp
+c      real*8,intent(inout) :: totevelo
+c      integer,intent(out) :: ierr
+c      end subroutine transport2
+c
+c      pure subroutine transport3(ptcl,ptcl2,rndstate,
+c     &  edep,eraddens,eamp,totevelo,ierr)
+c      use randommod
+c      use particlemod
+c      type(packet),target,intent(inout) :: ptcl
+c      type(packet2),target,intent(inout) :: ptcl2
+c      type(rnd_t),intent(inout) :: rndstate
+c      real*8,intent(out) :: edep, eraddens, eamp
+c      real*8,intent(inout) :: totevelo
+c      integer,intent(out) :: ierr
+c      end subroutine transport3
+c
+c      pure subroutine transport11(ptcl,ptcl2,rndstate,
+c     &  edep,eraddens,eamp,totevelo,ierr)
+c      use randommod
+c      use particlemod
+c      type(packet),target,intent(inout) :: ptcl
+c      type(packet2),target,intent(inout) :: ptcl2
+c      type(rnd_t),intent(inout) :: rndstate
+c      real*8,intent(out) :: edep, eraddens, eamp
+c      real*8,intent(inout) :: totevelo
+c      integer,intent(out) :: ierr
+c     end subroutine transport11
+c
+c-- diffusion
+c      pure subroutine diffusion1(ptcl,ptcl2,cache,rndstate,
+c     &  edep,eraddens,totevelo,ierr)
+c      use randommod
+c      use groupmod
+c      use particlemod
+c      type(packet),target,intent(inout) :: ptcl
+c      type(packet2),target,intent(inout) :: ptcl2
+c      type(grp_t_cache),target,intent(inout) :: cache
+c      type(rnd_t),intent(inout) :: rndstate
+c      real*8,intent(out) :: edep, eraddens
+c      real*8,intent(inout) :: totevelo
+c      integer,intent(out) :: ierr
+c      end subroutine diffusion1
+c
+c      pure subroutine diffusion2(ptcl,ptcl2,cache,rndstate,
+c     &  edep,eraddens,totevelo,ierr)
+c      use randommod
+c      use groupmod
+c      use particlemod
+c      type(packet),target,intent(inout) :: ptcl
+c      type(packet2),target,intent(inout) :: ptcl2
+c      type(grp_t_cache),target,intent(inout) :: cache
+c      type(rnd_t),intent(inout) :: rndstate
+c      real*8,intent(out) :: edep, eraddens
+c      real*8,intent(inout) :: totevelo
+c      integer,intent(out) :: ierr
+c      end subroutine diffusion2
+c
+c      pure subroutine diffusion3(ptcl,ptcl2,cache,rndstate,
+c     &  edep,eraddens,totevelo,ierr)
+c      use randommod
+c      use groupmod
+c      use particlemod
+c      type(packet),target,intent(inout) :: ptcl
+c      type(packet2),target,intent(inout) :: ptcl2
+c      type(grp_t_cache),target,intent(inout) :: cache
+c      type(rnd_t),intent(inout) :: rndstate
+c      real*8,intent(out) :: edep, eraddens
+c      real*8,intent(inout) :: totevelo
+c      integer,intent(out) :: ierr
+c      end subroutine diffusion3
+c
+c      pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,
+c     &  edep,eraddens,totevelo,ierr)
+c      use randommod
+c      use groupmod
+c      use particlemod
+c      type(packet),target,intent(inout) :: ptcl
+c      type(packet2),target,intent(inout) :: ptcl2
+c      type(grp_t_cache),target,intent(inout) :: cache
+c      type(rnd_t),intent(inout) :: rndstate
+c      real*8,intent(out) :: edep, eraddens
+c      real*8,intent(inout) :: totevelo
+c      integer,intent(out) :: ierr
+c      end subroutine diffusion11
+!     New code
+
 c
 c-- transport
       pure subroutine transport1(ptcl,ptcl2,rndstate,
-     &  edep,eraddens,eamp,totevelo,ierr)
+     &  edep,momdep,eraddens,eamp,totevelo,ierr)
       use randommod
       use particlemod
       type(packet),target,intent(inout) :: ptcl
       type(packet2),target,intent(inout) :: ptcl2
       type(rnd_t),intent(inout) :: rndstate
-      real*8,intent(out) :: edep, eraddens, eamp
+      real*8,intent(out) :: edep,momdep(3), eraddens, eamp
       real*8,intent(inout) :: totevelo
       integer,intent(out) :: ierr
       end subroutine transport1
 c
       pure subroutine transport2(ptcl,ptcl2,rndstate,
-     &  edep,eraddens,eamp,totevelo,ierr)
+     &  edep,momdep,eraddens,eamp,totevelo,ierr)
       use randommod
       use particlemod
       type(packet),target,intent(inout) :: ptcl
       type(packet2),target,intent(inout) :: ptcl2
       type(rnd_t),intent(inout) :: rndstate
-      real*8,intent(out) :: edep, eraddens, eamp
+      real*8,intent(out) :: edep,momdep(3), eraddens, eamp
       real*8,intent(inout) :: totevelo
       integer,intent(out) :: ierr
       end subroutine transport2
 c
       pure subroutine transport3(ptcl,ptcl2,rndstate,
-     &  edep,eraddens,eamp,totevelo,ierr)
+     &  edep,momdep,eraddens,eamp,totevelo,ierr)
       use randommod
       use particlemod
       type(packet),target,intent(inout) :: ptcl
       type(packet2),target,intent(inout) :: ptcl2
       type(rnd_t),intent(inout) :: rndstate
-      real*8,intent(out) :: edep, eraddens, eamp
+      real*8,intent(out) :: edep,momdep(3), eraddens, eamp
       real*8,intent(inout) :: totevelo
       integer,intent(out) :: ierr
       end subroutine transport3
 c
       pure subroutine transport11(ptcl,ptcl2,rndstate,
-     &  edep,eraddens,eamp,totevelo,ierr)
+     &  edep,momdep,eraddens,eamp,totevelo,ierr)
       use randommod
       use particlemod
       type(packet),target,intent(inout) :: ptcl
       type(packet2),target,intent(inout) :: ptcl2
       type(rnd_t),intent(inout) :: rndstate
-      real*8,intent(out) :: edep, eraddens, eamp
+      real*8,intent(out) :: edep,momdep(3), eraddens, eamp
       real*8,intent(inout) :: totevelo
       integer,intent(out) :: ierr
       end subroutine transport11
 c
 c-- diffusion
       pure subroutine diffusion1(ptcl,ptcl2,cache,rndstate,
-     &  edep,eraddens,totevelo,ierr)
+     &  edep,momdep,eraddens,totevelo,ierr)
       use randommod
       use groupmod
       use particlemod
@@ -151,13 +265,13 @@ c-- diffusion
       type(packet2),target,intent(inout) :: ptcl2
       type(grp_t_cache),target,intent(inout) :: cache
       type(rnd_t),intent(inout) :: rndstate
-      real*8,intent(out) :: edep, eraddens
+      real*8,intent(out) :: edep,momdep(3), eraddens
       real*8,intent(inout) :: totevelo
       integer,intent(out) :: ierr
       end subroutine diffusion1
 c
       pure subroutine diffusion2(ptcl,ptcl2,cache,rndstate,
-     &  edep,eraddens,totevelo,ierr)
+     &  edep,momdep,eraddens,totevelo,ierr)
       use randommod
       use groupmod
       use particlemod
@@ -165,13 +279,13 @@ c
       type(packet2),target,intent(inout) :: ptcl2
       type(grp_t_cache),target,intent(inout) :: cache
       type(rnd_t),intent(inout) :: rndstate
-      real*8,intent(out) :: edep, eraddens
+      real*8,intent(out) :: edep,momdep(3), eraddens
       real*8,intent(inout) :: totevelo
       integer,intent(out) :: ierr
       end subroutine diffusion2
 c
       pure subroutine diffusion3(ptcl,ptcl2,cache,rndstate,
-     &  edep,eraddens,totevelo,ierr)
+     &  edep,momdep,eraddens,totevelo,ierr)
       use randommod
       use groupmod
       use particlemod
@@ -179,13 +293,13 @@ c
       type(packet2),target,intent(inout) :: ptcl2
       type(grp_t_cache),target,intent(inout) :: cache
       type(rnd_t),intent(inout) :: rndstate
-      real*8,intent(out) :: edep, eraddens
+      real*8,intent(out) :: edep,momdep(3), eraddens
       real*8,intent(inout) :: totevelo
       integer,intent(out) :: ierr
       end subroutine diffusion3
 c
       pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,
-     &  edep,eraddens,totevelo,ierr)
+     &  edep,momdep,eraddens,totevelo,ierr)
       use randommod
       use groupmod
       use particlemod
@@ -193,10 +307,12 @@ c
       type(packet2),target,intent(inout) :: ptcl2
       type(grp_t_cache),target,intent(inout) :: cache
       type(rnd_t),intent(inout) :: rndstate
-      real*8,intent(out) :: edep, eraddens
+      real*8,intent(out) :: edep,momdep(3), eraddens
       real*8,intent(inout) :: totevelo
       integer,intent(out) :: ierr
       end subroutine diffusion11
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !}}}
       end interface
 c
@@ -237,21 +353,52 @@ c
       integer,intent(out) :: ierr
       end subroutine transport_gamgrey_
 c
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     LSU MODIFICATION
+c     Old code
+c      pure subroutine transport_(ptcl,ptcl2,rndstate,
+c     &  edep,eraddens,eamp,totevelo,ierr)
+c      use randommod
+c      use groupmod
+c      use particlemod
+c      type(packet),target,intent(inout) :: ptcl
+c      type(packet2),target,intent(inout) :: ptcl2
+c      type(rnd_t),intent(inout) :: rndstate
+c      real*8,intent(out) :: edep, eraddens, eamp
+c      real*8,intent(inout) :: totevelo
+c      integer,intent(out) :: ierr
+c      end subroutine transport_
+c
+c      pure subroutine diffusion_(ptcl,ptcl2,cache,rndstate,
+c     &  edep,eraddens,totevelo,ierr)
+c      use randommod
+c      use groupmod
+c      use particlemod
+c      type(packet),target,intent(inout) :: ptcl
+c      type(packet2),target,intent(inout) :: ptcl2
+c      type(grp_t_cache),target,intent(inout) :: cache
+c      type(rnd_t),intent(inout) :: rndstate
+c      real*8,intent(out) :: edep, eraddens
+c      real*8,intent(inout) :: totevelo
+c      integer,intent(out) :: ierr
+c      end subroutine diffusion_
+!}}}
+c     New code
       pure subroutine transport_(ptcl,ptcl2,rndstate,
-     &  edep,eraddens,eamp,totevelo,ierr)
+     &  edep,momdep,eraddens,eamp,totevelo,ierr)
       use randommod
       use groupmod
       use particlemod
       type(packet),target,intent(inout) :: ptcl
       type(packet2),target,intent(inout) :: ptcl2
       type(rnd_t),intent(inout) :: rndstate
-      real*8,intent(out) :: edep, eraddens, eamp
+      real*8,intent(out) :: edep, eraddens, eamp, momdep(3)
       real*8,intent(inout) :: totevelo
       integer,intent(out) :: ierr
       end subroutine transport_
 c
       pure subroutine diffusion_(ptcl,ptcl2,cache,rndstate,
-     &  edep,eraddens,totevelo,ierr)
+     &  edep,momdep,eraddens,totevelo,ierr)
       use randommod
       use groupmod
       use particlemod
@@ -259,11 +406,12 @@ c
       type(packet2),target,intent(inout) :: ptcl2
       type(grp_t_cache),target,intent(inout) :: cache
       type(rnd_t),intent(inout) :: rndstate
-      real*8,intent(out) :: edep, eraddens
+      real*8,intent(out) :: edep, eraddens, momdep(3)
       real*8,intent(inout) :: totevelo
       integer,intent(out) :: ierr
       end subroutine diffusion_
 !}}}
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       end interface
 c
 c-- procedure pointers

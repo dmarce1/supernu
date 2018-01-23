@@ -1,6 +1,12 @@
 !This file is part of SuperNu.  SuperNu is released under the terms of the GNU GPLv3, see COPYING.
 !Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
-pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
+! New code
+pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,momdep,eraddens,totevelo,ierr)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
   use randommod
   use miscmod
@@ -36,6 +42,7 @@ pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ier
   real*8 :: ddmct, tau, tcensus, pa
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
+  real*8, intent(out) :: momdep(3)
   real*8 :: v0
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !-- lumped quantities -----------------------------------------
@@ -66,6 +73,7 @@ pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ier
 ! LSU MODIFICATION
   real*8,pointer :: vx
   vx => ptcl2%vx
+  momdep = 0d0
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
   ix => ptcl2%ix

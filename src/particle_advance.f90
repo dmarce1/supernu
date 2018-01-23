@@ -46,6 +46,7 @@ subroutine particle_advance
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !    LSU MODIFICATION
   real*8, pointer :: vx, vy, vz
+  real*8 :: momdep(3)
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   real*8 :: eta, xi
   real*8 :: t0,t1  !timing
@@ -302,7 +303,13 @@ subroutine particle_advance
         icold = ic
         if(ptcl2%itype==1 .or. in_puretran) then
            nstepimc = nstepimc + 1
-           call transport(ptcl,ptcl2,rndstate,edep,eraddens,eamp,tot_evelo,ierr)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MOD
+! Old code
+!           call transport(ptcl,ptcl2,rndstate,edep,eraddens,eamp,tot_evelo,ierr)
+! New code
+           call transport(ptcl,ptcl2,rndstate,edep,momdep,eraddens,eamp,tot_evelo,ierr)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            if(ptcl2%itype/=1) then
               nmethodswap = nmethodswap + 1
               if(in_io_dogrdtally) grd_methodswap(icold) = grd_methodswap(icold) + 1
@@ -311,7 +318,13 @@ subroutine particle_advance
            if(.not.trn_noampfact) grd_eamp(icold) = grd_eamp(icold) + eamp
         else
            nstepddmc = nstepddmc + 1
-           call diffusion(ptcl,ptcl2,cache,rndstate,edep,eraddens,tot_evelo,ierr)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MOD
+! Old code
+!           call diffusion(ptcl,ptcl2,cache,rndstate,edep,eraddens,tot_evelo,ierr)
+! New code
+           call diffusion(ptcl,ptcl2,cache,rndstate,edep,momdep,eraddens,tot_evelo,ierr)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
            if(ptcl2%itype==1) then
               nmethodswap = nmethodswap + 1
               if(in_io_dogrdtally) grd_methodswap(icold) = grd_methodswap(icold) + 1
