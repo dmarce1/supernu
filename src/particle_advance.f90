@@ -347,7 +347,7 @@ subroutine particle_advance
             call particle_momentum( ptcl, mome )
           else
             mome = 0d0
-            help = eraddens * this_dt
+            help = eraddens * this_dt / 3d0
             grd_momdep(ix+1,iy,iz,1) = grd_momdep(ix+1,iy,iz,1) + help / dx(ix)
             grd_momdep(ix,iy+1,iz,2) = grd_momdep(ix,iy+1,iz,2) + help / dy(iy)
             grd_momdep(ix,iy,iz+1,3) = grd_momdep(ix,iy,iz+1,3) + help / dz(iz)
