@@ -1,13 +1,7 @@
 !This file is part of SuperNu.  SuperNu is released under the terms of the GNU GPLv3, see COPYING.
 !Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
 !See LANL_COPYING and LANL_README for details of LANL copyright assertion.
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
-! Old code
-!pure subroutine transport2(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
-! New code
-pure subroutine transport2(ptcl,ptcl2,rndstate,edep,momdep,eraddens,eamp,totevelo,ierr)
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+pure subroutine transport2(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 
   use randommod
   use miscmod
@@ -41,7 +35,6 @@ pure subroutine transport2(ptcl,ptcl2,rndstate,edep,momdep,eraddens,eamp,totevel
   real*8,pointer :: mux,muy,muz
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !    LSU MODIFICATION
-  real*8, intent(out) :: momdep(3)
   real*8, pointer :: vx, vy, vz
   real*8 :: eta, R
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -82,7 +75,6 @@ pure subroutine transport2(ptcl,ptcl2,rndstate,edep,momdep,eraddens,eamp,totevel
   z => ptcl%z
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !    LSU MODIFICATION
-  momdep = 0d0
   vx => ptcl2%vx
   vy => ptcl2%vy
   vz => ptcl2%vz

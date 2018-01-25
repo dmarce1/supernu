@@ -46,7 +46,8 @@ subroutine particle_advance
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !    LSU MODIFICATION
   real*8, pointer :: vx, vy, vz
-  real*8 :: momdep(3)
+  real*8 :: momb(3), mome(3), this_dt
+  integer :: ixold, iyold, izold, itypeold
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   real*8 :: eta, xi
   real*8 :: t0,t1  !timing
@@ -149,6 +150,7 @@ subroutine particle_advance
   z => ptcl%z
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !    LSU MODIFICATION
+  grd_momdep = 0d0
   vx => ptcl2%vx
   vy => ptcl2%vy
   vz => ptcl2%vz
@@ -300,16 +302,25 @@ subroutine particle_advance
 
      do while (ptcl2%stat=='live')
         ptcl2%istep = ptcl2%istep + 1
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+        if( grd_hydro_on ) then
+          itypeold = ptcl2%itype
+          ixold = ix
+          iyold = iy
+          izold = iz
+          this_dt = ptcl%t
+          if( ptcl2%itype .eq. 1 ) then
+            call particle_momentum( ptcl, momb )
+          else
+            momb = 0d0
+          endif
+        endif
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         icold = ic
         if(ptcl2%itype==1 .or. in_puretran) then
            nstepimc = nstepimc + 1
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MOD
-! Old code
-!           call transport(ptcl,ptcl2,rndstate,edep,eraddens,eamp,tot_evelo,ierr)
-! New code
-           call transport(ptcl,ptcl2,rndstate,edep,momdep,eraddens,eamp,tot_evelo,ierr)
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+           call transport(ptcl,ptcl2,rndstate,edep,eraddens,eamp,tot_evelo,ierr)
            if(ptcl2%itype/=1) then
               nmethodswap = nmethodswap + 1
               if(in_io_dogrdtally) grd_methodswap(icold) = grd_methodswap(icold) + 1
@@ -318,13 +329,7 @@ subroutine particle_advance
            if(.not.trn_noampfact) grd_eamp(icold) = grd_eamp(icold) + eamp
         else
            nstepddmc = nstepddmc + 1
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MOD
-! Old code
-!           call diffusion(ptcl,ptcl2,cache,rndstate,edep,eraddens,tot_evelo,ierr)
-! New code
-           call diffusion(ptcl,ptcl2,cache,rndstate,edep,momdep,eraddens,tot_evelo,ierr)
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+           call diffusion(ptcl,ptcl2,cache,rndstate,edep,eraddens,tot_evelo,ierr)
            if(ptcl2%itype==1) then
               nmethodswap = nmethodswap + 1
               if(in_io_dogrdtally) grd_methodswap(icold) = grd_methodswap(icold) + 1
@@ -334,6 +339,25 @@ subroutine particle_advance
         ndist(i) = ndist(i) + 1
 !-- tally rest
         grd_tally(:,icold) = grd_tally(:,icold) + [edep,eraddens]
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+        if( grd_hydro_on ) then
+          this_dt = ptcl%t - this_dt
+          if( ptcl2%itype .eq. 1 ) then
+            call particle_momentum( ptcl, mome )
+          else
+            mome = 0d0
+            help = eraddens * this_dt
+            grd_momdep(ix+1,iy,iz,1) = grd_momdep(ix+1,iy,iz,1) + help / dx(ix)
+            grd_momdep(ix,iy+1,iz,2) = grd_momdep(ix,iy+1,iz,2) + help / dy(iy)
+            grd_momdep(ix,iy,iz+1,3) = grd_momdep(ix,iy,iz+1,3) + help / dz(iz)
+            grd_momdep(ix-1,iy,iz,1) = grd_momdep(ix-1,iy,iz,1) - help / dx(ix)
+            grd_momdep(ix,iy-1,iz,2) = grd_momdep(ix,iy-1,iz,2) - help / dy(iy)
+            grd_momdep(ix,iy,iz-1,3) = grd_momdep(ix,iy,iz-1,3) - help / dz(iz)
+          endif
+          grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) + momb - mome
+        endif
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
 !-- Russian roulette for termination of exhausted particles
         if(e<1d-6*e0 .and. ptcl2%stat=='live' .and. &

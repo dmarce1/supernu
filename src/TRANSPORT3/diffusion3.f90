@@ -1,12 +1,6 @@
 !This file is part of SuperNu.  SuperNu is released under the terms of the GNU GPLv3, see COPYING.
 !Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
-! Old code
-!pure subroutine diffusion3(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
-! New code
-pure subroutine diffusion3(ptcl,ptcl2,cache,rndstate,edep,momdep,eraddens,totevelo,ierr)
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+pure subroutine diffusion3(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
 
   use randommod
   use miscmod
@@ -65,9 +59,7 @@ pure subroutine diffusion3(ptcl,ptcl2,cache,rndstate,edep,momdep,eraddens,toteve
   dz(l) = grd_zarr(l+1) - grd_zarr(l)
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
-  real*8, intent(out) :: momdep(3)
   real*8,pointer :: vx, vy, vz
-  momdep = 0d0
   vx => ptcl2%vx
   vy => ptcl2%vy
   vz => ptcl2%vz

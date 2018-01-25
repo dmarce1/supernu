@@ -66,7 +66,10 @@ c-- Fleck factor
       real*8,allocatable :: grd_fcoef(:)  !(ncell)
 
 
-
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     LSU MODIFICATION
+      real*8,allocatable :: grd_momdep(:,:,:,:)
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       real*8,allocatable :: grd_tally(:,:)   !(2,ncell) (edep,eraddens)
 c-- amplification factor excess
       real*8,allocatable :: grd_eamp(:)   !(ncell)
@@ -139,6 +142,7 @@ c
       allocate(grd_zarr(grd_nz+1))
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c        HYDRO LSU
+      allocate(grd_momdep(grd_nx,grd_ny,grd_nz,3))
       allocate(grd_vx(grd_ncell))
       allocate(grd_vy(grd_ncell))
       allocate(grd_vz(grd_ncell))
@@ -233,6 +237,7 @@ c        HYDRO LSU
       deallocate(grd_vz)
       deallocate(grd_v)
       deallocate(grd_dvdx)
+      deallocate(grd_momdep)
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       end subroutine grid_dealloc
 c

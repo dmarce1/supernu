@@ -1,12 +1,6 @@
 !This file is part of SuperNu.  SuperNu is released under the terms of the GNU GPLv3, see COPYING.
 !Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
-! Old code
-!pure subroutine transport1(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
-! New code
-pure subroutine transport1(ptcl,ptcl2,rndstate,edep,momdep,eraddens,eamp,totevelo,ierr)
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+pure subroutine transport1(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
@@ -44,7 +38,6 @@ pure subroutine transport1(ptcl,ptcl2,rndstate,edep,momdep,eraddens,eamp,totevel
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !    LSU MODIFICATION
   real*8, pointer :: vx, vy, vz
-  real*8, intent(out) :: momdep(3)
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   real*8,pointer :: mux,muy,muz
   real*8 :: thelp, thelpinv, help
@@ -81,7 +74,6 @@ pure subroutine transport1(ptcl,ptcl2,rndstate,edep,momdep,eraddens,eamp,totevel
   z => ptcl%z
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !    LSU MODIFICATION
-  momdep = 0d0
   vx => ptcl2%vx
   vy => ptcl2%vy
   vz => ptcl2%vz
