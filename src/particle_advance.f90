@@ -46,7 +46,7 @@ subroutine particle_advance
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !    LSU MODIFICATION
   real*8, pointer :: vx, vy, vz
-  real*8 :: momb(3), mome(3), this_dt
+  real*8 :: momb(3), mome(3), this_dt, help2
   integer :: ixold, iyold, izold, itypeold, icxp, icxm, icyp, icym, iczp, iczm
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   real*8 :: eta, xi
@@ -249,9 +249,9 @@ subroutine particle_advance
         if( grd_igeom .eq. 11 ) then
           labfact = 1d0 - mu*vx/pc_c
         else
-           help = sqrt(1d0-mu**2)
-           mu1 = help*cos(om)
-           mu2 = help*sin(om)
+           help2 = sqrt(1d0-mu**2)
+           mu1 = help2*cos(om)
+           mu2 = help2*sin(om)
           select case(grd_igeom)
           case(1)
              labfact = 1d0-(mu*vx + mu1*vy + mu2*vz)/pc_c
@@ -347,55 +347,55 @@ subroutine particle_advance
           if( itypeold .eq. 2 ) then
             this_dt = ptcl%t - this_dt
 
-            help = eraddens * this_dt / 2d0 * dx(ixold)
+            help2 = eraddens * this_dt / 2d0 * dx(ixold)
             if( ixold .gt. 1 ) then
               icxm = grd_icell(ixold-1,iyold,izold)
               grd_momdep(ixold-1,iyold,izold,1)=grd_momdep(ixold-1,iyold,izold,1) - &
-                                     help * (grd_sig(icxm)+grd_cap(ig,icxm)) * grd_opaclump(1,icold)
+                                     help2 * (grd_sig(icxm)+grd_cap(ig,icxm)) * grd_opaclump(1,icold)
             endif
             if( ixold .lt. grd_nx ) then
               icxp = grd_icell(ixold+1,iyold,izold)
               grd_momdep(ixold+1,iyold,izold,1)=grd_momdep(ixold+1,iyold,izold,1) + &
-                                     help * (grd_sig(icxp)+grd_cap(ig,icxp)) * grd_opaclump(2,icold)
+                                     help2 * (grd_sig(icxp)+grd_cap(ig,icxp)) * grd_opaclump(2,icold)
             endif
             grd_momdep(ixold,iyold,izold,1)=grd_momdep(ixold,iyold,izold,1) - &
-                                     help * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(1,icold)
+                                     help2 * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(1,icold)
             grd_momdep(ixold,iyold,izold,1)=grd_momdep(ixold,iyold,izold,1) + &
-                                     help * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(2,icold)
+                                     help2 * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(2,icold)
 
             if( grd_igeom .ne. 11 ) then
 
-              help = eraddens * this_dt / 2d0 * dy(iyold)
+              help2 = eraddens * this_dt / 2d0 * dy(iyold)
               if( iyold .gt. 1 ) then
                 icym = grd_icell(ixold,iyold-1,izold)
                 grd_momdep(ixold,iyold-1,izold,2)=grd_momdep(ixold,iyold-1,izold,2) - &
-                                       help * (grd_sig(icym)+grd_cap(ig,icym)) * grd_opaclump(3,icold)
+                                       help2 * (grd_sig(icym)+grd_cap(ig,icym)) * grd_opaclump(3,icold)
               endif
               if( iyold .lt. grd_ny ) then
                 icyp = grd_icell(ixold,iyold+1,izold)
                 grd_momdep(ixold,iyold+1,izold,2)=grd_momdep(ixold,iyold+1,izold,2) + &
-                                       help * (grd_sig(icyp)+grd_cap(ig,icyp)) * grd_opaclump(4,icold)
+                                       help2 * (grd_sig(icyp)+grd_cap(ig,icyp)) * grd_opaclump(4,icold)
               endif
               grd_momdep(ixold,iyold,izold,2)=grd_momdep(ixold,iyold,izold,2) - &
-                                       help * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(3,icold)
+                                       help2 * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(3,icold)
               grd_momdep(ixold,iyold,izold,2)=grd_momdep(ixold,iyold,izold,2) + &
-                                      help * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(4,icold)
+                                      help2 * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(4,icold)
 
-              help = eraddens * this_dt / 2d0 * dz(izold)
+              help2 = eraddens * this_dt / 2d0 * dz(izold)
               if( izold .gt. 1 ) then
                 iczm = grd_icell(ixold,iyold,izold-1)
                 grd_momdep(ixold,iyold,izold-1,3)=grd_momdep(ixold,iyold,izold-1,3) - &
-                                       help * (grd_sig(iczm)+grd_cap(ig,iczm)) * grd_opaclump(5,icold)
+                                       help2 * (grd_sig(iczm)+grd_cap(ig,iczm)) * grd_opaclump(5,icold)
               endif
               if( izold .lt. grd_nz ) then
                 iczp = grd_icell(ixold,iyold,izold+1)
                 grd_momdep(ixold,iyold,izold+1,3)=grd_momdep(ixold,iyold,izold+1,3) + &
-                                       help * (grd_sig(iczp)+grd_cap(ig,iczp)) * grd_opaclump(6,icold)
+                                       help2 * (grd_sig(iczp)+grd_cap(ig,iczp)) * grd_opaclump(6,icold)
               endif
               grd_momdep(ixold,iyold,izold,3)=grd_momdep(ixold,iyold,izold,  3) - &
-                                       help * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(5,icold)
+                                       help2 * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(5,icold)
               grd_momdep(ixold,iyold,izold,3)=grd_momdep(ixold,iyold,izold,  3) + &
-                                       help * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(6,icold)
+                                       help2 * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(6,icold)
             endif
           endif
           if( ptcl2%itype .eq. 1 ) then
@@ -433,9 +433,9 @@ subroutine particle_advance
              if( grd_igeom .eq. 11 ) then
                labfact = 1d0 - mu*vx/pc_c
              else
-               help = sqrt(1d0-mu**2)
-               mu1 = help*cos(om)
-               mu2 = help*sin(om)
+               help2 = sqrt(1d0-mu**2)
+               mu1 = help2*cos(om)
+               mu2 = help2*sin(om)
                select case(grd_igeom)
                  case(1)
                    labfact = 1d0-(mu*vx + mu1*vy + mu2*vz)/pc_c
