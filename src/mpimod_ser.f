@@ -107,12 +107,14 @@ c      HYDRO LSU
          endif
          f = frac_i
          do f0 = -2*gas_nchain, -1
-           hydro_state(i,j,k,f) = gas_natom1fr(f0,l) * gas_rho(l)
+           hydro_state(i,j,k,f) = gas_natom1fr(f0,l) * gas_natom(l) /
+     &                                                 gas_vol(l)
            f = f + 1
          enddo
 c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
          do f0 = 1, gas_nelem
-           hydro_state(i,j,k,f) = gas_natom1fr(f0,l) * gas_rho(l)
+           hydro_state(i,j,k,f) = gas_natom1fr(f0,l) * gas_natom(l)
+     &                                               / gas_vol(l)
            f = f + 1
          enddo
       enddo
@@ -158,19 +160,18 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
 
          f = frac_i
          do f0 = -2*gas_nchain, -1
-           gas_natom1fr(f0,l) = hydro_state(i,j,k,f) / gas_rho(l)
+           gas_natom1fr(f0,l) = hydro_state(i,j,k,f) * gas_vol(l)
            f = f + 1
          enddo
          do f0 = 1, gas_nelem
-           gas_natom1fr(f0,l) = hydro_state(i,j,k,f) / gas_rho(l)
+           gas_natom1fr(f0,l) = hydro_state(i,j,k,f) * gas_vol(l)
            f = f + 1
          enddo
          gas_natom(l) = 0.0d0
          gas_nelec(l) = 0.0d0
          nnuc = 0.0d0
          do f = 1, gas_nelem
-           natom = gas_rho(l) * gas_vol(l) * gas_natom1fr(f,l)
-     &                                       / (elem_data(f)%m*pc_amu)
+           natom = gas_natom1fr(f,l)
            nelec = natom * f
            nnuc = nnuc + natom * elem_data(f)%m
            gas_natom(l) = gas_natom(l) + natom
@@ -185,6 +186,49 @@ c         write(*,*) l, gas_temp(l), eint, gas_bcoef(l)
       enddo
       enddo
       enddo
+
+      do i = 1, gas_ncell
+        gas_natom1fr(28,i) = gas_natom1fr(28,i) -
+     &   gas_natom1fr(gas_ini56,i)
+        gas_natom1fr(27,i) = gas_natom1fr(27,i) -
+     &   gas_natom1fr(gas_ico56,i)
+        gas_natom1fr(26,i) = gas_natom1fr(26,i) -
+     &   gas_natom1fr(gas_ife52,i)
+        gas_natom1fr(25,i) = gas_natom1fr(25,i) -
+     &   gas_natom1fr(gas_imn52,i)
+        gas_natom1fr(24,i) = gas_natom1fr(24,i) -
+     &   gas_natom1fr(gas_icr48,i)
+        gas_natom1fr(23,i) = gas_natom1fr(23,i) -
+     &   gas_natom1fr(gas_iv48,i)
+        gas_natom0fr(-2,i,1) = gas_natom1fr(gas_ini56,i)!unstable
+        gas_natom0fr(-1,i,1) = gas_natom1fr(gas_ico56,i)!unstable
+        gas_natom0fr(0:2,i,1) = gas_natom1fr(26:28,i)!stable
+        gas_natom0fr(-2,i,2) = gas_natom1fr(gas_ife52,i)!unstable
+        gas_natom0fr(-1,i,2) = gas_natom1fr(gas_imn52,i)!unstable
+        gas_natom0fr(0:2,i,2) = gas_natom1fr(24:26,i)!stable
+        gas_natom0fr(-2,i,3) = gas_natom1fr(gas_icr48,i)!unstable
+        gas_natom0fr(-1,i,3) = gas_natom1fr(gas_iv48,i)!unstable
+        gas_natom0fr(0:2,i,3) = gas_natom1fr(22:24,i)!stable
+        gas_natom1fr(28,i) = gas_natom1fr(28,i) +
+     &   gas_natom1fr(gas_ini56,i)
+        gas_natom1fr(27,i) = gas_natom1fr(27,i) +
+     &   gas_natom1fr(gas_ico56,i)
+        gas_natom1fr(26,i) = gas_natom1fr(26,i) +
+     &   gas_natom1fr(gas_ife52,i)
+        gas_natom1fr(25,i) = gas_natom1fr(25,i) +
+     &   gas_natom1fr(gas_imn52,i)
+        gas_natom1fr(24,i) = gas_natom1fr(24,i) +
+     &   gas_natom1fr(gas_icr48,i)
+        gas_natom1fr(23,i) = gas_natom1fr(23,i) +
+     &   gas_natom1fr(gas_iv48,i)
+c
+c-- total natom
+c       gas_natom(i) = sum(gas_natom1fr(1:,i))
+c-- convert natoms to natom fractions
+        gas_natom1fr(:,i) = gas_natom1fr(:,i)/gas_natom(i)
+        gas_natom0fr(:,i,:) = gas_natom0fr(:,i,:)/gas_natom(i)
+      enddo
+
 
 c      call abort()
 
