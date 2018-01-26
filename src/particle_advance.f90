@@ -339,6 +339,8 @@ subroutine particle_advance
         ndist(i) = ndist(i) + 1
 !-- tally rest
         grd_tally(:,icold) = grd_tally(:,icold) + [edep,eraddens]
+
+
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
         if( grd_hydro_on ) then
@@ -352,34 +354,49 @@ subroutine particle_advance
             iczm = grd_icell(ixold,iyold,izold-1)
 
             help = eraddens * this_dt / 2d0 * dx(ixold)
-            grd_momdep(ixold-1,iyold,izold,1)=grd_momdep(ixold-1,iyold,izold,1) - &
+            if( ixold .gt. 1 ) then
+              grd_momdep(ixold-1,iyold,izold,1)=grd_momdep(ixold-1,iyold,izold,1) - &
                                      help * (grd_sig(icxm)+grd_cap(ig,icxm)) * grd_opaclump(1,icold)
-            grd_momdep(ixold  ,iyold,izold,1)=grd_momdep(ixold  ,iyold,izold,1) - &
-                                     help * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(1,icold)
-            grd_momdep(ixold+1,iyold,izold,1)=grd_momdep(ixold+1,iyold,izold,1) + &
+            endif
+            if( ixold .lt. grd_nx ) then
+              grd_momdep(ixold+1,iyold,izold,1)=grd_momdep(ixold+1,iyold,izold,1) + &
                                      help * (grd_sig(icxp)+grd_cap(ig,icxp)) * grd_opaclump(2,icold)
-            grd_momdep(ixold  ,iyold,izold,1)=grd_momdep(ixold  ,iyold,izold,1) + &
+            endif
+            grd_momdep(ixold,iyold,izold,1)=grd_momdep(ixold,iyold,izold,1) - &
+                                     help * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(1,icold)
+            grd_momdep(ixold,iyold,izold,1)=grd_momdep(ixold,iyold,izold,1) + &
                                      help * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(2,icold)
 
-            help = eraddens * this_dt / 2d0 * dy(iyold)
-            grd_momdep(ixold,iyold-1,izold,2)=grd_momdep(ixold,iyold-1,izold,2) - &
-                                     help * (grd_sig(icym)+grd_cap(ig,icym)) * grd_opaclump(3,icold)
-            grd_momdep(ixold,iyold  ,izold,2)=grd_momdep(ixold,iyold  ,izold,2) - &
-                                     help * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(3,icold)
-            grd_momdep(ixold,iyold+1,izold,2)=grd_momdep(ixold,iyold+1,izold,2) + &
-                                     help * (grd_sig(icyp)+grd_cap(ig,icyp)) * grd_opaclump(4,icold)
-            grd_momdep(ixold,iyold  ,izold,2)=grd_momdep(ixold,iyold  ,izold,2) + &
-                                     help * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(4,icold)
+            if( grd_igeom .ne. 11 ) then
 
-            help = eraddens * this_dt / 2d0 * dz(izold)
-            grd_momdep(ixold,iyold,izold-1,3)=grd_momdep(ixold,iyold,izold-1,3) - &
-                                     help * (grd_sig(iczm)+grd_cap(ig,iczm)) * grd_opaclump(5,icold)
-            grd_momdep(ixold,iyold,izold  ,3)=grd_momdep(ixold,iyold,izold,  3) - &
-                                     help * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(5,icold)
-            grd_momdep(ixold,iyold,izold+1,3)=grd_momdep(ixold,iyold,izold+1,3) + &
-                                     help * (grd_sig(iczp)+grd_cap(ig,iczp)) * grd_opaclump(6,icold)
-            grd_momdep(ixold,iyold,izold  ,3)=grd_momdep(ixold,iyold,izold,  3) + &
-                                     help * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(6,icold)
+              help = eraddens * this_dt / 2d0 * dy(iyold)
+              if( iyold .gt. 1 ) then
+                grd_momdep(ixold,iyold-1,izold,2)=grd_momdep(ixold,iyold-1,izold,2) - &
+                                       help * (grd_sig(icym)+grd_cap(ig,icym)) * grd_opaclump(3,icold)
+              endif
+              if( iyold .lt. grd_ny ) then
+                grd_momdep(ixold,iyold+1,izold,2)=grd_momdep(ixold,iyold+1,izold,2) + &
+                                       help * (grd_sig(icyp)+grd_cap(ig,icyp)) * grd_opaclump(4,icold)
+              endif
+              grd_momdep(ixold,iyold,izold,2)=grd_momdep(ixold,iyold,izold,2) - &
+                                       help * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(3,icold)
+              grd_momdep(ixold,iyold,izold,2)=grd_momdep(ixold,iyold,izold,2) + &
+                                      help * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(4,icold)
+
+              help = eraddens * this_dt / 2d0 * dz(izold)
+              if( izold .gt. 1 ) then
+                grd_momdep(ixold,iyold,izold-1,3)=grd_momdep(ixold,iyold,izold-1,3) - &
+                                       help * (grd_sig(iczm)+grd_cap(ig,iczm)) * grd_opaclump(5,icold)
+              endif
+              if( izold .lt. grd_nz ) then
+                grd_momdep(ixold,iyold,izold+1,3)=grd_momdep(ixold,iyold,izold+1,3) + &
+                                       help * (grd_sig(iczp)+grd_cap(ig,iczp)) * grd_opaclump(6,icold)
+              endif
+              grd_momdep(ixold,iyold,izold,3)=grd_momdep(ixold,iyold,izold,  3) - &
+                                       help * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(5,icold)
+              grd_momdep(ixold,iyold,izold,3)=grd_momdep(ixold,iyold,izold,  3) + &
+                                       help * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(6,icold)
+            endif
           endif
           if( ptcl2%itype .eq. 1 ) then
             call particle_momentum( ptcl, mome )
@@ -389,6 +406,8 @@ subroutine particle_advance
           grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) + momb - mome
         endif
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+
 !
 !-- Russian roulette for termination of exhausted particles
         if(e<1d-6*e0 .and. ptcl2%stat=='live' .and. &
