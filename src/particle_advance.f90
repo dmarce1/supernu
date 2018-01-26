@@ -346,19 +346,15 @@ subroutine particle_advance
         if( grd_hydro_on ) then
           if( itypeold .eq. 2 ) then
             this_dt = ptcl%t - this_dt
-            icxp = grd_icell(ixold+1,iyold,izold)
-            icxm = grd_icell(ixold-1,iyold,izold)
-            icyp = grd_icell(ixold,iyold+1,izold)
-            icym = grd_icell(ixold,iyold-1,izold)
-            iczp = grd_icell(ixold,iyold,izold+1)
-            iczm = grd_icell(ixold,iyold,izold-1)
 
             help = eraddens * this_dt / 2d0 * dx(ixold)
             if( ixold .gt. 1 ) then
+              icxm = grd_icell(ixold-1,iyold,izold)
               grd_momdep(ixold-1,iyold,izold,1)=grd_momdep(ixold-1,iyold,izold,1) - &
                                      help * (grd_sig(icxm)+grd_cap(ig,icxm)) * grd_opaclump(1,icold)
             endif
             if( ixold .lt. grd_nx ) then
+              icxp = grd_icell(ixold+1,iyold,izold)
               grd_momdep(ixold+1,iyold,izold,1)=grd_momdep(ixold+1,iyold,izold,1) + &
                                      help * (grd_sig(icxp)+grd_cap(ig,icxp)) * grd_opaclump(2,icold)
             endif
@@ -371,10 +367,12 @@ subroutine particle_advance
 
               help = eraddens * this_dt / 2d0 * dy(iyold)
               if( iyold .gt. 1 ) then
+                icym = grd_icell(ixold,iyold-1,izold)
                 grd_momdep(ixold,iyold-1,izold,2)=grd_momdep(ixold,iyold-1,izold,2) - &
                                        help * (grd_sig(icym)+grd_cap(ig,icym)) * grd_opaclump(3,icold)
               endif
               if( iyold .lt. grd_ny ) then
+                icyp = grd_icell(ixold,iyold+1,izold)
                 grd_momdep(ixold,iyold+1,izold,2)=grd_momdep(ixold,iyold+1,izold,2) + &
                                        help * (grd_sig(icyp)+grd_cap(ig,icyp)) * grd_opaclump(4,icold)
               endif
@@ -385,10 +383,12 @@ subroutine particle_advance
 
               help = eraddens * this_dt / 2d0 * dz(izold)
               if( izold .gt. 1 ) then
+                iczm = grd_icell(ixold,iyold,izold-1)
                 grd_momdep(ixold,iyold,izold-1,3)=grd_momdep(ixold,iyold,izold-1,3) - &
                                        help * (grd_sig(iczm)+grd_cap(ig,iczm)) * grd_opaclump(5,icold)
               endif
               if( izold .lt. grd_nz ) then
+                iczp = grd_icell(ixold,iyold,izold+1)
                 grd_momdep(ixold,iyold,izold+1,3)=grd_momdep(ixold,iyold,izold+1,3) + &
                                        help * (grd_sig(iczp)+grd_cap(ig,iczp)) * grd_opaclump(6,icold)
               endif
