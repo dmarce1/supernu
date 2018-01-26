@@ -492,7 +492,7 @@ subroutine particle_advance
            write(0,*) 'x,y,z:',ptcl%x,ptcl%y,ptcl%z
            write(0,*) 'mu,om:',ptcl%mu,ptcl%om
            write(0,*) 'mux,muy,muz:',ptcl2%mux,ptcl2%muy,ptcl2%muz
-           write(0,*)
+           write(0,*) grd_dvdx(ix,iy,iz,1,1)
            if(ierr>0) then
               if(trn_errorfatal) stop 'particle_advance: fatal transport error'
               ptcl2%stat = 'dead'
