@@ -127,7 +127,7 @@ subroutine particle_advance_gamgrey(nmpi)
 
 !$omp parallel &
 !$omp shared(nvol) &
-!$omp private(ptcl,ptcl2,x0,y0,z0,mu0,om0,cmffact,gm,mu1,mu2,eta,xi,labfact,iom,imu, &
+!$omp private(ptcl,ptcl2,mu0,om0,cmffact,mu1,mu2,eta,xi,labfact,iom,imu, &
 !$omp    rndstate,edep,ierr, iomp, &
 !$omp    x,y,z,mu,om,e,e0,ix,iy,iz,ic,icold,r1, &
 !$omp    i,j,k) &
