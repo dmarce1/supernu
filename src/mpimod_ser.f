@@ -107,17 +107,17 @@ c      HYDRO LSU
      &     (grd_vx(l)**2 + grd_vy(l)**2 + grd_vz(l)**2) * gas_rho(l)
          endif
          f = frac_i
+         do f0 = 1, gas_nelem
+           hydro_state(i,j,k,f) = gas_natom1fr(f0,l) * gas_natom(l)
+     &                                               / gas_vol(l)
+           f = f + 1
+         enddo
          do f0 = -2*gas_nchain, -1
            hydro_state(i,j,k,f) = gas_natom1fr(f0,l) * gas_natom(l) /
      &                                                 gas_vol(l)
            f = f + 1
          enddo
 c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
-         do f0 = 1, gas_nelem
-           hydro_state(i,j,k,f) = gas_natom1fr(f0,l) * gas_natom(l)
-     &                                               / gas_vol(l)
-           f = f + 1
-         enddo
          hydro_state(i,j,k,nelec_i) = gas_nelec(l) * gas_natom(l)
      &                                             / gas_vol(l)
       enddo
@@ -162,11 +162,11 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
 
 
          f = frac_i
-         do f0 = -2*gas_nchain, -1
+         do f0 = 1, gas_nelem
            gas_natom1fr(f0,l) = hydro_state(i,j,k,f) * gas_vol(l)
            f = f + 1
          enddo
-         do f0 = 1, gas_nelem
+         do f0 = -2*gas_nchain, -1
            gas_natom1fr(f0,l) = hydro_state(i,j,k,f) * gas_vol(l)
            f = f + 1
          enddo

@@ -131,6 +131,9 @@ c===============================================
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c     HYDRO LSU
       if( grd_hydro_on .and. it_gt_0 ) then
+        if( lfirst ) then
+          call eos_update(.false.)
+        endif
         call hydro_update(tsp_t, tsp_t + tsp_dt)
         gas_mass = gas_rho * gas_vol
       endif
