@@ -182,6 +182,7 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
          gas_bcoef(l) = 1.5d0*pc_kb*(1d0+gas_nelec(l))
      &              * gas_natom(l) / gas_vol(l)
          gas_temp(l) =    eint / gas_bcoef(l)
+         gas_temp(l) = max(gas_temp(l),3d3)
 c         write(*,*) l, gas_temp(l), eint, gas_bcoef(l)
       enddo
       enddo
