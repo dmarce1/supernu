@@ -94,7 +94,7 @@ c..get the solution for all spatial points at once
             x = x * tsp_t
           endif
           write(1,'(E14.6)', advance="no") x
-          do j = 1, 6
+          do j = 1, hydro_nf
             write(1,'(E14.6)', advance="no")
      &                   hydro_state(i,hydro_bw+1,hydro_bw+1,j)
           enddo

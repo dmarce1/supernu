@@ -98,6 +98,7 @@ c      HYDRO LSU
          eint =  1.5d0*pc_kb*(1.0d0+gas_nelec(l))
      &              * gas_natom(l) / gas_vol(l) * gas_temp(l)
          hydro_state(i,j,k,tau_i) = eint**(1.0d0 / hydro_gamma)
+         hydro_state(i,j,k,natom_i) = gas_natom(l) / gas_vol(l)
          if( grd_igeom .eq. 11 ) then
            hydro_state(i,j,k,egas_i) = eint +
      &                               0.5d0*grd_vx(l)**2 * gas_rho(l)
@@ -117,6 +118,8 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
      &                                               / gas_vol(l)
            f = f + 1
          enddo
+         hydro_state(i,j,k,nelec_i) = gas_nelec(l) * gas_natom(l)
+     &                                             / gas_vol(l)
       enddo
       enddo
       enddo
@@ -134,7 +137,7 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
 
       integer :: i, j, k, l, f
       integer :: i0, j0, k0, f0
-      real*8 :: natom, nelec
+      real*8 :: natom
       real*8 :: eint, nnuc
       do i = hydro_bw+1, hydro_nx - hydro_bw
       do j = hydro_bw+1, hydro_ny - hydro_bw
@@ -168,17 +171,17 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
            f = f + 1
          enddo
          gas_natom(l) = 0.0d0
-         gas_nelec(l) = 0.0d0
          nnuc = 0.0d0
          do f = 1, gas_nelem
            natom = gas_natom1fr(f,l)
-           nelec = natom * f
            nnuc = nnuc + natom * elem_data(f)%m
            gas_natom(l) = gas_natom(l) + natom
-           gas_nelec(l) = gas_nelec(l) + nelec
          enddo
+         gas_natom(l) = hydro_state(i,j,k,natom_i) * gas_vol(l)
+         gas_nelec(l) = hydro_state(i,j,k,nelec_i) * gas_vol(l)
+     &                                             / gas_natom(l)
          gas_ye(l) = gas_nelec(l) / nnuc
-         gas_nelec(l) = gas_nelec(l) / gas_natom(l)
+c         gas_nelec(l) = gas_nelec(l) / gas_natom(l)
          gas_bcoef(l) = 1.5d0*pc_kb*(1d0+gas_nelec(l))
      &              * gas_natom(l) / gas_vol(l)
          gas_temp(l) =    eint / gas_bcoef(l)
@@ -224,7 +227,7 @@ c         write(*,*) l, gas_temp(l), eint, gas_bcoef(l)
      &   gas_natom1fr(gas_iv48,i)
 c
 c-- total natom
-c       gas_natom(i) = sum(gas_natom1fr(1:,i))
+        gas_natom(i) = sum(gas_natom1fr(1:,i))
 c-- convert natoms to natom fractions
         gas_natom1fr(:,i) = gas_natom1fr(:,i)/gas_natom(i)
         gas_natom0fr(:,i,:) = gas_natom0fr(:,i,:)/gas_natom(i)

@@ -13,9 +13,11 @@ c
       integer, parameter :: pz_i = 4
       integer, parameter :: tau_i = 5
       integer, parameter :: egas_i = 6
-      integer, parameter :: frac_i = 7
+      integer, parameter :: natom_i = 7
+      integer, parameter :: nelec_i = 8
+      integer, parameter :: frac_i = 9
       integer, parameter :: nfracs = 2 * gas_nchain + gas_nelem
-      integer, parameter :: hydro_nf = 6 + nfracs
+      integer, parameter :: hydro_nf = 8 + nfracs
       integer :: hydro_nx, hydro_ny, hydro_nz, hydro_bw
 
       real*8, allocatable :: hydro_state(:,:,:,:)

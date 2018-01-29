@@ -45,7 +45,7 @@
       logical :: veldim(3)
       logical :: dimused(3)
       integer :: xb, xe, yb, ye, zb, ze
-      integer :: nx, ny, nz, bw, nf
+      integer :: nx, ny, nz, bw, nf, l
       real(8) :: gamma, tfactor
       logical :: done
       logical, save :: first_call = .true.
@@ -203,8 +203,13 @@ c     Reconstruct face values
 
 c         pre-recon
               do f = 1, nf
-                if( (f .ne. rho_i) .and. (f .ne. tau_i) ) then
-                  U(:,:,:,f) = U(:,:,:,f) / U(:,:,:,rho_i)
+                if((f.ne.rho_i).and.(f.ne.tau_i).and.(f.ne.natom_i))then
+                  if( f .eq. nelec_i .or. f .ge. frac_i ) then
+                    l = natom_i
+                  else
+                    l = rho_i
+                  endif
+                  U(:,:,:,f) = U(:,:,:,f) / U(:,:,:,l)
                 endif
               enddo
               do i = 0, 2
@@ -276,10 +281,15 @@ c         post-recon
                 endif
               enddo
               do f = 1, nf
-                if( (f .ne. rho_i) .and. (f .ne. tau_i) ) then
-                  U(:,:,:,f) = U(:,:,:,f) * U(:,:,:,rho_i)
-                  UR(:,:,:,f) = UR(:,:,:,f) * UR(:,:,:,rho_i)
-                  UL(:,:,:,f) = UL(:,:,:,f) * UL(:,:,:,rho_i)
+                if((f.ne.rho_i).and.(f.ne.tau_i).and.(f.ne.natom_i))then
+                  if( f .eq. nelec_i .or. f .ge. frac_i ) then
+                    l = natom_i
+                  else
+                    l = rho_i
+                  endif
+                  U(:,:,:,f) = U(:,:,:,f) * U(:,:,:,l)
+                  UR(:,:,:,f) = UR(:,:,:,f) * UR(:,:,:,l)
+                  UL(:,:,:,f) = UL(:,:,:,f) * UL(:,:,:,l)
                 endif
               enddo
 

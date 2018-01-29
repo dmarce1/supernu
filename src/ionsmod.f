@@ -299,6 +299,8 @@ c-- recursively compute n_(i+1)
        do istart=1,nion-1
         ion_el(iz)%i(istart)%n = 1d0 !use arbitrary start value for n_1
         do ii=istart+1,nion
+c        write(*,*)  sahac2,exp(-kti*ion_el(iz)%i(ii-1)%e),
+c     &     ion_el(iz)%i(ii-1)%n,ion_el(iz)%i(ii)%q,ion_el(iz)%i(ii-1)%q
          help = sahac2*exp(-kti*ion_el(iz)%i(ii-1)%e)*
      &     ion_el(iz)%i(ii-1)%n*ion_el(iz)%i(ii)%q/ion_el(iz)%i(ii-1)%q
          ion_el(iz)%i(ii)%n = help

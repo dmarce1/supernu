@@ -410,8 +410,10 @@ c
 c-- natom conservation check
       do i=1,gas_ncell
        help = sum(gas_natom1fr(22:28,i))
-       if(abs(help-natom(i))>1d-14*natom(i)) stop
-     &   'update_natomfr: natom not conserved'
+       if(abs(help-natom(i))>1d-14*natom(i)) then
+       write(*,*) help, natom(i)
+       stop 'update_natomfr: natom not conserved'
+       endif
       enddo
 c
 c-- calculate Ye
