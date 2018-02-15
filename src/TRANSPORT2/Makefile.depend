@@ -1,4 +1,0 @@
-diffusion2.o: diffusion2.f90 gridmod.mod groupmod.mod miscmod.mod particlemod.mod physconstmod.mod randommod.mod timestepmod.mod transportmod.mod 
-transport2.o: transport2.f90 gridmod.mod groupmod.mod inputparmod.mod miscmod.mod particlemod.mod physconstmod.mod randommod.mod timestepmod.mod transportmod.mod 
-advection2.o: advection2.f90 gridmod.mod inputparmod.mod miscmod.mod particlemod.mod timestepmod.mod transportmod.mod 
-transport2_gamgrey.o: transport2_gamgrey.f90 gridmod.mod miscmod.mod particlemod.mod physconstmod.mod randommod.mod timestepmod.mod transportmod.mod 
