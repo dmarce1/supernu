@@ -228,7 +228,7 @@ pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ier
   if( grd_hydro_on ) then
     v0 = grd_v(ix,iy,iz,1)
     if( grd_isvelocity ) then
-      v0 = v0 - (grd_xarr(ix+1)+grd_xarr(ix)) / (tsp_t * 2d0)
+      v0 = v0 - (grd_xarr(ix+1)+grd_xarr(ix)) / (2d0)
     endif
     v0 = v0 / (pc_c * dx(ix))
     opacleak(2) = opacleak(2) + max(v0,0d0)

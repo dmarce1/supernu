@@ -4,7 +4,7 @@ FC = mpif90
 
 
 FCFLAGS = -O3 -fopenmp -march=native
-#FCFLAGS = -g -Werror -O0 -Wall -fbounds-check -fbacktrace -fstack-protector-all -Wno-real-q-constant  -ffpe-trap=zero -ffpe-trap=overflow
+#FCFLAGS = -g -O0 -Wall -fbounds-check -fbacktrace -fstack-protector-all -Wno-real-q-constant -fcheck=all
 
 
 #-- additional flags

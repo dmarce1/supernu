@@ -254,6 +254,8 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c-- domain decomposition
       grd_tempinv = reshape(1d0/gas_temp,[grd_ncell])
       grd_emit = reshape(gas_emit,[grd_ncell])
+
+
       grd_emitex = reshape(gas_emitex,[grd_ncell])
       grd_evolinit = reshape(gas_evolinit,[grd_ncell])
 c

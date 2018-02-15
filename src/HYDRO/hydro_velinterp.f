@@ -20,7 +20,7 @@
       ye = hydro_ny - hydro_bw + 1
       ze = hydro_nz - hydro_bw + 1
 
-      if( grd_hydro_on ) then
+      if( .not. grd_hydro_on ) then
          stop
       endif
 
@@ -48,6 +48,8 @@
           grd_dvdx(:,:,:,2,3) = 0.0d0
           grd_dvdx(:,:,:,3,1) = 0.0d0
           grd_dvdx(:,:,:,3,2) = 0.0d0
+          grd_dvdx(:,:,:,2,2) = 0.0d0
+          grd_dvdx(:,:,:,3,3) = 0.0d0
 
         else
           do dm = 1, 3

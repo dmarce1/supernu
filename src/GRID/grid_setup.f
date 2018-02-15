@@ -136,13 +136,21 @@ c       HYDRO LSU
                 do k = 1, grd_nz
                   l = grd_icell(i,j,k)
                   grd_vx(l) = (grd_xarr(i+1) + grd_xarr(i))*0.5d0
+                  grd_v(i,j,k,:) = 0d0
+                  grd_dvdx(i,j,k,:,:) = 0d0
+                  grd_v(i,j,k,1) = grd_vx(l)
+                  grd_dvdx(i,j,k,1,1) = 1d0
                   if( (grd_igeom .eq. 1) .or. (grd_igeom .eq. 11) ) then
                     grd_vy(l) = 0d0
                   else
                     grd_vy(l) = (grd_yarr(j+1) + grd_yarr(j))*0.5d0
+                    grd_v(i,j,k,2) = grd_vy(l)
+                    grd_dvdx(i,j,k,2,2) = 1d0
                   endif
                   if( grd_igeom .eq. 3 ) then
                     grd_vz(l) = (grd_zarr(k+1) + grd_zarr(k))*0.5d0
+                    grd_v(i,j,k,3) = grd_vz(l)
+                    grd_dvdx(i,j,k,3,3) = 1d0
                   else
                     grd_vz(l) = 0d0
                   endif
@@ -166,6 +174,7 @@ c       HYDRO LSU
             grd_vy = 0.0d0
             grd_vz = 0.0d0
           endif
+
 
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
