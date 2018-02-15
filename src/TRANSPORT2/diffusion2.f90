@@ -61,13 +61,6 @@ pure subroutine diffusion2(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr
   dy(l) = grd_yarr(l+1) - grd_yarr(l)
   xm(l) = .5d0*(grd_xarr(l+1) + grd_xarr(l))
   dz(l) = grd_zarr(l+1) - grd_zarr(l)
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
-  real*8,pointer :: vx, vy, vz
-  vx => ptcl2%vx
-  vy => ptcl2%vy
-  vz => ptcl2%vz
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
   ix => ptcl2%ix
   iy => ptcl2%iy

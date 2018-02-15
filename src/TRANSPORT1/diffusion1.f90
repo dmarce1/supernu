@@ -64,13 +64,6 @@ pure subroutine diffusion1(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr
   xm(l) = 0.5*(grd_xarr(l+1) + grd_xarr(l))
   dyac(l) = grd_yacos(l) - grd_yacos(l+1)
   ym(l) = sqrt(1d0-0.25*(grd_yarr(l+1)+grd_yarr(l))**2)
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
-  real*8,pointer :: vx, vy, vz
-  vx => ptcl2%vx
-  vy => ptcl2%vy
-  vz => ptcl2%vz
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
   ix => ptcl2%ix
   iy => ptcl2%iy

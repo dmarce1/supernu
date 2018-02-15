@@ -418,22 +418,29 @@ c
 c
       pure subroutine direction2lab1(vx0,vy0,vz0,mu0,om0)
 c     -------------------------------------------
+      use gridmod
       implicit none
       real*8,intent(in) :: vx0,vy0,vz0
       real*8,intent(inout) :: mu0,om0
       real*8 :: cmffact,mu,sin0,om
 c
 c
-      sin0 = sqrt(1d0 - mu0*mu0)
-      cmffact = 1d0+(mu0*vx0+sin0*(cos(om0)*vy0+sin(om0)*vz0))*cinv
-      mu = (mu0+vx0*cinv)/cmffact
-      mu = min(mu,1d0)
-      mu = max(mu,-1d0)
-      om = atan2(sin0*sin(om0)+vz0*cinv,
+      if( grd_igeom .eq. 11 ) then
+        call direction2lab11(vx0,mu0)
+        om0 = 0d0
+      else
+        sin0 = sqrt(1d0 - mu0*mu0)
+        cmffact = 1d0+(mu0*vx0+sin0*(cos(om0)*vy0+sin(om0)*vz0))*cinv
+        mu = (mu0+vx0*cinv)/cmffact
+        mu = min(mu,1d0)
+        mu = max(mu,-1d0)
+        om = atan2(sin0*sin(om0)+vz0*cinv,
      &     sin0*cos(om0)+vy0*cinv)
-      if(om<0d0) om=om+pc_pi2
-      mu0 = mu
-      om0 = om
+        if(om<0d0) om=om+pc_pi2
+        mu0 = mu
+        om0 = om
+      endif
+
       end subroutine direction2lab1
 c
 c

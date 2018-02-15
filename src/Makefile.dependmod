@@ -1,0 +1,26 @@
+elemdatamod.o elemdatamod.mod: elemdatamod.f  
+nucdatamod.o nucdatamod.mod: nucdatamod.f physconstmod.o 
+physconstmod.o physconstmod.mod: physconstmod.f  
+randommod.o randommod.mod: randommod.f  
+mpimod.o mpimod.mod: mpimod.f elemdatamod.o gasmod.o gridmod.o groupmod.o hydromod.o inputstrmod.o particlemod.o physconstmod.o sourcemod.o timestepmod.o 
+miscmod.o miscmod.mod: miscmod.f  
+ionsmod.o ionsmod.mod: ionsmod.f miscmod.o physconstmod.o 
+ffxsmod.o ffxsmod.mod: ffxsmod.f  
+bfxsmod.o bfxsmod.mod: bfxsmod.f  
+bbxsmod.o bbxsmod.mod: bbxsmod.f elemdatamod.o miscmod.o 
+inputparmod.o inputparmod.mod: inputparmod.f fluxmod.o gasmod.o gridmod.o groupmod.o hydromod.o miscmod.o particlemod.o physconstmod.o sourcemod.o timestepmod.o transportmod.o 
+timestepmod.o timestepmod.mod: timestepmod.f90 physconstmod.o 
+groupmod.o groupmod.mod: groupmod.f physconstmod.o 
+gridmod.o gridmod.mod: gridmod.f  
+gasmod.o gasmod.mod: gasmod.f  
+inputstrmod.o inputstrmod.mod: inputstrmod.f elemdatamod.o gasmod.o inputparmod.o miscmod.o physconstmod.o 
+particlemod.o particlemod.mod: particlemod.f90  
+timingmod.o timingmod.mod: timingmod.f  
+countersmod.o countersmod.mod: countersmod.f  
+manufacmod.o manufacmod.mod: manufacmod.f gasmod.o gridmod.o groupmod.o inputparmod.o miscmod.o physconstmod.o 
+fluxmod.o fluxmod.mod: fluxmod.f groupmod.o physconstmod.o 
+totalsmod.o totalsmod.mod: totalsmod.f  
+transportmod.o transportmod.mod: transportmod.f gridmod.o groupmod.o particlemod.o physconstmod.o randommod.o 
+sourcemod.o sourcemod.mod: sourcemod.f  
+hydromod.o hydromod.mod: hydromod.f gasmod.o gridmod.o 
+momentum.o .mod: momentum.f90 gridmod.o particlemod.o physconstmod.o 

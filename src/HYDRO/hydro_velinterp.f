@@ -20,38 +20,41 @@
       ye = hydro_ny - hydro_bw + 1
       ze = hydro_nz - hydro_bw + 1
 
+      if( grd_hydro_on ) then
+         stop
+      endif
 
-      if( grd_igeom .eq. 11 ) then
-          yb = hydro_bw + 1
-          zb = hydro_bw + 1
-          ye = yb
-          ze = zb
-          u(0:nx+1,1:1,1:1) =
+        if( grd_igeom .eq. 11 ) then
+            yb = hydro_bw + 1
+            zb = hydro_bw + 1
+            ye = yb
+            ze = zb
+            u(0:nx+1,1:1,1:1) =
      &             hydro_state(xb:xe,yb:ye,zb:ze,px_i) /
      &             hydro_state(xb:xe,yb:ye,zb:ze,rho_i)
-        grd_v(:,:,:,2:3) = 0.0d0
-        grd_v(1:nx,:,:,1) =
+          grd_v(:,:,:,2:3) = 0.0d0
+          grd_v(1:nx,:,:,1) =
      &           0.5d0*u(1:nx,1:ny,1:nz) +
      &          0.25d0*u(0:nx-1,1:ny,1:nz) +
      &          0.25d0*u(2:nx+1,1:ny,1:nz)
-        do i = 1, nx
-          dr = (grd_xarr(i+1) - grd_xarr(i))
-          grd_dvdx(i,:,:,1,1) =
+          do i = 1, nx
+            dr = (grd_xarr(i+1) - grd_xarr(i))
+            grd_dvdx(i,:,:,1,1) =
      &         (u(i+1,1:ny,1:nz) - u(i-1,1:ny,1:nz))*0.5d0 / dr
-        enddo
-        grd_dvdx(:,:,:,1,2) = 0.0d0
-        grd_dvdx(:,:,:,1,3) = 0.0d0
-        grd_dvdx(:,:,:,2,1) = 0.0d0
-        grd_dvdx(:,:,:,2,3) = 0.0d0
-        grd_dvdx(:,:,:,3,1) = 0.0d0
-        grd_dvdx(:,:,:,3,2) = 0.0d0
+          enddo
+          grd_dvdx(:,:,:,1,2) = 0.0d0
+          grd_dvdx(:,:,:,1,3) = 0.0d0
+          grd_dvdx(:,:,:,2,1) = 0.0d0
+          grd_dvdx(:,:,:,2,3) = 0.0d0
+          grd_dvdx(:,:,:,3,1) = 0.0d0
+          grd_dvdx(:,:,:,3,2) = 0.0d0
 
-      else
-        do dm = 1, 3
-          u(0:nx+1,0:ny+1,0:nz+1) =
+        else
+          do dm = 1, 3
+            u(0:nx+1,0:ny+1,0:nz+1) =
      &             hydro_state(xb:xe,yb:ye,zb:ze,px_i-1+dm) /
      &             hydro_state(xb:xe,yb:ye,zb:ze,rho_i)
-          vc(1:nx+1,1:ny+1,1:nz+1) =
+            vc(1:nx+1,1:ny+1,1:nz+1) =
      &         (u(0:nx+0,0:ny+0,0:nz+0) +
      &          u(0:nx+0,0:ny+0,1:nz+1) +
      &          u(0:nx+0,1:ny+1,0:nz+0) +
@@ -60,7 +63,7 @@
      &          u(1:nx+1,0:ny+0,1:nz+1) +
      &          u(1:nx+1,1:ny+1,0:nz+0) +
      &          u(1:nx+1,1:ny+1,1:nz+1)) * 0.125d0
-          grd_v(:,:,:,dm) =
+            grd_v(:,:,:,dm) =
      &         (vc(1:nx+0,1:ny+0,1:nz+0) +
      &          vc(1:nx+0,1:ny+0,2:nz+1) +
      &          vc(1:nx+0,2:ny+1,1:nz+0) +
@@ -69,7 +72,7 @@
      &          vc(2:nx+1,1:ny+0,2:nz+1) +
      &          vc(2:nx+1,2:ny+1,1:nz+0) +
      &          vc(2:nx+1,2:ny+1,2:nz+1)) * 0.125d0
-          grd_dvdx(:,:,:,dm,1) =
+            grd_dvdx(:,:,:,dm,1) =
      &         ((-vc(1:nx+0,1:ny+0,1:nz+0)) +
      &          (-vc(1:nx+0,1:ny+0,2:nz+1)) +
      &          (-vc(1:nx+0,2:ny+1,1:nz+0)) +
@@ -78,7 +81,7 @@
      &          (+vc(2:nx+1,1:ny+0,2:nz+1)) +
      &          (+vc(2:nx+1,2:ny+1,1:nz+0)) +
      &          (+vc(2:nx+1,2:ny+1,2:nz+1))) * 0.25d0
-          grd_dvdx(:,:,:,dm,2) =
+            grd_dvdx(:,:,:,dm,2) =
      &         ((-vc(1:nx+0,1:ny+0,1:nz+0)) +
      &          (-vc(1:nx+0,1:ny+0,2:nz+1)) +
      &          (+vc(1:nx+0,2:ny+1,1:nz+0)) +
@@ -87,7 +90,7 @@
      &          (-vc(2:nx+1,1:ny+0,2:nz+1)) +
      &          (+vc(2:nx+1,2:ny+1,1:nz+0)) +
      &          (+vc(2:nx+1,2:ny+1,2:nz+1))) * 0.25d0
-          grd_dvdx(:,:,:,dm,3) =
+            grd_dvdx(:,:,:,dm,3) =
      &         ((-vc(1:nx+0,1:ny+0,1:nz+0)) +
      &          (+vc(1:nx+0,1:ny+0,2:nz+1)) +
      &          (-vc(1:nx+0,2:ny+1,1:nz+0)) +
@@ -97,21 +100,21 @@
      &          (-vc(2:nx+1,2:ny+1,1:nz+0)) +
      &          (+vc(2:nx+1,2:ny+1,2:nz+1))) * 0.25d0
 
-        enddo
+          enddo
 
 
-        do i = 1, nx
-          dxinv = 1.0d0/(grd_xarr(i+1) - grd_xarr(i))
-          grd_dvdx(i,:,:,:,1) = grd_dvdx(i,:,:,:,1) * dxinv
-       enddo
-        do i = 1, ny
-          dxinv = 1.0d0/(grd_yarr(i+1) - grd_yarr(i))
-          grd_dvdx(:,i,:,:,2) = grd_dvdx(:,i,:,:,2) * dxinv
-        enddo
-        do i = 1, nz
-          dxinv = 1.0d0/(grd_zarr(i+1) - grd_zarr(i))
-          grd_dvdx(:,:,i,:,2) = grd_dvdx(:,:,i,:,3) * dxinv
-        enddo
+          do i = 1, nx
+            dxinv = 1.0d0/(grd_xarr(i+1) - grd_xarr(i))
+            grd_dvdx(i,:,:,:,1) = grd_dvdx(i,:,:,:,1) * dxinv
+          enddo
+          do i = 1, ny
+            dxinv = 1.0d0/(grd_yarr(i+1) - grd_yarr(i))
+            grd_dvdx(:,i,:,:,2) = grd_dvdx(:,i,:,:,2) * dxinv
+          enddo
+          do i = 1, nz
+            dxinv = 1.0d0/(grd_zarr(i+1) - grd_zarr(i))
+            grd_dvdx(:,:,i,:,2) = grd_dvdx(:,:,i,:,3) * dxinv
+          enddo
 
       endif
 

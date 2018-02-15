@@ -282,14 +282,14 @@ c        HYDRO LSU
           vz = 0.0d0
         endif
       else if( grd_isvelocity ) then
-        vx = x / t
+        vx = x
         if( grd_igeom .ne. 1 .and. grd_igeom .ne. 11 ) then
-          vy = y / t
+          vy = y
         else
           vy = 0.0d0
         endif
         if( grd_igeom .eq. 3 ) then
-          vz = z / t
+          vz = z
         else
           vz = 0.0d0
         endif
@@ -317,7 +317,7 @@ c        HYDRO LSU
         vx = grd_v(xi,1,1,1)
         vx = vx + grd_dvdx(xi,1,1,1,1) * dx
       else if( grd_isvelocity ) then
-        vx = x / t
+        vx = x
       else
         vx = 0.0d0
       endif

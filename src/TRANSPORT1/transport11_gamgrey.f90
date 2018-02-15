@@ -57,6 +57,7 @@ pure subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
 !-- init
   edep = 0d0
 
+  call hydro_velocity_at11(x, vx, ix, tsp_t)
 
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !LSU MODIFICATION
@@ -252,12 +253,9 @@ pure subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
         endif
      endif
      ic = grd_icell(ix,iy,iz)!}}}
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
-! compute fluid velocity at particle position
-     call hydro_velocity_at11(x, vx, ix, tsp_t)
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   endif
+
+  call hydro_velocity_at11(x, vx, ix, tsp_t)
 
 end subroutine transport11_gamgrey
 ! vim: fdm=marker

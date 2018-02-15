@@ -191,6 +191,7 @@ c         write(*,*) l, gas_temp(l), eint, gas_bcoef(l)
       enddo
       enddo
 
+
       do i = 1, gas_ncell
         gas_natom1fr(28,i) = gas_natom1fr(28,i) -
      &   gas_natom1fr(gas_ini56,i)
@@ -204,15 +205,19 @@ c         write(*,*) l, gas_temp(l), eint, gas_bcoef(l)
      &   gas_natom1fr(gas_icr48,i)
         gas_natom1fr(23,i) = gas_natom1fr(23,i) -
      &   gas_natom1fr(gas_iv48,i)
+
         gas_natom0fr(-2,i,1) = gas_natom1fr(gas_ini56,i)!unstable
         gas_natom0fr(-1,i,1) = gas_natom1fr(gas_ico56,i)!unstable
         gas_natom0fr(0:2,i,1) = gas_natom1fr(26:28,i)!stable
+c-- fe/mn/cr
         gas_natom0fr(-2,i,2) = gas_natom1fr(gas_ife52,i)!unstable
         gas_natom0fr(-1,i,2) = gas_natom1fr(gas_imn52,i)!unstable
         gas_natom0fr(0:2,i,2) = gas_natom1fr(24:26,i)!stable
+c-- cr/v/ti
         gas_natom0fr(-2,i,3) = gas_natom1fr(gas_icr48,i)!unstable
         gas_natom0fr(-1,i,3) = gas_natom1fr(gas_iv48,i)!unstable
         gas_natom0fr(0:2,i,3) = gas_natom1fr(22:24,i)!stable
+c
         gas_natom1fr(28,i) = gas_natom1fr(28,i) +
      &   gas_natom1fr(gas_ini56,i)
         gas_natom1fr(27,i) = gas_natom1fr(27,i) +
@@ -226,9 +231,7 @@ c         write(*,*) l, gas_temp(l), eint, gas_bcoef(l)
         gas_natom1fr(23,i) = gas_natom1fr(23,i) +
      &   gas_natom1fr(gas_iv48,i)
 c
-c-- total natom
         gas_natom(i) = sum(gas_natom1fr(1:,i))
-c-- convert natoms to natom fractions
         gas_natom1fr(:,i) = gas_natom1fr(:,i)/gas_natom(i)
         gas_natom0fr(:,i,:) = gas_natom0fr(:,i,:)/gas_natom(i)
       enddo

@@ -86,6 +86,14 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
 !     thelp = 1d0
 !  endif
 ! New code
+
+
+  !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+  call hydro_velocity_at11(x, vx, ix, tsp_t)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
   if(grd_isvelocity) then
      thelp = tsp_t
   else
@@ -156,8 +164,12 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
 !     ddop = pc_c*(elabfact-wl*grp_wlinv(ig+1))
 ! New code
   if((grd_isvelocity .or. grd_hydro_on) .and.ig<grp_ng) then
-     help = grd_dvdx(ix,iy,iz,1,1)
-     ddop = pc_c*(elabfact-wl*help*grp_wlinv(ig+1)*thelpinv)
+     if( grd_hydro_on ) then
+       help = grd_dvdx(ix,iy,iz,1,1)
+     else
+       help = 1d0
+     endif
+     ddop = pc_c*(elabfact-wl*help*grp_wlinv(ig+1))
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      if(ddop<0d0) then
         ddop = far
@@ -602,6 +614,13 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
      ierr = 17
      return     
   endif
+
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+  call hydro_velocity_at11(x, vx, ix, tsp_t)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 
 end subroutine transport11
 ! vim: fdm=marker

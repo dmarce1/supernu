@@ -162,7 +162,7 @@ program supernu
 !
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !     HYDRO LSU
-  tsp_itrestart = max(1,tsp_itrestart)
+!  tsp_itrestart = max(1,tsp_itrestart)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   do it=tsp_itrestart,tsp_nt
      t_timelin(1) = t_time() !timeline

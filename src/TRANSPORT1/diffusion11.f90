@@ -77,6 +77,8 @@ pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ier
   e0 => ptcl%e0
   wl => ptcl%wl
 
+  call hydro_velocity_at11(x, vx, ix, tsp_t)
+
   capgreyinv => cache%capgreyinv
   speclump => cache%speclump
   glumps => cache%glumps
@@ -387,6 +389,7 @@ pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ier
 !           endif
 ! New code
            if(grd_isvelocity.or.grd_hydro_on) then
+              call hydro_velocity_at11(x, vx, ix, tsp_t)
               mu = (mu+vx*cinv)/(1.0+vx*mu*cinv)
 !-- velocity effects accounting
               help = 1d0/(1.0-vx*mu*cinv)
@@ -458,6 +461,7 @@ pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ier
 !        endif
 ! New code
         if(grd_isvelocity.or.grd_hydro_on) then
+           call hydro_velocity_at11(x, vx, ix, tsp_t)
            help = 1d0+mu*vx*cinv
 !-- velocity effects accounting
            totevelo = totevelo+e*(1d0 - help)
@@ -537,6 +541,7 @@ pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ier
 !           endif
 ! New code
            if(grd_isvelocity.or.grd_hydro_on) then
+              call hydro_velocity_at11(x, vx, ix, tsp_t)
               mu = (mu+vx*cinv)/(1.0+vx*mu*cinv)
 !-- velocity effects accounting
               help = 1d0/(1.0-vx*mu*cinv)
@@ -628,6 +633,7 @@ pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ier
 !        endif
 ! New code
         if(grd_isvelocity.or.grd_hydro_on) then
+           call hydro_velocity_at11(x, vx, ix, tsp_t)
            mu = (mu+vx*cinv)/(1.0+vx*mu*cinv)
 !-- velocity effects accounting
            help = 1d0/(1d0-vx*mu*cinv)
@@ -641,6 +647,8 @@ pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ier
      endif
 !}}}
   endif
+
+  call hydro_velocity_at11(x, vx, ix, tsp_t)
 
 end subroutine diffusion11
 ! vim: fdm=marker

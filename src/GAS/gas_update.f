@@ -69,15 +69,27 @@ c
 c-- current time step
       if(grd_isvelocity.and.in_srctype=='none') then
 c-- beginning of time step
-       call update_natomfr(tsp_t)
+       if( grd_hydro_on ) then
+         call update_natomfr(0d0)
+       else
+         call update_natomfr(tsp_t)
+       endif
        natom1fr = gas_natom1fr
 c-- end of time step
-       call update_natomfr(tsp_t + tsp_dt)
+       if( grd_hydro_on ) then
+         call update_natomfr(tsp_dt)
+       else
+         call update_natomfr(tsp_t+tsp_dt)
+       endif
        natom2fr = gas_natom1fr
 c
 c-- update the abundances for the center time
        !call update_natomfr(tsp_tcenter)
-       call update_natomfr(tsp_t)
+       if( grd_hydro_on ) then
+         call update_natomfr(0d0)
+       else
+         call update_natomfr(tsp_t)
+       endif
 c-- sanity check
        if(any(gas_natom1fr<0d0)) stop 'gas_update: natom1fr<0'
 !c-- print change in electron fraction
@@ -324,6 +336,8 @@ c
 c     ----------------------------!{{{
       use nucdatamod
       use gasmod
+      use gridmod
+      use timestepmod
       implicit none
       real*8,intent(in) :: t
 ************************************************************************
@@ -336,7 +350,7 @@ c     ----------------------------!{{{
       real*8 :: dye(gas_ncell) !delta natom*ye
 c
 c-- save norm for conservation check
-      natom = sum(gas_natom1fr(22:28,:),dim=1)
+      natom = sum(gas_natom1fr(1:,:),dim=1)
 c
 c-- zero
       gas_natom1fr(22:28,:) = 0d0
@@ -372,6 +386,7 @@ c-- subtract original ye*natom
       dye = dye - x(:,1)*(25d0/52)
 c-- update
       call nucdecay3(gas_ncell,t,nuc_thl_fe52,nuc_thl_mn52,x)
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c-- current radioactive natom
       gas_natom1fr(gas_ife52,:) = x(:,2)
       gas_natom1fr(gas_imn52,:) = x(:,1)
@@ -412,9 +427,9 @@ c-- add stable fraction to total natom
 c
 c-- natom conservation check
       do i=1,gas_ncell
-       help = sum(gas_natom1fr(22:28,i))
+       help = sum(gas_natom1fr(1:,i))
        if(abs(help-natom(i))>1d-14*natom(i)) then
-       write(*,*) help, natom(i)
+       write(*,*) help, natom(i),i
        stop 'update_natomfr: natom not conserved'
        endif
       enddo

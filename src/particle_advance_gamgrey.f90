@@ -38,7 +38,7 @@ subroutine particle_advance_gamgrey(nmpi)
   real*8 :: t0,t1  !timing
   real*8 :: labfact, cmffact, mu1, mu2!, gm
   real*8 :: etot,pwr
-  real*8 :: om0, mu0!, x0, y0, z0
+  real*8 :: om0, mu0, x0, y0, z0
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
   real*8,pointer :: vx, vy, vz
@@ -265,6 +265,22 @@ subroutine particle_advance_gamgrey(nmpi)
 !     endif
 
 ! New code
+        if( grd_igeom .eq. 11 ) then
+          cmffact = 1d0 + mu0*vx/pc_c
+        else
+           help = sqrt(1d0-mu0**2)
+           mu1 = help*cos(om0)
+           mu2 = help*sin(om0)
+          select case(grd_igeom)
+          case(1)
+             cmffact = 1d0+(mu0*vx + mu1*vy + mu2*vz)/pc_c
+          case(2)
+             cmffact = 1d0+(mu0*vy + mu1*vx + mu2*vz)/pc_c
+          case(3)
+             cmffact = 1d0+(mu0*vz + mu1*vx + mu2*vy)/pc_c
+          endselect
+        endif
+
      if(grd_isvelocity.or.grd_hydro_on) then
        if( grd_igeom .eq. 11 ) then
          call direction2lab11(vx,mu0)
@@ -275,6 +291,7 @@ subroutine particle_advance_gamgrey(nmpi)
      endif
      mu = mu0
      om = om0
+
 
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
@@ -301,21 +318,6 @@ subroutine particle_advance_gamgrey(nmpi)
      e = grd_emitex(ic)/nvol(ic)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
-        if( grd_igeom .eq. 11 ) then
-          cmffact = 1d0 + mu*vx/pc_c
-        else
-           help = sqrt(1d0-mu**2)
-           mu1 = help*cos(om)
-           mu2 = help*sin(om)
-          select case(grd_igeom)
-          case(1)
-             cmffact = 1d0+(mu*vx + mu1*vy + mu2*vz)/pc_c
-          case(2)
-             cmffact = 1d0+(mu*vy + mu1*vx + mu2*vz)/pc_c
-          case(3)
-             cmffact = 1d0+(mu*vz + mu1*vx + mu2*vy)/pc_c
-          endselect
-        endif
 
 ! Old code
 !     if(grd_isvelocity) e = e*cmffact
@@ -336,7 +338,9 @@ subroutine particle_advance_gamgrey(nmpi)
      do while (ptcl2%stat=='live')
         ptcl2%istep = ptcl2%istep + 1
         icold = ic
+        call hydro_velocity_at11(x, vx, ix, tsp_t)
         call transport_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
+        call hydro_velocity_at11(x, vx, ix, tsp_t)
 !-- tally
         grd_tally(1,icold) = grd_tally(1,icold) + edep
 
@@ -360,7 +364,7 @@ subroutine particle_advance_gamgrey(nmpi)
 !                         (cos(om)*x+sin(om)*y))/pc_c
 !                 endselect
 ! New code
-             if((grd_isvelocity.or.grd_hydro_on).and.ptcl2%itype==1) then
+             if((grd_isvelocity.or.grd_hydro_on)) then
                if( grd_igeom .eq. 11 ) then
                  labfact = 1d0 - mu*vx/pc_c
                else

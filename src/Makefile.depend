@@ -1,0 +1,7 @@
+banner.o: banner.f mpimod.mod version.inc 
+particle_advance.o: particle_advance.f90 countersmod.mod fluxmod.mod gridmod.mod groupmod.mod inputparmod.mod miscmod.mod particlemod.mod physconstmod.mod randommod.mod sourcemod.mod timestepmod.mod timingmod.mod totalsmod.mod transportmod.mod 
+particle_advance_gamgrey.o: particle_advance_gamgrey.f90 fluxmod.mod gridmod.mod inputparmod.mod miscmod.mod particlemod.mod physconstmod.mod randommod.mod sourcemod.mod timestepmod.mod timingmod.mod totalsmod.mod transportmod.mod 
+fluxtally.o: fluxtally.f countersmod.mod fluxmod.mod miscmod.mod particlemod.mod timestepmod.mod timingmod.mod 
+dealloc_all.o: dealloc_all.f bbxsmod.mod fluxmod.mod gasmod.mod gridmod.mod groupmod.mod hydromod.mod ionsmod.mod mpimod.mod particlemod.mod randommod.mod sourcemod.mod timestepmod.mod 
+read_bbxs_data.o: read_bbxs_data.f bbxsmod.mod ionsmod.mod miscmod.mod physconstmod.mod timingmod.mod 
+tau_update.o: tau_update.f90 physconstmod.mod transportmod.mod 

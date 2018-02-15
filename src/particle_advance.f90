@@ -272,6 +272,7 @@ subroutine particle_advance
 !-- First portion of operator split particle velocity position adjustment
      if(grd_isvelocity.and.ptcl2%itype==1) then
         call advection(.true.,ptcl,ptcl2) !procedure pointer to advection[123]
+        call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
      endif
 
 !-- velocity components in cartesian basis
@@ -556,8 +557,13 @@ subroutine particle_advance
 ! New code
         if(ptcl2%itype==2 .and. (grd_isvelocity.or.grd_hydro_on)) then
 !-- r   edshifting energy weight!{{{
-           help = 4d0/(grd_xarr(ix+1)+grd_xarr(ix))
-           help = grd_dvdx(ix,iy,iz,1,1) + grd_v(ix,iy,iz,1)*help
+           if( grd_hydro_on ) then
+             help = 2d0/(grd_xarr(ix+1)+grd_xarr(ix))
+             help = mu*mu*grd_dvdx(ix,iy,iz,1,1) + (1d0-mu*mu)*grd_v(ix,iy,iz,1)*help
+           else
+             help = 1d0
+           endif
+           help = 1d0 / tsp_t
            tot_evelo = tot_evelo + e*(1d0-exp(-tsp_dt*help))
            e = e*exp(-tsp_dt*help)
            e0 = e0*exp(-tsp_dt*help)
@@ -580,6 +586,7 @@ subroutine particle_advance
 
         if(grd_isvelocity.and.ptcl2%itype==1) then
            call advection(.false.,ptcl,ptcl2) !procedure pointer to advection[123]
+           call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
         endif
 
 !-- renergy at census
@@ -632,7 +639,10 @@ subroutine particle_advance
 ! Old code -
 !           if(grd_isvelocity) call direction2lab(x,y,z,mu,om)
 ! New code -
-           if(grd_isvelocity.or.grd_hydro_on) call direction2lab(vx,vy,vz,mu,om)
+            if(grd_isvelocity.or.grd_hydro_on) then
+              call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
+              call direction2lab(vx,vy,vz,mu,om)
+            endif
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         endif
 
