@@ -69,14 +69,14 @@ c
 c-- current time step
       if(grd_isvelocity.and.in_srctype=='none') then
 c-- beginning of time step
-       if( grd_hydro_on ) then
+       if( grd_hydro_on .and. tsp_it .ne. 1) then
          call update_natomfr(0d0)
        else
          call update_natomfr(tsp_t)
        endif
        natom1fr = gas_natom1fr
 c-- end of time step
-       if( grd_hydro_on ) then
+       if( grd_hydro_on .and. tsp_it .ne. 1 ) then
          call update_natomfr(tsp_dt)
        else
          call update_natomfr(tsp_t+tsp_dt)
@@ -85,9 +85,7 @@ c-- end of time step
 c
 c-- update the abundances for the center time
        !call update_natomfr(tsp_tcenter)
-       if( grd_hydro_on ) then
-         call update_natomfr(0d0)
-       else
+       if( .not. grd_hydro_on ) then
          call update_natomfr(tsp_t)
        endif
 c-- sanity check
@@ -100,11 +98,15 @@ c-- sanity check
 c
 c-- energy deposition
 c-- gamma decay
+
+
        gas_decaygamma =  !per average atom (mix of stable and unstable)
      &   (natom1fr(gas_ini56,:) - natom2fr(gas_ini56,:)) *
      &     (nuc_qhl_ni56 + nuc_qhl_co56) +!ni56 that decays adds to co56
      &   (natom1fr(gas_ico56,:) - natom2fr(gas_ico56,:)) *
      &     nuc_qhl_co56
+
+
        gas_decaygamma = gas_decaygamma * gas_natom !total, units=ergs
 c-- beta decay (off for backwards compatibility)
 c      gas_decaybeta = (natom2fr(26,:) - natom1fr(26,:))*nuc_q_poskin
@@ -147,7 +149,6 @@ c     HYDRO LSU
           call eos_update(.false.)
         endif
         call hydro_update(tsp_t, tsp_t + tsp_dt)
-        gas_mass = gas_rho * gas_vol
       endif
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 

@@ -526,9 +526,11 @@ c     Apply dual energy formalism to update tau
 
       enddo
 
-      call hydro_boundaries(U,nx,ny,nz,nf,bw)
 
       hydro_state = U
+
+
+      call hydro_boundaries(hydro_state,nx,ny,nz,nf,bw)
 
 
       call scatter_hydro

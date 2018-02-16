@@ -91,7 +91,7 @@ c      HYDRO LSU
          j0 = j - hydro_bw
          k0 = k - hydro_bw
          l = grd_icell(i0, j0, k0)
-         hydro_state(i,j,k,rho_i) = gas_rho(l)
+         hydro_state(i,j,k,rho_i) = gas_mass(l) / gas_vol(l)
          hydro_state(i,j,k,px_i) = grd_vx(l) * gas_rho(l)
          hydro_state(i,j,k,py_i) = grd_vy(l) * gas_rho(l)
          hydro_state(i,j,k,pz_i) = grd_vz(l) * gas_rho(l)
@@ -150,6 +150,7 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
            gas_vol(l) = gas_vol(l) * (1.0d0 + tsp_dt / tsp_t )**3
          endif
          gas_rho(l) = hydro_state(i,j,k,rho_i)
+         gas_mass(l) = gas_rho(l) * gas_vol(l)
          grd_vx(l) = hydro_state(i,j,k,px_i) / gas_rho(l)
          grd_vy(l) = hydro_state(i,j,k,py_i) / gas_rho(l)
          grd_vz(l) = hydro_state(i,j,k,pz_i) / gas_rho(l)
@@ -187,12 +188,17 @@ c         gas_nelec(l) = gas_nelec(l) / gas_natom(l)
          gas_temp(l) =    eint / gas_bcoef(l)
          gas_temp(l) = max(gas_temp(l),3d3)
 c         write(*,*) l, gas_temp(l), eint, gas_bcoef(l)
+         if( grd_isvelocity) then
+           gas_vol(l) = gas_vol(l) / (1.0d0 + tsp_dt / tsp_t )**3
+         endif
       enddo
       enddo
       enddo
 
 
       do i = 1, gas_ncell
+
+
         gas_natom1fr(28,i) = gas_natom1fr(28,i) -
      &   gas_natom1fr(gas_ini56,i)
         gas_natom1fr(27,i) = gas_natom1fr(27,i) -
@@ -205,6 +211,18 @@ c         write(*,*) l, gas_temp(l), eint, gas_bcoef(l)
      &   gas_natom1fr(gas_icr48,i)
         gas_natom1fr(23,i) = gas_natom1fr(23,i) -
      &   gas_natom1fr(gas_iv48,i)
+
+       do l=1,gas_nelem
+        gas_ye(i) = gas_ye(i) + gas_natom1fr(l,i)*l/elem_data(l)%m
+       enddo
+       if(gas_nchain/=3) stop 'massfr2natomfr: gas_nchain updated'
+       gas_ye(i) = gas_ye(i) + gas_natom1fr(gas_ini56,i)*(28/56d0)
+       gas_ye(i) = gas_ye(i) + gas_natom1fr(gas_ico56,i)*(27/56d0)
+       gas_ye(i) = gas_ye(i) + gas_natom1fr(gas_ife52,i)*(26/52d0)
+       gas_ye(i) = gas_ye(i) + gas_natom1fr(gas_imn52,i)*(25/52d0)
+       gas_ye(i) = gas_ye(i) + gas_natom1fr(gas_icr48,i)*(24/48d0)
+       gas_ye(i) = gas_ye(i) + gas_natom1fr(gas_iv48,i)*(23/48d0)
+       gas_ye(i) = gas_ye(i)/sum(gas_natom1fr(:,i))
 
         gas_natom0fr(-2,i,1) = gas_natom1fr(gas_ini56,i)!unstable
         gas_natom0fr(-1,i,1) = gas_natom1fr(gas_ico56,i)!unstable
