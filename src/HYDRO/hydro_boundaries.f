@@ -1,4 +1,4 @@
-      subroutine hydro_boundaries(U,nx,ny,nz,nf,bw)
+      subroutine hydro_boundaries(U,X,veldim,nx,ny,nz,nf,bw,t)
       use hydromod
       use gridmod
       use mpimod
@@ -7,23 +7,27 @@
       logical, parameter :: allow_inflow = .true.
 
       real*8,dimension(nx,ny,nz,nf),intent(inout) :: U
+      logical, intent(in) :: veldim(3)
+      real*8,dimension(nx,ny,nz,3),intent(in) :: X
       integer,intent(in) :: nx, ny, nz, bw, nf
 
-      integer :: i, j, k
+      integer :: i, j, k, dm
+      real*8, intent(in) :: t
+
 
 
 c     Boundaries
 
 c       pre-bound
 c          if(.not.allow_inflow) then
-c            do dm = 1, 3
-c              if( veldim(dm) ) then
-c                U(:,:,:,egas_i) = U(:,:,:,egas_i) -
-c     &                  U(:,:,:,px_i+dm-1)**2 * 0.5d0 / U(:,:,:,rho_i)
-c                U(: ,:,:,px_i+dm-1) = U(:,:,:,px_i+dm-1) -
-c     &                   U(:,:,:,rho_i)*X(:,:,:,dm) / t
-c              endif
-c            enddo
+            do dm = 1, 3
+              if( veldim(dm) ) then
+                U(:,:,:,egas_i) = U(:,:,:,egas_i) -
+     &                  U(:,:,:,px_i+dm-1)**2 * 0.5d0 / U(:,:,:,rho_i)
+                U(: ,:,:,px_i+dm-1) = U(:,:,:,px_i+dm-1) -
+     &                   U(:,:,:,rho_i)*X(:,:,:,dm) / t
+              endif
+            enddo
 c          endif
 
           do i = 1, bw
@@ -114,15 +118,16 @@ c     All dims are outflow
 
 c       post-bound
 c          if(.not.allow_inflow) then
-c            do dm = 1, 3
-c              if( veldim(dm) ) then
-c                U(:,:,:,px_i+dm-1) = U(:,:,:,px_i+dm-1) +
-c     &                   U(:,:,:,rho_i)*X(:,:,:,dm) / t
-c                U(:,:,:,egas_i) = U(:,:,:,egas_i) +
-c     &                   U(:,:,:,px_i+dm-1)**2 * 0.5d0 / U(:,:,:,rho_i)
-c              endif
-c            enddo
+            do dm = 1, 3
+              if( veldim(dm) ) then
+                U(:,:,:,px_i+dm-1) = U(:,:,:,px_i+dm-1) +
+     &                   U(:,:,:,rho_i)*X(:,:,:,dm) / t
+                U(:,:,:,egas_i) = U(:,:,:,egas_i) +
+     &                   U(:,:,:,px_i+dm-1)**2 * 0.5d0 / U(:,:,:,rho_i)
+              endif
+            enddo
 c          endif
+
 
 
       end subroutine

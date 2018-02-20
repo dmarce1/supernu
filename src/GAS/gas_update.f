@@ -14,6 +14,7 @@ c     -------------------------
       use timingmod
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c     HYDRO LSU
+      use mpimod
       use hydromod
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       implicit none
@@ -148,8 +149,15 @@ c     HYDRO LSU
         if( lfirst ) then
           call eos_update(.false.)
         endif
+      endif
+      call gather_hydro
+      if( grd_hydro_on .and. it_gt_0 ) then
+        if( lfirst ) then
+          call hydro_output()
+        endif
         call hydro_update(tsp_t, tsp_t + tsp_dt)
       endif
+      call hydro_output()
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 c-- temperature

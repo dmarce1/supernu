@@ -14,14 +14,18 @@
       integer :: dm, rk
       integer :: i, j, k, f
 
+      real(8), parameter :: des1 = 0.001d0
+      real(8), parameter :: des2 = 0.1d0
+
+
       real(8) :: U(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
       real(8) :: U0(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
       real(8) :: dU(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
       real(8) :: UR(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
       real(8) :: UL(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
-      real(8) :: slp(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
-      real(8) :: slp_p(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
-      real(8) :: slp_m(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
+      real(8) :: slp(hydro_nx,hydro_ny,hydro_nz)
+      real(8) :: slp_p(hydro_nx,hydro_ny,hydro_nz)
+      real(8) :: slp_m(hydro_nx,hydro_ny,hydro_nz)
       real(8) :: Fv(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
       real(8) :: Fs(hydro_nx,hydro_ny,hydro_nz,hydro_nf)
       real(8) :: A(hydro_nx,hydro_ny,hydro_nz)
@@ -46,13 +50,11 @@
       logical :: dimused(3)
       integer :: xb, xe, yb, ye, zb, ze
       integer :: nx, ny, nz, bw, nf, l
-      real(8) :: gamma, tfactor
+      real(8) :: gamma, tfactor, tmp8
       logical :: done
       logical, save :: first_call = .true.
 
-      call gather_hydro
       if( first_call ) then
-        call hydro_output()
         first_call = .false.
       endif
 
@@ -183,6 +185,8 @@ c     (in units of dX)
 c     Main loop - loop until desired time is reached
       U = hydro_state
 
+        write(*,*)
+        write(*,*) t, t1
       do while (.not. done)
 
         U0 = U
@@ -192,7 +196,7 @@ c     Main loop - loop until desired time is reached
           dU = 0.0d0
           dtinv_max = 0.0d0
 
-          call hydro_boundaries(U,nx,ny,nz,nf,bw)
+          call hydro_boundaries(U,X,veldim,nx,ny,nz,nf,bw,t)
 
 
 c     Compute contribution to dudt in each flux direction
@@ -212,6 +216,11 @@ c         pre-recon
                   U(:,:,:,f) = U(:,:,:,f) / U(:,:,:,l)
                 endif
               enddo
+              U(:,:,:,egas_i) = U(:,:,:,egas_i) - 0.5*U(:,:,:,px_i)**2
+              if( grd_igeom .ne. 11 ) then
+               U(:,:,:,egas_i) = U(:,:,:,egas_i) - 0.5*U(:,:,:,py_i)**2
+               U(:,:,:,egas_i) = U(:,:,:,egas_i) - 0.5*U(:,:,:,pz_i)**2
+              endif
               do i = 0, 2
                 if( veldim(i+1) ) then
                    U(:,:,:,px_i+i) = U(:,:,:,px_i+i) - X(:,:,:,i+1) / t
@@ -231,39 +240,50 @@ c     Piecewise constant
                 end select
 c     Piecwise linear
               else if( bw .eq. 2 ) then
-                select case(dm)
+                do f = 1, nf
+                 select case(dm)
                   case(1)
-                    slp(2:nx,:,:,:) = U(2:nx,:,:,:) - U(1:nx-1,:,:,:)
+                    slp(2:nx,:,:) = (U(2:nx,:,:,f) - U(1:nx-1,:,:,f))/
+     &                              (X(2:nx,:,:,1) - X(1:nx-1,:,:,1))
                     slp_m = slp
-                    slp_p(1:nx-1,:,:,:) = slp(2:nx,:,:,:)
+                    slp_p(1:nx-1,:,:) = slp(2:nx,:,:)
                   case(2)
-                    slp(:,2:ny,:,:) = U(:,2:ny,:,:) - U(:,1:ny-1,:,:)
+                    slp(:,2:ny,:) = (U(:,2:ny,:,f) - U(:,1:ny-1,:,f))/
+     &                              (X(:,2:ny,:,2) - X(:,1:ny-1,:,2))
                     slp_m = slp
-                    slp_p(:,1:ny-1,:,:) = slp(:,2:ny,:,:)
+                    slp_p(:,1:ny-1,:) = slp(:,2:ny,:)
                   case(3)
-                    slp(:,:,2:nz,:) = U(:,:,2:nz,:) - U(:,:,1:nz-1,:)
+                    slp(:,:,2:nz) = (U(:,:,2:nz,f) - U(:,:,1:nz-1,f))/
+     &                              (X(:,:,2:nz,3) - X(:,:,1:nz-1,3))
                     slp_m = slp
-                    slp_p(:,:,1:nz-1,:) = slp(:,:,2:nz,:)
-                end select
-                slp = (sign(0.25d0,slp_m)+sign(0.25d0,slp_p))*
+                    slp_p(:,:,1:nz-1) = slp(:,:,2:nz)
+                 end select
+                 slp = (sign(0.5d0,slp_m)+sign(0.5d0,slp_p))*
      &                   min(abs(slp_p),abs(slp_m))
                  select case(dm)
                   case(1)
-                    UR(xb:xe+1,yb:ye,zb:ze,:) =
-     &               U(xb:xe+1,yb:ye,zb:ze,:)-slp(xb:xe+1,yb:ye,zb:ze,:)
-                    UL(xb:xe+1,yb:ye,zb:ze,:) =
-     &               U(xb-1:xe,yb:ye,zb:ze,:)+slp(xb-1:xe,yb:ye,zb:ze,:)
+                    UR(xb:xe+1,yb:ye,zb:ze,f) = U(xb:xe+1,yb:ye,zb:ze,f)
+     &               - slp(xb:xe+1,yb:ye,zb:ze)
+     &               *  dX(xb:xe+1,yb:ye,zb:ze,1)*0.5d0
+                    UL(xb:xe+1,yb:ye,zb:ze,f) = U(xb-1:xe,yb:ye,zb:ze,f)
+     &               + slp(xb-1:xe,yb:ye,zb:ze)
+     &               *  dX(xb-1:xe,yb:ye,zb:ze,1)*0.5d0
                   case(2)
-                    UR(xb:xe,yb:ye+1,zb:ze,:) =
-     &               U(xb:xe,yb:ye+1,zb:ze,:)-slp(xb:xe,yb:ye+1,zb:ze,:)
-                   UL(xb:xe,yb:ye+1,zb:ze,:) =
-     &               U(xb:xe,yb-1:ye,zb:ze,:)+slp(xb:xe,yb-1:ye,zb:ze,:)
+                    UR(xb:xe,yb:ye+1,zb:ze,f) = U(xb:xe,yb:ye+1,zb:ze,f)
+     &               - slp(xb:xe,yb:ye+1,zb:ze)
+     &               *  dX(xb:xe,yb:ye+1,zb:ze,2)*0.5d0
+                    UL(xb:xe,yb:ye+1,zb:ze,f) = U(xb:xe,yb-1:ye,zb:ze,f)
+     &               + slp(xb:xe,yb-1:ye,zb:ze)
+     &               *  dX(xb:xe,yb-1:ye,zb:ze,2)*0.5d0
                   case(3)
-                    UR(xb:xe,yb:ye,zb:ze+1,:) =
-     &               U(xb:xe,yb:ye,zb:ze+1,:)-slp(xb:xe,yb:ye,zb:ze+1,:)
-                    UL(xb:xe,yb:ye,zb:ze+1,:) =
-     &               U(xb:xe,yb:ye,zb-1:ze,:)+slp(xb:xe,yb:ye,zb-1:ze,:)
-                end select
+                    UR(xb:xe,yb:ye,zb:ze+1,f) = U(xb:xe,yb:ye,zb:ze+1,f)
+     &               - slp(xb:xe,yb:ye,zb:ze+1)
+     &               *  dX(xb:xe,yb:ye,zb:ze+1,3)*0.5d0
+                    UL(xb:xe,yb:ye,zb:ze+1,f) = U(xb:xe,yb:ye,zb-1:ze,f)
+     &               + slp(xb:xe,yb:ye,zb-1:ze)
+     &               *  dX(xb:xe,yb:ye,zb-1:ze,3)*0.5d0
+                 end select
+                enddo
 
                 else
                   write(*,*) 'bw not supported by hydro'
@@ -280,6 +300,17 @@ c         post-recon
      &                                          Xf(1:nx,1:ny,1:nz,i+1)/t
                 endif
               enddo
+              U(:,:,:,egas_i) = U(:,:,:,egas_i) + 0.5*U(:,:,:,px_i)**2
+              UR(:,:,:,egas_i) = UR(:,:,:,egas_i)+0.5*UR(:,:,:,px_i)**2
+              UL(:,:,:,egas_i) = UL(:,:,:,egas_i)+0.5*UL(:,:,:,px_i)**2
+              if( grd_igeom .ne. 11 ) then
+               U(:,:,:,egas_i) = U(:,:,:,egas_i) + 0.5*U(:,:,:,py_i)**2
+               U(:,:,:,egas_i) = U(:,:,:,egas_i) + 0.5*U(:,:,:,pz_i)**2
+               UR(:,:,:,egas_i) = UR(:,:,:,egas_i)+0.5*UR(:,:,:,py_i)**2
+               UR(:,:,:,egas_i) = UR(:,:,:,egas_i)+0.5*UR(:,:,:,pz_i)**2
+               UL(:,:,:,egas_i) = UL(:,:,:,egas_i)+0.5*UL(:,:,:,py_i)**2
+               UL(:,:,:,egas_i) = UL(:,:,:,egas_i)+0.5*UL(:,:,:,pz_i)**2
+              endif
               do f = 1, nf
                 if((f.ne.rho_i).and.(f.ne.tau_i).and.(f.ne.natom_i))then
                   if( f .eq. nelec_i .or. f .ge. frac_i ) then
@@ -319,10 +350,10 @@ c     energy
               do i = 1, nx
               do j = 1, ny
               do k = 1, nz
-                if( einL(i,j,k) .lt. UL(i,j,k,egas_i) * 0.001d0 ) then
+                if( einL(i,j,k) .lt. UL(i,j,k,egas_i) * des1 ) then
                   einL(i,j,k) = UL(i,j,k,tau_i)**gamma
                 endif
-                if( einR(i,j,k) .lt. UR(i,j,k,egas_i) * 0.001d0 ) then
+                if( einR(i,j,k) .lt. UR(i,j,k,egas_i) * des1 ) then
                   einR(i,j,k) = UR(i,j,k,tau_i)**gamma
                 endif
               enddo
@@ -504,23 +535,33 @@ c     Update geometrical quantities for moving grid
             t = t + dt
           endif
 
-
-        enddo
-
+      call hydro_boundaries(U,X,veldim,nx,ny,nz,nf,bw,t)
 
 c     Apply dual energy formalism to update tau
         kin = U(:,:,:,px_i)**2+U(:,:,:,py_i)**2+U(:,:,:,pz_i)**2
         kin = kin * 0.5d0 / U(:,:,:,rho_i)
         ein = U(:,:,:,egas_i) - kin
-        do i = 1, nx
-        do j = 1, ny
-        do k = 1, nz
-          if( ein(i,j,k) .ge. U(i,j,k,egas_i) * 0.1d0 ) then
+        do i = 2, nx-1
+        do j = 2, ny-1
+        do k = 2, nz-1
+          tmp8 = U(i,j,k,egas_i)
+          tmp8 = max(U(i-1,j,k,egas_i), tmp8)
+          tmp8 = max(U(i+1,j,k,egas_i), tmp8)
+          tmp8 = max(U(i,j-1,k,egas_i), tmp8)
+          tmp8 = max(U(i,j+1,k,egas_i), tmp8)
+          tmp8 = max(U(i,j,k-1,egas_i), tmp8)
+          tmp8 = max(U(i,j,k+1,egas_i), tmp8)
+          if( ein(i,j,k) .ge. tmp8 * des2 ) then
             U(i,j,k,tau_i) = ein(i,j,k)**(1.0d0/gamma)
           endif
         enddo
         enddo
         enddo
+
+
+        enddo
+
+
         write(*,*) t, t1, dt, dtinv_max
 
 
@@ -530,7 +571,7 @@ c     Apply dual energy formalism to update tau
       hydro_state = U
 
 
-      call hydro_boundaries(hydro_state,nx,ny,nz,nf,bw)
+      call hydro_boundaries(hydro_state,X,veldim,nx,ny,nz,nf,bw,t)
 
 
       call scatter_hydro
@@ -538,8 +579,6 @@ c     Apply dual energy formalism to update tau
 
       call hydro_velinterp
 
-
-      call hydro_output
 
 
       end subroutine

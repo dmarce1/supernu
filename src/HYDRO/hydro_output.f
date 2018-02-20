@@ -80,7 +80,7 @@ c..get the solution for all spatial points at once
 
       integer, save :: onum = 0
       character*15 :: filename
-      integer :: i, j
+      integer :: i, j, l
       real*8 :: x
 
 
@@ -90,15 +90,17 @@ c..get the solution for all spatial points at once
         open(unit=1,file=filename,status='unknown')
         do i = hydro_bw+1, hydro_nx - hydro_bw
           x = (grd_xarr(i-hydro_bw) + grd_xarr(i+1-hydro_bw)) * 0.5d0
+          l = grd_icell(i-hydro_bw,1,1)
           if( grd_isvelocity ) then
             x = x * tsp_t
           endif
-          write(1,'(E14.6)', advance="no") x
-          do j = 1, hydro_nf
-            write(1,'(E14.6)', advance="no")
-     &                   hydro_state(i,hydro_bw+1,hydro_bw+1,j)
-          enddo
-          write(1,*)
+          write(1,'(6E14.6)') x, gas_mass(l), gas_temp(l),
+     &      grd_vx(l), grd_vy(l), grd_vz(l)
+!          do j = 1, hydro_nf
+!            write(1,'(E14.6)', advance="no")
+!     &                   hydro_state(i,hydro_bw+1,hydro_bw+1,j)
+!          enddo
+!          write(1,*)
         enddo
         close(1)
 

@@ -157,7 +157,7 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
          eint = hydro_state(i,j,k,egas_i) -
      &          (grd_vx(l)**2+grd_vy(l)**2+grd_vz(l)**2)*0.50d0*
      &              hydro_state(i,j,k,rho_i)
-         if( eint .le. hydro_state(i,j,k,egas_i) * 0.001d0 ) then
+         if( eint .le. hydro_state(i,j,k,egas_i) * 0.1d0 ) then
            eint = hydro_state(i,j,k,tau_i)**(hydro_gamma)
          endif
 
@@ -181,7 +181,7 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
          gas_natom(l) = hydro_state(i,j,k,natom_i) * gas_vol(l)
          gas_nelec(l) = hydro_state(i,j,k,nelec_i) * gas_vol(l)
      &                                             / gas_natom(l)
-         gas_ye(l) = gas_nelec(l) / nnuc
+         gas_ye(l) = gas_nelec(l) * gas_natom(l) / nnuc
 c         gas_nelec(l) = gas_nelec(l) / gas_natom(l)
          gas_bcoef(l) = 1.5d0*pc_kb*(1d0+gas_nelec(l))
      &              * gas_natom(l) / gas_vol(l)
