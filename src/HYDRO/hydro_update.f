@@ -477,7 +477,7 @@ c     Compute timestep
      &              maxval(dU(xb:xe,yb:ye,zb:ze,(/rho_i,tau_i/)) /
      &                      (-U(xb:xe,yb:ye,zb:ze,(/rho_i,tau_i/)))),
      &                  dtinv_max)
-            dt = 0.4d0 / dtinv_max
+            dt = 0.1d0 / dtinv_max
             if( dt .ge. t1 - t ) then
               dt = t1 - t
               done = .true.

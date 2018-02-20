@@ -143,6 +143,7 @@ c
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c        HYDRO LSU
       allocate(grd_momdep(grd_nx,grd_ny,grd_nz,3))
+      grd_momdep=0d0
       allocate(grd_vx(grd_ncell))
       allocate(grd_vy(grd_ncell))
       allocate(grd_vz(grd_ncell))

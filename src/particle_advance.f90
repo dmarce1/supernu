@@ -46,7 +46,7 @@ subroutine particle_advance
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !    LSU MODIFICATION
   real*8, pointer :: vx, vy, vz
-  real*8 :: momb(3), mome(3), this_dt, help2
+  real*8 :: momb(3), mome(3), this_dt, help2, xold, yold, zold, eold
   integer :: ixold, iyold, izold, itypeold, icxp, icxm, icyp, icym, iczp, iczm
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   real*8 :: eta, xi
@@ -307,6 +307,10 @@ subroutine particle_advance
 ! LSU MODIFICATION
         if( grd_hydro_on ) then
           itypeold = ptcl2%itype
+          eold = e
+          xold = x
+          yold = y
+          zold = z
           ixold = ix
           iyold = iy
           izold = iz
@@ -405,6 +409,12 @@ subroutine particle_advance
             mome = 0d0
           endif
           grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) + momb - mome
+          select case(grd_igeom)
+            case(11)
+              grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) + eold * (mu * (x - xold) - ptcl2%dist) / xold / pc_c
+            case default
+              stop 'particle advance: coord sys not written yet for momdep'
+            end select
         endif
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 

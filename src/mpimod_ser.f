@@ -84,6 +84,20 @@ c      HYDRO LSU
       integer :: i0, j0, k0, f0
       real*8 :: eint
 
+      do i = 1, grd_nx
+      do j = 1, grd_ny
+      do k = 1, grd_nz
+        l = grd_icell(i,j,k)
+        grd_vx(l) = grd_vx(l)+grd_momdep(i,j,k,1)/gas_mass(l)
+        if( grd_igeom .ne. 11 ) then
+        grd_vy(l) = grd_vy(l)+grd_momdep(i,j,k,2)/gas_mass(l)
+        grd_vz(l) = grd_vz(l)+grd_momdep(i,j,k,3)/gas_mass(l)
+        endif
+      enddo
+      enddo
+      enddo
+      grd_momdep=0d0
+
       do i = hydro_bw+1, hydro_nx - hydro_bw
       do j = hydro_bw+1, hydro_ny - hydro_bw
       do k = hydro_bw+1, hydro_nz - hydro_bw
