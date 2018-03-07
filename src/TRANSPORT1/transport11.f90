@@ -1,6 +1,6 @@
 !This file is part of SuperNu.  SuperNu is released under the terms of the GNU GPLv3, see COPYING.
 !Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
-pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
+subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
 
   use randommod
   use miscmod
@@ -21,6 +21,7 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !    LSU MODIFICATION
   real*8, pointer :: vx
+  real*8 :: eold
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   integer,intent(out) :: ierr
 !##################################################
@@ -115,6 +116,7 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
 
 !-- census distance
   dcen = abs(pc_c*(tsp_t1-ptcl%t)*thelpinv)
+!  write(*,*) tsp_t1, ptcl%t, dcen / pc_c * thelp, ptcl2%ipart
 !
 !-- boundary distances
   if(ix==1 .or. mu>=-sqrt(1d0-(grd_xarr(ix)/x)**2)) then
@@ -235,8 +237,11 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
           (1d0-exp(-grd_fcoef(ic)*grd_cap(ig,ic) * &
           elabfact*d*thelp))*elabfact
 !-- reducing particle energy
+     eold = e
      e = e*exp(-grd_fcoef(ic)*grd_cap(ig,ic) * &
           elabfact*d*thelp)
+!--LSU - depositing momentum
+    grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) + mu*(eold - e)/pc_c
   endif
 
 !
@@ -253,15 +258,18 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
   endif
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
+
 !
 !-- census
   if(d == dcen) then
      ptcl2%stat = 'cens'
+
      return
   endif
 
 !-- common manipulations for collisions
   if(d==dthm.or.d==dcol) then
+
      call rnd_r(r1,rndstate)
      mu = 1d0-2d0*r1
      if(abs(mu)<0.0000001d0) then
@@ -291,6 +299,10 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
 !
 !-- Thomson scatter
   if(d == dthm) then
+
+! LSU
+     grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) + e * mu / pc_c
+
 !-- checking velocity dependence
 !-- lab wavelength
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -310,11 +322,21 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
 !-- energy weight
         e = e*help
         e0 = e0*help
+
+
      endif
 
+
+! LSU
+     grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) - e * mu / pc_c
 !
 !-- effective collision
   elseif(d == dcol) then
+
+
+! LSU
+     grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) + e * mu / pc_c
+
      call rnd_r(r1,rndstate)
 !-- checking if analog
      if(trn_isimcanlog.and.r1<=grd_fcoef(ic)) then
@@ -396,6 +418,10 @@ pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr
              wl = wl*(1d0-vx*mu*cinv)
            endif
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+! LSU
+           grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) - e * mu / pc_c
+
         endif
      endif
      

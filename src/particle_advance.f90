@@ -46,7 +46,7 @@ subroutine particle_advance
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !    LSU MODIFICATION
   real*8, pointer :: vx, vy, vz
-  real*8 :: momb(3), mome(3), this_dt, help2, xold, yold, zold, eold
+  real*8 :: momb(3), mome(3), this_dt, help2, xold, yold, zold, eold, muold, tmp
   integer :: ixold, iyold, izold, itypeold, icxp, icxm, icyp, icym, iczp, iczm
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   real*8 :: eta, xi
@@ -308,6 +308,7 @@ subroutine particle_advance
         if( grd_hydro_on ) then
           itypeold = ptcl2%itype
           eold = e
+          muold = mu
           xold = x
           yold = y
           zold = z
@@ -352,70 +353,65 @@ subroutine particle_advance
           if( itypeold .eq. 2 ) then
             this_dt = ptcl%t - this_dt
 
-            help2 = eraddens * this_dt / 2d0 * dx(ixold)
+            help2 = eraddens * this_dt / 2d0 * dx(ixold) * thelp
             if( ixold .gt. 1 ) then
               icxm = grd_icell(ixold-1,iyold,izold)
               grd_momdep(ixold-1,iyold,izold,1)=grd_momdep(ixold-1,iyold,izold,1) - &
-                                     help2 * (grd_sig(icxm)+grd_cap(ig,icxm)) * grd_opaclump(1,icold)
+                                     help2 * (grd_sig(icxm)+grd_capgrey(icxm)) * grd_opaclump(1,icold)
             endif
             if( ixold .lt. grd_nx ) then
               icxp = grd_icell(ixold+1,iyold,izold)
               grd_momdep(ixold+1,iyold,izold,1)=grd_momdep(ixold+1,iyold,izold,1) + &
-                                     help2 * (grd_sig(icxp)+grd_cap(ig,icxp)) * grd_opaclump(2,icold)
+                                     help2 * (grd_sig(icxp)+grd_capgrey(icxp)) * grd_opaclump(2,icold)
             endif
-            grd_momdep(ixold,iyold,izold,1)=grd_momdep(ixold,iyold,izold,1) - &
-                                     help2 * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(1,icold)
+
+            if( ixold .gt. 1 .or. grd_igeom .eq. 3 ) then
+              grd_momdep(ixold,iyold,izold,1)=grd_momdep(ixold,iyold,izold,1) - &
+                                     help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(1,icold)
+            endif
+
             grd_momdep(ixold,iyold,izold,1)=grd_momdep(ixold,iyold,izold,1) + &
-                                     help2 * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(2,icold)
+                                     help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(2,icold)
 
             if( grd_igeom .ne. 11 ) then
+
+             write(*,*) 'geometry not yet supported'
+             call abort
 
               help2 = eraddens * this_dt / 2d0 * dy(iyold)
               if( iyold .gt. 1 ) then
                 icym = grd_icell(ixold,iyold-1,izold)
                 grd_momdep(ixold,iyold-1,izold,2)=grd_momdep(ixold,iyold-1,izold,2) - &
-                                       help2 * (grd_sig(icym)+grd_cap(ig,icym)) * grd_opaclump(3,icold)
+                                       help2 * (grd_sig(icym)+grd_capgrey(icym)) * grd_opaclump(3,icold)
               endif
               if( iyold .lt. grd_ny ) then
                 icyp = grd_icell(ixold,iyold+1,izold)
                 grd_momdep(ixold,iyold+1,izold,2)=grd_momdep(ixold,iyold+1,izold,2) + &
-                                       help2 * (grd_sig(icyp)+grd_cap(ig,icyp)) * grd_opaclump(4,icold)
+                                       help2 * (grd_sig(icyp)+grd_capgrey(icyp)) * grd_opaclump(4,icold)
               endif
               grd_momdep(ixold,iyold,izold,2)=grd_momdep(ixold,iyold,izold,2) - &
-                                       help2 * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(3,icold)
+                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(3,icold)
               grd_momdep(ixold,iyold,izold,2)=grd_momdep(ixold,iyold,izold,2) + &
-                                      help2 * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(4,icold)
+                                      help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(4,icold)
 
               help2 = eraddens * this_dt / 2d0 * dz(izold)
               if( izold .gt. 1 ) then
                 iczm = grd_icell(ixold,iyold,izold-1)
                 grd_momdep(ixold,iyold,izold-1,3)=grd_momdep(ixold,iyold,izold-1,3) - &
-                                       help2 * (grd_sig(iczm)+grd_cap(ig,iczm)) * grd_opaclump(5,icold)
+                                       help2 * (grd_sig(iczm)+grd_capgrey(iczm)) * grd_opaclump(5,icold)
               endif
               if( izold .lt. grd_nz ) then
                 iczp = grd_icell(ixold,iyold,izold+1)
                 grd_momdep(ixold,iyold,izold+1,3)=grd_momdep(ixold,iyold,izold+1,3) + &
-                                       help2 * (grd_sig(iczp)+grd_cap(ig,iczp)) * grd_opaclump(6,icold)
+                                       help2 * (grd_sig(iczp)+grd_capgrey(iczp)) * grd_opaclump(6,icold)
               endif
               grd_momdep(ixold,iyold,izold,3)=grd_momdep(ixold,iyold,izold,  3) - &
-                                       help2 * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(5,icold)
+                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(5,icold)
               grd_momdep(ixold,iyold,izold,3)=grd_momdep(ixold,iyold,izold,  3) + &
-                                       help2 * (grd_sig(icold)+grd_cap(ig,icold)) * grd_opaclump(6,icold)
+                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(6,icold)
             endif
           endif
-          if( ptcl2%itype .eq. 1 ) then
-            call particle_momentum( ptcl, mome )
-          else
-            mome = 0d0
-          endif
-          grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) + momb - mome
-          select case(grd_igeom)
-            case(11)
-              grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) + eold * (mu * (x - xold) - ptcl2%dist) / xold / pc_c
-            case default
-              stop 'particle advance: coord sys not written yet for momdep'
-            end select
-        endif
+         endif
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 
@@ -551,7 +547,10 @@ subroutine particle_advance
 !
 !-- exact particle time
         help = abs(ptcl%t-tsp_t1)/(ptcl%t+tsp_t1)
-        if(help>1e-15) stop 'particle_advance: census time inaccurate'
+        if(help>1e-15) then
+           write(*,*) ptcl%t, tsp_t1, ptcl2%itype
+           call abort
+        endif !stop 'particle_advance: census time inaccurate'
         ptcl%t = tsp_t1
 
 !
@@ -568,12 +567,16 @@ subroutine particle_advance
         if(ptcl2%itype==2 .and. (grd_isvelocity.or.grd_hydro_on)) then
 !-- r   edshifting energy weight!{{{
            if( grd_hydro_on ) then
-             help = 2d0/(grd_xarr(ix+1)+grd_xarr(ix))
-             help = mu*mu*grd_dvdx(ix,iy,iz,1,1) + (1d0-mu*mu)*grd_v(ix,iy,iz,1)*help
+              select case(grd_igeom)
+                case(11)
+                  help = (1d0/3d0)*(grd_dvdx(ix,iy,iz,1,1) + grd_v(ix,iy,iz,1)*4d0/(grd_xarr(ix+1)+grd_xarr(ix)))
+                case default
+                  stop 'particle_advance.f90: coord sys not implemented'
+               end select
            else
              help = 1d0
            endif
-           help = 1d0 / tsp_t
+           help = help / tsp_t
            tot_evelo = tot_evelo + e*(1d0-exp(-tsp_dt*help))
            e = e*exp(-tsp_dt*help)
            e0 = e0*exp(-tsp_dt*help)

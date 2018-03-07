@@ -88,10 +88,10 @@ c      HYDRO LSU
       do j = 1, grd_ny
       do k = 1, grd_nz
         l = grd_icell(i,j,k)
-        grd_vx(l) = grd_vx(l)+grd_momdep(i,j,k,1)/gas_mass(l)
+c        grd_vx(l) = grd_vx(l)+grd_momdep(i,j,k,1)/gas_mass(l)
         if( grd_igeom .ne. 11 ) then
-        grd_vy(l) = grd_vy(l)+grd_momdep(i,j,k,2)/gas_mass(l)
-        grd_vz(l) = grd_vz(l)+grd_momdep(i,j,k,3)/gas_mass(l)
+c          grd_vy(l) = grd_vy(l)+grd_momdep(i,j,k,2)/gas_mass(l)
+c          grd_vz(l) = grd_vz(l)+grd_momdep(i,j,k,3)/gas_mass(l)
         endif
       enddo
       enddo
@@ -151,7 +151,7 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
 
       integer :: i, j, k, l, f
       integer :: i0, j0, k0, f0
-      real*8 :: natom
+      real*8 :: natom, tmp
       real*8 :: eint, nnuc
       do i = hydro_bw+1, hydro_nx - hydro_bw
       do j = hydro_bw+1, hydro_ny - hydro_bw
@@ -200,7 +200,7 @@ c         gas_nelec(l) = gas_nelec(l) / gas_natom(l)
          gas_bcoef(l) = 1.5d0*pc_kb*(1d0+gas_nelec(l))
      &              * gas_natom(l) / gas_vol(l)
          gas_temp(l) =    eint / gas_bcoef(l)
-         gas_temp(l) = max(gas_temp(l),3d3)
+         gas_temp(l) = max(gas_temp(l),1d3)
 c         write(*,*) l, gas_temp(l), eint, gas_bcoef(l)
          if( grd_isvelocity) then
            gas_vol(l) = gas_vol(l) / (1.0d0 + tsp_dt / tsp_t )**3

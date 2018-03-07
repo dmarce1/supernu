@@ -146,6 +146,7 @@ c===============================================
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c     HYDRO LSU
       if( grd_hydro_on .and. it_gt_0 ) then
+        gas_rho = gas_mass/gas_vol
         if( lfirst ) then
           call eos_update(.false.)
         endif
@@ -155,7 +156,7 @@ c     HYDRO LSU
         if( lfirst ) then
           call hydro_output()
         endif
-        call hydro_update(tsp_t, tsp_t + tsp_dt)
+        call hydro_update(tsp_t, tsp_t + tsp_dt, help, .false.)
       endif
       call hydro_output()
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

@@ -1,18 +1,20 @@
 
 
-      subroutine hydro_update( t0, t1 )
+      subroutine hydro_update( t0, t1, dt, dt_only )
       use hydromod
       use gridmod
       use mpimod
       implicit none
       logical, parameter :: allow_inflow = .true.
       real(8), intent(in) :: t0, t1
+      real(8), intent(out) :: dt
+      logical, intent(in) :: dt_only
 
-      real(8) :: t, dt
+      real(8) :: t
       real(8) :: dtinv_max
 
       integer :: dm, rk
-      integer :: i, j, k, f
+      integer :: i, j, k, f, i0, j0, k0
 
       real(8), parameter :: des1 = 0.001d0
       real(8), parameter :: des2 = 0.1d0
@@ -335,8 +337,8 @@ c     Compute face kinetic and internal energies and velocities
                 kinR = 0.5d0*(UR(:,:,:,px_i)**2 + UR(:,:,:,py_i)**2
      &                    + UR(:,:,:,pz_i)**2) / UR(:,:,:,rho_i)
               endif
-              einL = UL(:,:,:,egas_i) - kinL
-              einR = UR(:,:,:,egas_i) - kinR
+              einL = max(UL(:,:,:,egas_i) - kinL,0d0)
+              einR = max(UR(:,:,:,egas_i) - kinR,0d0)
               velL = UL(:,:,:,px_i+dm-1) / UL(:,:,:,rho_i)
               velR = UR(:,:,:,px_i+dm-1) / UR(:,:,:,rho_i)
 c     Remove grid velocity
@@ -469,6 +471,21 @@ c     If grid is moving, volume increases
           if( grd_isvelocity ) then
              dU = dU - 3.0d0 * U / t
           endif
+          do i = xb, xe
+          do j = yb, ye
+          do k = zb, ze
+            i0 = i - hydro_bw
+            j0 = j - hydro_bw
+            k0 = k - hydro_bw
+            tmp8 = volinv(i,j,k) / product(dX(i,j,k,:)) / (t1-t0)
+            dU(i,j,k,px_i) = dU(i,j,k,px_i)+grd_momdep(i0,j0,k0,1)*tmp8
+            if( grd_igeom .ne. 11 ) then
+              dU(i,j,k,py_i)=dU(i,j,k,py_i)+grd_momdep(i0,j0,k0,2)*tmp8
+              dU(i,j,k,pz_i)=dU(i,j,k,pz_i)+grd_momdep(i0,j0,k0,3)*tmp8
+            endif
+          enddo
+          enddo
+          enddo
 
 
 c     Compute timestep
@@ -478,108 +495,117 @@ c     Compute timestep
      &                      (-U(xb:xe,yb:ye,zb:ze,(/rho_i,tau_i/)))),
      &                  dtinv_max)
             dt = 0.1d0 / dtinv_max
-            if( dt .ge. t1 - t ) then
+            if( dt .ge. t1 - t .and. (.not. dt_only) ) then
               dt = t1 - t
               done = .true.
             endif
           endif
 
+          if( .not. dt_only ) then
+
 c     Apply dudt
-          if( rk .eq. 1 ) then
-            U = U0 + dU * dt
-          else
-            U = (U0 + U + dU*dt) * 0.5d0
-          endif
-
-
-          if( rk .eq. 1 ) then
-
-            if(any(U(xb:xe,yb:ye,zb:ze,rho_i).le.0.0d0)) then
-               write(*,*) 'rho < 0.0'
-               call abort()
-            endif
-            if(any(U(xb:xe,yb:ye,zb:ze,tau_i).le.0.0d0)) then
-               write(*,*) 'tau < 0.0'
+            if( rk .eq. 1 ) then
+              U = U0 + dU * dt
+            else
+              U = (U0 + U + dU*dt) * 0.5d0
             endif
 
-            tfactor = 1.0d0 + dt / t
+
+            if( rk .eq. 1 ) then
+
+              if(any(U(xb:xe,yb:ye,zb:ze,rho_i).le.0.0d0)) then
+                write(*,*) 'rho < 0.0'
+                call abort()
+              endif
+              if(any(U(xb:xe,yb:ye,zb:ze,tau_i).le.0.0d0)) then
+                write(*,*) 'tau < 0.0'
+              endif
+
+              tfactor = 1.0d0 + dt / t
 
 c     Upate X, Xf, and dX for moving grids
-            do i = 1, 3
-              if( veldim(i) ) then
-                X(:,:,:,i) = X(:,:,:,i) * tfactor
-                Xf(:,:,:,i) = Xf(:,:,:,i) * tfactor
-                dX(:,:,:,i) = dX(:,:,:,i) * tfactor
-              endif
-            enddo
+              do i = 1, 3
+                if( veldim(i) ) then
+                  X(:,:,:,i) = X(:,:,:,i) * tfactor
+                  Xf(:,:,:,i) = Xf(:,:,:,i) * tfactor
+                  dX(:,:,:,i) = dX(:,:,:,i) * tfactor
+                endif
+              enddo
 
 c     Update geometrical quantities for moving grid
-            if( grd_isvelocity ) then
-              select case( grd_igeom )
-                case(1,11)
-                  scle(:,:,:,2) = scle(:,:,:,2) * tfactor
-                  scle(:,:,:,3) = scle(:,:,:,3) * tfactor
-                  area(:,:,:,1) = area(:,:,:,1) * tfactor**2
-                  area(:,:,:,2) = area(:,:,:,2) * tfactor
-                  area(:,:,:,3) = area(:,:,:,3) * tfactor
-                  volinv = volinv / (tfactor**2)
-                case(2)
-                  scle(:,:,:,3) = scle(:,:,:,3) * tfactor
-                  area(:,:,:,1) = area(:,:,:,1) * tfactor
-                  area(:,:,:,2) = area(:,:,:,2) * tfactor
-                  volinv = volinv / tfactor
-                case(3)
-              end select
+              if( grd_isvelocity ) then
+                select case( grd_igeom )
+                  case(1,11)
+                    scle(:,:,:,2) = scle(:,:,:,2) * tfactor
+                    scle(:,:,:,3) = scle(:,:,:,3) * tfactor
+                    area(:,:,:,1) = area(:,:,:,1) * tfactor**2
+                    area(:,:,:,2) = area(:,:,:,2) * tfactor
+                    area(:,:,:,3) = area(:,:,:,3) * tfactor
+                    volinv = volinv / (tfactor**2)
+                  case(2)
+                    scle(:,:,:,3) = scle(:,:,:,3) * tfactor
+                    area(:,:,:,1) = area(:,:,:,1) * tfactor
+                    area(:,:,:,2) = area(:,:,:,2) * tfactor
+                    volinv = volinv / tfactor
+                  case(3)
+                end select
+              endif
+              t = t + dt
+
             endif
 
-            t = t + dt
-          endif
-
-      call hydro_boundaries(U,X,veldim,nx,ny,nz,nf,bw,t)
+            call hydro_boundaries(U,X,veldim,nx,ny,nz,nf,bw,t)
 
 c     Apply dual energy formalism to update tau
-        kin = U(:,:,:,px_i)**2+U(:,:,:,py_i)**2+U(:,:,:,pz_i)**2
-        kin = kin * 0.5d0 / U(:,:,:,rho_i)
-        ein = U(:,:,:,egas_i) - kin
-        do i = 2, nx-1
-        do j = 2, ny-1
-        do k = 2, nz-1
-          tmp8 = U(i,j,k,egas_i)
-          tmp8 = max(U(i-1,j,k,egas_i), tmp8)
-          tmp8 = max(U(i+1,j,k,egas_i), tmp8)
-          tmp8 = max(U(i,j-1,k,egas_i), tmp8)
-          tmp8 = max(U(i,j+1,k,egas_i), tmp8)
-          tmp8 = max(U(i,j,k-1,egas_i), tmp8)
-          tmp8 = max(U(i,j,k+1,egas_i), tmp8)
-          if( ein(i,j,k) .ge. tmp8 * des2 ) then
-            U(i,j,k,tau_i) = ein(i,j,k)**(1.0d0/gamma)
-          endif
-        enddo
-        enddo
-        enddo
+            kin = U(:,:,:,px_i)**2+U(:,:,:,py_i)**2+U(:,:,:,pz_i)**2
+            kin = kin * 0.5d0 / U(:,:,:,rho_i)
+            ein = U(:,:,:,egas_i) - kin
+            do i = 2, nx-1
+            do j = 2, ny-1
+            do k = 2, nz-1
+              tmp8 = U(i,j,k,egas_i)
+              tmp8 = max(U(i-1,j,k,egas_i), tmp8)
+              tmp8 = max(U(i+1,j,k,egas_i), tmp8)
+              tmp8 = max(U(i,j-1,k,egas_i), tmp8)
+              tmp8 = max(U(i,j+1,k,egas_i), tmp8)
+              tmp8 = max(U(i,j,k-1,egas_i), tmp8)
+              tmp8 = max(U(i,j,k+1,egas_i), tmp8)
+              if( ein(i,j,k) .ge. tmp8 * des2 ) then
+                U(i,j,k,tau_i) = ein(i,j,k)**(1.0d0/gamma)
+              endif
+            enddo
+            enddo
+            enddo
 
+          endif
 
         enddo
 
 
         write(*,*) t, t1, dt, dtinv_max
 
+        done = done .or. dt_only
 
       enddo
 
-
-      hydro_state = U
-
-
-      call hydro_boundaries(hydro_state,X,veldim,nx,ny,nz,nf,bw,t)
+c      if( .not. dt_only ) then
 
 
-      call scatter_hydro
+
+        hydro_state = U
 
 
-      call hydro_velinterp
+        call hydro_boundaries(hydro_state,X,veldim,nx,ny,nz,nf,bw,t)
 
 
+        call scatter_hydro
+
+
+        call hydro_velinterp
+
+c     endif
+
+      grd_momdep=0d0
 
       end subroutine
 
