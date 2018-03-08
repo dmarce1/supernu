@@ -1,6 +1,6 @@
 !This file is part of SuperNu.  SuperNu is released under the terms of the GNU GPLv3, see COPYING.
 !Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
-pure subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
+subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
 
   use randommod
   use gridmod
@@ -41,6 +41,7 @@ pure subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
   real*8, pointer :: vx
+  real*8 :: eold
 
   vx => ptcl2%vx
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -164,7 +165,11 @@ pure subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
      edep = e*(1d0-exp( &
           -grd_capgam(ic)*siglabfact*d*thelp))*elabfact
      !--
+     eold = e
      e = e*exp(-grd_capgam(ic)*siglabfact*d*thelp)
+
+!--LSU - depositing momentum
+    grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) + mu*(eold - e)/pc_c
 
   endif
 
@@ -194,6 +199,10 @@ pure subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
 !
 !-- fictitious scattering with implicit capture
   if (d == dcol) then
+
+! LSU
+     grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) + e * mu / pc_c
+
      !!{{{
      call rnd_r(r1,rndstate)
      if(r1<=1d0.and.trn_isimcanlog) then
@@ -233,6 +242,9 @@ pure subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
         call rnd_r(r1,rndstate)
      endif
      !!}}}
+
+! LSU
+     grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) - e * mu / pc_c
 !
 !------boundary crossing ----
   elseif (d == db) then
