@@ -346,6 +346,7 @@ subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
         edep = e*elabfact
 !-- velocity effects accounting
         totevelo = totevelo+e*(1d0-elabfact)
+        grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) - mu*e/pc_c
         return
      else
 !-- effective scattering

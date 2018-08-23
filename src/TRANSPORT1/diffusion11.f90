@@ -106,7 +106,11 @@ subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
   if(ic/=cache%ic) then
      cache%ic = ic!{{{
      cache%istat = 0 !specarr is not cached yet
-     capgreyinv = max(1d0/grd_capgrey(ic),0d0) !catch nans
+     if( grd_capgrey(ic) .eq. 0d0 ) then
+       capgreyinv = 0d0
+     else
+       capgreyinv = 1d0/grd_capgrey(ic)
+     endif
 
 !
 !-- lump testing ---------------------------------------------
@@ -269,8 +273,16 @@ subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
         flxopacleak(2)=2.0d0/(mfphelp*thelp*dx(ix))
      endif!}}}
   else
-     flxopacleak(1) = opacleak(1) * (dx3(ix)) / (dx(ix) * grd_xarr(ix)**2)
-     flxopacleak(2) = opacleak(2) * (dx3(ix)) / (dx(ix) * grd_xarr(ix+1)**2)
+     if( grd_xarr(ix) .ne. 0d0) then
+       flxopacleak(1) = opacleak(1) * (dx3(ix)) / (dx(ix) * grd_xarr(ix)**2)
+     else
+       flxopacleak(1) = 0d0
+     endif
+     if( grd_xarr(ix+1) .ne. 0d0) then
+       flxopacleak(2) = opacleak(2) * (dx3(ix)) / (dx(ix) * grd_xarr(ix+1)**2)
+     else
+       flxopacleak(2) = 0d0
+     endif
   endif
   flxopacleak = flxopacleak * (1d0/3d0)
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -484,7 +496,6 @@ subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
         ix = ix-1
         ic = grd_icell(ix,iy,iz)
         ig = iiig
-
      endif!}}}
 
 
@@ -674,7 +685,7 @@ subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
 !-- don't sample, it will end up in the lump anyway
         else
 !-- always put this in the single most likely group
-           ig = nint(grd_opaclump(9,ic))
+           iiig = max(1,nint(grd_opaclump(9,ic)))
            return
         endif
      else

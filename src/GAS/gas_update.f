@@ -149,16 +149,20 @@ c     HYDRO LSU
         gas_rho = gas_mass/gas_vol
         if( lfirst ) then
           call eos_update(.false.)
-        endif
+       endif
       endif
+
+
       call gather_hydro
       if( grd_hydro_on .and. it_gt_0 ) then
         if( lfirst ) then
-          call hydro_output()
+          call hydro_output(0d0)
         endif
         call hydro_update(tsp_t, tsp_t + tsp_dt, help, .false.)
       endif
-      call hydro_output()
+      call eos_update(.false.)
+
+      call hydro_output(tsp_t + tsp_dt)
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 c-- temperature

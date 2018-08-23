@@ -254,6 +254,8 @@ c        HYDRO LSU
 
       real*8 :: dx, dy, dz
 
+      dx = t
+
       if( grd_hydro_on ) then
         if( grd_igeom .ne. 11 ) then
           dx = 0.5d0 * (x - grd_xarr(xi)) /
@@ -311,7 +313,7 @@ c        HYDRO LSU
       integer, intent(in) :: xi
 
       real*8 :: dx
-
+      dx = t
       if( grd_hydro_on ) then
         dx = 0.5d0 * (x - grd_xarr(xi)) /
      &                 (grd_xarr(xi+1) - grd_xarr(xi))

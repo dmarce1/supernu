@@ -76,6 +76,7 @@ c
 c     --------------------------------------------------------!{{{
       use physconstmod
       use miscmod
+      use inputparmod!{{{
       implicit none
       integer,intent(in) :: igeomin,nmpi
       integer,intent(in) :: ndim(3)
@@ -84,7 +85,7 @@ c     --------------------------------------------------------!{{{
 * Read the input structure file
 ************************************************************************
       integer :: i,j,k,l,ierr,nx_r,ny_r,nz_r,ini56,nvar,ncol
-      integer :: jmass,jxleft,jye,jtemp
+      integer :: jmass,jxleft,jye,jtemp,jvelx,jvely,jvelz
       integer :: ncorner,nvoid,ncell,ncpr
       character(2) :: dmy
       character(8),allocatable :: labl(:)
@@ -126,15 +127,27 @@ c-- read labels
       if(ierr/=0) stop 'read_inputstr: input.str fmt err: col labels'
 c
 c-- var pointers
+      jvelx = 0
+      jvely = 0
+      jvelz = 0
       jxleft = 0
       jmass = 0
       jye = 0
       jtemp = 0
       do i=1,nvar
-       if(lcase(trim(labl(i)))=='x_left') jxleft = i
+       if(lcase(trim(labl(i)))=='x_left') then
+          write(*,*) 'Found x_left column'
+          jxleft = i
+       endif
        if(lcase(trim(labl(i)))=='mass') jmass = i
        if(lcase(trim(labl(i)))=='ye') jye = i
        if(lcase(trim(labl(i)))=='temp') jtemp = i
+       if(lcase(trim(labl(i)))=='velx') then
+            write(*,*) 'Found x velocity column'
+            jvelx = i
+       endif
+       if(lcase(trim(labl(i)))=='vely') jvely = i
+       if(lcase(trim(labl(i)))=='velz') jvelz = i
       enddo
       if(jmass==0) stop 'read_inputstr: mass label not found'
       if(jtemp>0) str_ltemp = .true.
@@ -230,8 +243,11 @@ c
 c-- check grid monotonicity
       help = str_xleft(1)
       do i=2,nx+1
-       if(str_xleft(i)<=help) stop
+       if(str_xleft(i)<=help) then
+          write(*,*) str_xleft(i), help, i
+          stop
      &   'read_inputstr: x grid not increasing'
+       endif
        help = str_xleft(i)
       enddo
 c
@@ -259,6 +275,33 @@ c-- vars
        str_mass(i,j,k) = raw(jmass,l)
        if(str_ltemp) str_temp(i,j,k)=raw(jtemp,l)
        if(str_lye) str_ye(i,j,k)=raw(jye,l)
+       if(jvelx.ne.0) then
+          str_vx(i,j,k)=raw(jvelx,l)
+       else
+          if( in_isvelocity ) then
+             str_vx(i,j,k) = (str_xleft(i) + str_xleft(i+1))/2d0
+          else
+             str_vx(i,j,k) = 0d0
+          endif
+       endif
+       if(jvely.ne.0) then
+          str_vy(i,j,k)=raw(jvely,l)
+       else
+          if( in_isvelocity .and. (igeom.eq.2.or.igeom.eq.3)) then
+             str_vy(i,j,k) = (str_yleft(j) + str_yleft(j+1))/2d0
+          else
+             str_vy(i,j,k) = 0d0
+          endif
+       endif
+       if(jvelz.ne.0) then
+          str_vz(i,j,k)=raw(jvelz,l)
+       else
+          if( in_isvelocity .and. igeom.eq.3) then
+             str_vz(i,j,k) = (str_zleft(k) + str_zleft(k+1))/2d0
+          else
+             str_vz(i,j,k) = 0d0
+          endif
+       endif
       enddo
       enddo
       enddo

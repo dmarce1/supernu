@@ -54,13 +54,8 @@ c..get the solution for all spatial points at once
 
         write(2,'(E14.6)', advance="no") zpos(i)
         write(2,'(E14.6)', advance="no") den(i)
-        write(2,'(E14.6)', advance="no") den(i) * vel(i)
-        write(2,'(E14.6)', advance="no") 0.0d0
-        write(2,'(E14.6)', advance="no") 0.0d0
-        write(2,'(E14.6)', advance="no")
-     &            (ener(i)*den(i))**(1.0/gamma)
-        write(2,'(E14.6)')
-     &            ener(i)*den(i)+0.5d0*den(i)*vel(i)*vel(i)
+        write(2,'(E14.6)', advance="no") ener(i) /(3.0d0 *pc_kb / pc_mh)
+        write(2,'(E14.6)') vel(i)
 
       enddo
 
@@ -69,33 +64,39 @@ c..get the solution for all spatial points at once
       end subroutine
 
 
-      subroutine hydro_output
+      subroutine hydro_output( this_time )
 
-
+      use particlemod
+      use transportmod
       use hydromod
       use gridmod
       use inputparmod
       use timestepmod
       implicit none
 
+      real*8, intent(in) :: this_time
+
+      type(packet),target :: ptcl
       integer, save :: onum = 0
-      character*15 :: filename
-      integer :: i, j, l
+      character*15 :: filename1
+      character*15 :: filename2
+      integer :: i, l, ipart, j, k
       real*8 :: x
 
 
       if( grd_igeom .eq. 11 ) then
 
-        write(filename,'("hydro.",I0.4,".dat")') onum
-        open(unit=1,file=filename,status='unknown')
+        write(filename1,'("hydro.",I0.4,".dat")') onum
+        open(unit=1,file=filename1,status='unknown')
         do i = hydro_bw+1, hydro_nx - hydro_bw
           x = (grd_xarr(i-hydro_bw) + grd_xarr(i+1-hydro_bw)) * 0.5d0
           l = grd_icell(i-hydro_bw,1,1)
           if( grd_isvelocity ) then
-            x = x * tsp_t
+            x = x * this_time
           endif
-          write(1,'(6E14.6)') x, gas_mass(l), gas_temp(l),
-     &      grd_vx(l), grd_vy(l), grd_vz(l)
+          write(1,'(12E14.6)') x, gas_rho(l), gas_temp(l),
+     &      grd_vx(l), grd_vy(l), grd_vz(l), gas_nelec(l), gas_natom(l),
+     &      gas_ye(l), gas_eraddens(l), grd_sig(l),grd_capgrey(l)
 !          do j = 1, hydro_nf
 !            write(1,'(E14.6)', advance="no")
 !     &                   hydro_state(i,hydro_bw+1,hydro_bw+1,j)
@@ -103,6 +104,17 @@ c..get the solution for all spatial points at once
 !          write(1,*)
         enddo
         close(1)
+
+        if( mod(onum,100) .eq. 0 ) then
+          write(filename2,'("parts.",I0.4,".dat")') onum
+          open(unit=2,file=filename2,status='unknown')
+          do ipart=1,prt_npartmax
+            if(prt_isvacant(ipart)) cycle
+            ptcl = prt_particles(ipart)
+            write(2,'(4E14.6)') ptcl%x, ptcl%mu, ptcl%e, ptcl%wl
+          enddo
+          close(2)
+          endif
 
         select case( in_test_problem )
           case(1)

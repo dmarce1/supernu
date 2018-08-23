@@ -1,0 +1,464 @@
+GRID/leakage_opacity1.f90:       (grd_sig(l) + grd_cap(:,l))*dist >= trn_tauddmc)
+GRID/leakage_opacity1.f90:        if((grd_sig(l) + grd_cap(ig,l))*dist < trn_tauddmc) cycle
+GRID/leakage_opacity1.f90:        if((grd_sig(l) + grd_cap(ig,l))*dist < trn_tauddmc) cycle
+GRID/leakage_opacity1.f90:              grd_sig(icnb(1)))*min(dx(i-1),xm(i-1)*dyac(j), &
+GRID/leakage_opacity1.f90:           help = (grd_cap(ig,l)+grd_sig(l))*dx(i)*thelp
+GRID/leakage_opacity1.f90:           help = ((grd_sig(l)+grd_cap(ig,l))*dx(i)+&
+GRID/leakage_opacity1.f90:                (grd_sig(icnb(1))+grd_cap(ig,icnb(1)))*dx(i-1))*thelp
+GRID/leakage_opacity1.f90:              grd_sig(icnb(2)))*min(dx(i+1),xm(i+1)*dyac(j), &
+GRID/leakage_opacity1.f90:           help = (grd_cap(ig,l)+grd_sig(l))*dx(i)*thelp
+GRID/leakage_opacity1.f90:           help = ((grd_sig(l)+grd_cap(ig,l))*dx(i)+&
+GRID/leakage_opacity1.f90:                (grd_sig(icnb(2))+grd_cap(ig,icnb(2)))*dx(i+1))*thelp
+GRID/leakage_opacity1.f90:              grd_sig(icnb(3)))*min(dx(i),xm(i)*dyac(j-1), &
+GRID/leakage_opacity1.f90:           help = (grd_cap(ig,l)+grd_sig(l))*xm(i)*dyac(j)*thelp
+GRID/leakage_opacity1.f90:           help = ((grd_sig(l)+grd_cap(ig,l))*dyac(j) + &
+GRID/leakage_opacity1.f90:                (grd_sig(icnb(3))+grd_cap(ig,icnb(3)))*dyac(j-1))
+GRID/leakage_opacity1.f90:              grd_sig(icnb(4)))*min(dx(i),xm(i)*dyac(j+1), &
+GRID/leakage_opacity1.f90:           help = (grd_cap(ig,l)+grd_sig(l))*xm(i)*dyac(j)*thelp
+GRID/leakage_opacity1.f90:           help = ((grd_sig(l)+grd_cap(ig,l))*dyac(j) + &
+GRID/leakage_opacity1.f90:                (grd_sig(icnb(4))+grd_cap(ig,icnb(4)))*dyac(j+1))
+GRID/leakage_opacity1.f90:           grd_sig(icnb(5)))*min(dx(i),xm(i)*dyac(j), &
+GRID/leakage_opacity1.f90:           help = (grd_cap(ig,l)+grd_sig(l))*xm(i)*ym(j) * &
+GRID/leakage_opacity1.f90:           help = ((grd_sig(l)+grd_cap(ig,l))*dz(k) + &
+GRID/leakage_opacity1.f90:                (grd_sig(icnb(5))+grd_cap(ig,icnb(5)))*dz(khelp))
+GRID/leakage_opacity1.f90:           grd_sig(icnb(6)))*min(dx(i),xm(i)*dyac(j), &
+GRID/leakage_opacity1.f90:           help = (grd_cap(ig,l)+grd_sig(l))*xm(i)*ym(j) * &
+GRID/leakage_opacity1.f90:           help = ((grd_sig(l)+grd_cap(ig,l))*dz(k) + &
+GRID/leakage_opacity1.f90:                (grd_sig(icnb(6))+grd_cap(ig,icnb(6)))*dz(khelp))
+GRID/leakage_opacity1.f90:!if(i==20 .and. k==1) write(0,*) help,pp,grd_opaclump(6,l),grd_sig(l),grd_sig(icnb(6)),grd_cap(ig,l),grd_cap(ig,icnb(6)), &
+Binary file GRID/leakage_opacity2.o matches
+GRID/leakage_opacity11.f90:       (grd_sig(l) + grd_cap(:,l))*dist >= trn_tauddmc)
+GRID/leakage_opacity11.f90:        if((grd_sig(l) + grd_cap(ig,l))*dist < trn_tauddmc) cycle
+GRID/leakage_opacity11.f90:        if((grd_sig(l) + grd_cap(ig,l))*dist < trn_tauddmc) cycle
+GRID/leakage_opacity11.f90:              grd_sig(icnb(1)))*dx(i-1)*thelp<trn_tauddmc
+GRID/leakage_opacity11.f90:           help = (grd_cap(ig,l)+grd_sig(l))*dx(i)*thelp
+GRID/leakage_opacity11.f90:           help = ((grd_sig(l)+grd_cap(ig,l))*dx(i)+&
+GRID/leakage_opacity11.f90:                (grd_sig(icnb(1))+grd_cap(ig,icnb(1)))*dx(i-1))*thelp
+GRID/leakage_opacity11.f90:              grd_sig(icnb(2)))*dx(i+1)*thelp<trn_tauddmc
+GRID/leakage_opacity11.f90:           help = (grd_cap(ig,l)+grd_sig(l))*dx(i)*thelp
+GRID/leakage_opacity11.f90:           help = ((grd_sig(l)+grd_cap(ig,l))*dx(i)+&
+GRID/leakage_opacity11.f90:                (grd_sig(icnb(2))+grd_cap(ig,icnb(2)))*dx(i+1))*thelp
+Binary file GRID/grid.a matches
+Binary file GRID/leakage_opacity11.o matches
+Binary file GRID/leakage_opacity3.o matches
+GRID/leakage_opacity2.f90:       (grd_sig(l) + grd_cap(:,l))*dist >= trn_tauddmc)
+GRID/leakage_opacity2.f90:        if((grd_sig(l) + grd_cap(ig,l))*dist < trn_tauddmc) cycle
+GRID/leakage_opacity2.f90:        if((grd_sig(l) + grd_cap(ig,l))*dist < trn_tauddmc) cycle
+GRID/leakage_opacity2.f90:              grd_sig(icnb(1)))*min(dx(i-1),dy(j), &
+GRID/leakage_opacity2.f90:           help = (grd_cap(ig,l)+grd_sig(l))*dx(i)*thelp
+GRID/leakage_opacity2.f90:           help = ((grd_sig(l)+grd_cap(ig,l))*dx(i)+&
+GRID/leakage_opacity2.f90:                (grd_sig(icnb(1))+grd_cap(ig,icnb(1)))*dx(i-1))*thelp
+GRID/leakage_opacity2.f90:              grd_sig(icnb(2)))*min(dx(i+1),dy(j), &
+GRID/leakage_opacity2.f90:           help = (grd_cap(ig,l)+grd_sig(l))*dx(i)*thelp
+GRID/leakage_opacity2.f90:           help = ((grd_sig(l)+grd_cap(ig,l))*dx(i)+&
+GRID/leakage_opacity2.f90:                (grd_sig(icnb(2))+grd_cap(ig,icnb(2)))*dx(i+1))*thelp
+GRID/leakage_opacity2.f90:              grd_sig(icnb(3)))*min(dx(i),dy(j-1), &
+GRID/leakage_opacity2.f90:           help = (grd_cap(ig,l)+grd_sig(l))*dy(j)*thelp
+GRID/leakage_opacity2.f90:           help = ((grd_sig(l)+grd_cap(ig,l))*dy(j)+&
+GRID/leakage_opacity2.f90:                (grd_sig(icnb(3))+grd_cap(ig,icnb(3)))*dy(j-1))*thelp
+GRID/leakage_opacity2.f90:              grd_sig(icnb(4)))*min(dx(i),dy(j+1), &
+GRID/leakage_opacity2.f90:           help = (grd_cap(ig,l)+grd_sig(l))*dy(j)*thelp
+GRID/leakage_opacity2.f90:           help = ((grd_sig(l)+grd_cap(ig,l))*dy(j)+&
+GRID/leakage_opacity2.f90:                (grd_sig(icnb(4))+grd_cap(ig,icnb(4)))*dy(j+1))*thelp
+GRID/leakage_opacity2.f90:           grd_sig(icnb(5)))*min(dx(i),dy(j), &
+GRID/leakage_opacity2.f90:           help = (grd_cap(ig,l)+grd_sig(l))*xm(i) * &
+GRID/leakage_opacity2.f90:           help = ((grd_sig(l)+grd_cap(ig,l))*dz(k) + &
+GRID/leakage_opacity2.f90:              (grd_sig(icnb(5))+grd_cap(ig,icnb(5)))*dz(khelp))
+GRID/leakage_opacity2.f90:           grd_sig(icnb(6)))*min(dx(i),dy(j), &
+GRID/leakage_opacity2.f90:           help = (grd_cap(ig,l)+grd_sig(l))*xm(i) * &
+GRID/leakage_opacity2.f90:           help = ((grd_sig(l)+grd_cap(ig,l))*dz(k) + &
+GRID/leakage_opacity2.f90:              (grd_sig(icnb(6))+grd_cap(ig,icnb(6)))*dz(khelp))
+GRID/leakage_opacity3.f90:       (grd_sig(l) + grd_cap(:,l))*dist >= trn_tauddmc)
+GRID/leakage_opacity3.f90:        if((grd_sig(l) + grd_cap(ig,l))*dist < trn_tauddmc) cycle
+GRID/leakage_opacity3.f90:        if((grd_sig(l) + grd_cap(ig,l))*dist < trn_tauddmc) cycle
+GRID/leakage_opacity3.f90:              grd_sig(icnb(1)))*min(dx(i-1),dy(j),dz(k)) * &
+GRID/leakage_opacity3.f90:           help = (grd_cap(ig,l)+grd_sig(l))*dx(i)*thelp
+GRID/leakage_opacity3.f90:                (grd_cap(ig,l)+grd_sig(l))
+GRID/leakage_opacity3.f90:           help = ((grd_sig(l)+grd_cap(ig,l))*dx(i)+&
+GRID/leakage_opacity3.f90:                (grd_sig(icnb(1))+grd_cap(ig,icnb(1)))*dx(i-1))*thelp
+GRID/leakage_opacity3.f90:              grd_sig(icnb(2)))*min(dx(i+1),dy(j),dz(k)) * &
+GRID/leakage_opacity3.f90:           help = (grd_cap(ig,l)+grd_sig(l))*dx(i)*thelp
+GRID/leakage_opacity3.f90:                (grd_cap(ig,l)+grd_sig(l))
+GRID/leakage_opacity3.f90:           help = ((grd_sig(l)+grd_cap(ig,l))*dx(i)+&
+GRID/leakage_opacity3.f90:                (grd_sig(icnb(2))+grd_cap(ig,icnb(2)))*dx(i+1))*thelp
+GRID/leakage_opacity3.f90:              grd_sig(icnb(3)))*min(dx(i),dy(j-1),dz(k)) * &
+GRID/leakage_opacity3.f90:           help = (grd_cap(ig,l)+grd_sig(l))*dy(j)*thelp
+GRID/leakage_opacity3.f90:                (grd_cap(ig,l)+grd_sig(l))
+GRID/leakage_opacity3.f90:           help = ((grd_sig(l)+grd_cap(ig,l))*dy(j)+&
+GRID/leakage_opacity3.f90:                (grd_sig(icnb(3))+grd_cap(ig,icnb(3)))*dy(j-1))*thelp
+GRID/leakage_opacity3.f90:              grd_sig(icnb(4)))*min(dx(i),dy(j+1),dz(k)) * &
+GRID/leakage_opacity3.f90:           help = (grd_cap(ig,l)+grd_sig(l))*dy(j)*thelp
+GRID/leakage_opacity3.f90:                (grd_cap(ig,l)+grd_sig(l))
+GRID/leakage_opacity3.f90:           help = ((grd_sig(l)+grd_cap(ig,l))*dy(j)+&
+GRID/leakage_opacity3.f90:                (grd_sig(icnb(4))+grd_cap(ig,icnb(4)))*dy(j+1))*thelp
+GRID/leakage_opacity3.f90:              grd_sig(icnb(5)))*min(dx(i),dy(j),dz(k-1)) * &
+GRID/leakage_opacity3.f90:           help = (grd_cap(ig,l)+grd_sig(l))*dz(k)*thelp
+GRID/leakage_opacity3.f90:                (grd_cap(ig,l)+grd_sig(l))
+GRID/leakage_opacity3.f90:           help = ((grd_sig(l)+grd_cap(ig,l))*dz(k)+&
+GRID/leakage_opacity3.f90:                (grd_sig(icnb(5))+grd_cap(ig,icnb(5)))*dz(k-1))*thelp
+GRID/leakage_opacity3.f90:              grd_sig(icnb(6)))*min(dx(i),dy(j),dz(k+1)) * &
+GRID/leakage_opacity3.f90:           help = (grd_cap(ig,l)+grd_sig(l))*dz(k)*thelp
+GRID/leakage_opacity3.f90:                (grd_cap(ig,l)+grd_sig(l))
+GRID/leakage_opacity3.f90:           help = ((grd_sig(l)+grd_cap(ig,l))*dz(k)+&
+GRID/leakage_opacity3.f90:                (grd_sig(icnb(6))+grd_cap(ig,icnb(6)))*dz(k+1))*thelp
+Binary file GRID/leakage_opacity1.o matches
+gridmod.f:      real*8,allocatable :: grd_sig(:) !(ncell) !grey scattering opacity
+gridmod.f:      allocate(grd_sig(grd_ncell))
+gridmod.f:      deallocate(grd_sig)
+Binary file gridmod.o matches
+hgdiff.txt:+          grd_sig(l))*dx(ix-1)*thelp<trn_tauddmc) then
+hgdiff.txt:+        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dx(ix)*thelp
+hgdiff.txt:+        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dx(ix)+&
+hgdiff.txt:+             (grd_sig(l)+grd_cap(ig,l))*dx(ix-1))*thelp
+hgdiff.txt:+           grd_sig(l))*dx(ix+1)*thelp<trn_tauddmc
+hgdiff.txt:+        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dx(ix)*thelp
+hgdiff.txt:+        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dx(ix)+&
+hgdiff.txt:+             (grd_sig(l)+grd_cap(ig,l))*dx(ix+1))*thelp
+hgdiff.txt:+                                     help2 * (grd_sig(icxm)+grd_cap(ig,icxm)) * flxopacleak(1)
+hgdiff.txt:+       help2 * (grd_sig(ic)+grd_cap(ig,ic)) * flxopacleak(1)
+hgdiff.txt:+                                     help2 * (grd_sig(icxp)+grd_cap(ig,icxp)) * flxopacleak(2)
+hgdiff.txt:+                                     help2 * (grd_sig(ic)+grd_cap(ig,ic)) * flxopacleak(2)
+hgdiff.txt:         help= (grd_cap(ig,l)+grd_sig(l))*dx(ix+1)*thelp
+hgdiff.txt:+                                     help2 * (grd_sig(icxm)+grd_capgrey(icxm)) * grd_opaclump(1,icold)
+hgdiff.txt:+                                     help2 * (grd_sig(icxp)+grd_capgrey(icxp)) * grd_opaclump(2,icold)
+hgdiff.txt:+                                     help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(1,icold)
+hgdiff.txt:+                                     help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(2,icold)
+hgdiff.txt:+                                       help2 * (grd_sig(icym)+grd_capgrey(icym)) * grd_opaclump(3,icold)
+hgdiff.txt:+                                       help2 * (grd_sig(icyp)+grd_capgrey(icyp)) * grd_opaclump(4,icold)
+hgdiff.txt:+                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(3,icold)
+hgdiff.txt:+                                      help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(4,icold)
+hgdiff.txt:+                                       help2 * (grd_sig(iczm)+grd_capgrey(iczm)) * grd_opaclump(5,icold)
+hgdiff.txt:+                                       help2 * (grd_sig(iczp)+grd_capgrey(iczp)) * grd_opaclump(6,icold)
+hgdiff.txt:+                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(5,icold)
+hgdiff.txt:+                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(6,icold)
+hgdiff.txt:-           write(0,*) 't,taus,tauc:',ptcl%t,grd_sig(ic)*help,grd_cap(ig,ic)*help
+hgdiff.txt:+!           write(0,*) 't,taus,tauc:',ptcl%t,grd_sig(ic)*help,grd_cap(ig,ic)*help
+HYDRO/hydro_output.f:     &      gas_ye(l), gas_eraddens(l), grd_sig(l),grd_capgrey(l)
+Binary file HYDRO/hydro_output.o matches
+Binary file HYDRO/hydro.a matches
+mpimod.f:      grd_sig = reshape(gas_sig,[grd_ncell])
+mpimod_mpi.f:     &  grd_sig,counts,displs,MPI_REAL8,
+Binary file mpimod.o matches
+mpimod_ser.f:      grd_sig = reshape(gas_sig,[grd_ncell])
+OUTPUT/output_grid.f:       arr(:grd_ncell) = grd_sig
+OUTPUT/output_grid.f:       open(unit=4,file='output.grd_sig',status=fstat,
+Binary file OUTPUT/output.a matches
+Binary file OUTPUT/output_grid.o matches
+particle_advance.f90:     tau = (grd_sig(ic)+grd_cap(ig,ic))*help
+particle_advance.f90:                                     help2 * (grd_sig(icxm)+grd_capgrey(icxm)) * grd_opaclump(1,icold)
+particle_advance.f90:                                     help2 * (grd_sig(icxp)+grd_capgrey(icxp)) * grd_opaclump(2,icold)
+particle_advance.f90:                                     help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(1,icold)
+particle_advance.f90:                                     help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(2,icold)
+particle_advance.f90:                                       help2 * (grd_sig(icym)+grd_capgrey(icym)) * grd_opaclump(3,icold)
+particle_advance.f90:                                       help2 * (grd_sig(icyp)+grd_capgrey(icyp)) * grd_opaclump(4,icold)
+particle_advance.f90:                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(3,icold)
+particle_advance.f90:                                      help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(4,icold)
+particle_advance.f90:                                       help2 * (grd_sig(iczm)+grd_capgrey(iczm)) * grd_opaclump(5,icold)
+particle_advance.f90:                                       help2 * (grd_sig(iczp)+grd_capgrey(iczp)) * grd_opaclump(6,icold)
+particle_advance.f90:                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(5,icold)
+particle_advance.f90:                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(6,icold)
+particle_advance.f90:              grd_capgrey(ic)+grd_sig(ic)>0d0) then
+particle_advance.f90:!           write(0,*) 't,taus,tauc:',ptcl%t,grd_sig(ic)*help,grd_cap(ig,ic)*help
+Binary file particle_advance.o matches
+Binary file SOURCE/source.a matches
+SOURCE/boundary_source.f90:        mfphelp = (grd_cap(iig,l)+grd_sig(l))*dx(i)*thelp
+SOURCE/boundary_source.f90:        lhelp = ((grd_sig(l)+grd_cap(iig,l)) * &
+SOURCE/boundary_source.f90:        mfphelp = (grd_cap(iig,l)+grd_sig(l))*help*thelp
+SOURCE/boundary_source.f90:        lhelp = ((grd_sig(l)+grd_cap(iig,l)) * &
+SOURCE/boundary_source.f90:        mfphelp = (grd_cap(iig,l)+grd_sig(l))*help*thelp
+SOURCE/boundary_source.f90:             (grd_cap(iig,l)+grd_sig(l))
+SOURCE/boundary_source.f90:        lhelp = ((grd_sig(l)+grd_cap(iig,l)) * &
+SOURCE/boundary_source.f90:        mfphelp = (grd_cap(iig,l)+grd_sig(l))*dx(i)*thelp
+SOURCE/boundary_source.f90:        lhelp = ((grd_sig(l)+grd_cap(iig,l)) * &
+Binary file SOURCE/boundary_source.o matches
+Binary file src/.hg/store/data/write__output.f90.i matches
+Binary file supernu matches
+Tools/renoutput.sh:  mv -i $root.sig $root.grd_sig
+TRANSPORT1/diffusion11.f90:                (grd_sig(ic) + grd_cap(iig,ic))*dist >= trn_tauddmc) then
+TRANSPORT1/diffusion11.f90:  if((grd_sig(ic) + grd_cap(ig,ic))*dist < trn_tauddmc) then
+TRANSPORT1/diffusion11.f90:          grd_sig(l))*dx(ix-1)*thelp<trn_tauddmc) then
+TRANSPORT1/diffusion11.f90:        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dx(ix)*thelp
+TRANSPORT1/diffusion11.f90:        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dx(ix)+&
+TRANSPORT1/diffusion11.f90:             (grd_sig(l)+grd_cap(ig,l))*dx(ix-1))*thelp
+TRANSPORT1/diffusion11.f90:           grd_sig(l))*dx(ix+1)*thelp<trn_tauddmc
+TRANSPORT1/diffusion11.f90:        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dx(ix)*thelp
+TRANSPORT1/diffusion11.f90:        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dx(ix)+&
+TRANSPORT1/diffusion11.f90:             (grd_sig(l)+grd_cap(ig,l))*dx(ix+1))*thelp
+TRANSPORT1/diffusion11.f90:          grd_sig(l))*dx(ix-1)*thelp<trn_tauddmc) then
+TRANSPORT1/diffusion11.f90:        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dx(ix)*thelp
+TRANSPORT1/diffusion11.f90:        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dx(ix)+&
+TRANSPORT1/diffusion11.f90:             (grd_sig(l)+grd_cap(ig,l))*dx(ix-1))*thelp
+TRANSPORT1/diffusion11.f90:           grd_sig(l))*dx(ix+1)*thelp<trn_tauddmc
+TRANSPORT1/diffusion11.f90:        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dx(ix)*thelp
+TRANSPORT1/diffusion11.f90:        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dx(ix)+&
+TRANSPORT1/diffusion11.f90:             (grd_sig(l)+grd_cap(ig,l))*dx(ix+1))*thelp
+TRANSPORT1/diffusion11.f90:                                     help2 * (grd_sig(icxm)+grd_cap(ig,icxm)) * flxopacleak(1)
+TRANSPORT1/diffusion11.f90:       help2 * (grd_sig(ic)+grd_cap(ig,ic)) * flxopacleak(1)
+TRANSPORT1/diffusion11.f90:                                     help2 * (grd_sig(icxp)+grd_cap(ig,icxp)) * flxopacleak(2)
+TRANSPORT1/diffusion11.f90:                                     help2 * (grd_sig(ic)+grd_cap(ig,ic)) * flxopacleak(2)
+TRANSPORT1/diffusion11.f90:                   grd_sig(l))*dx(ix-1)*thelp<trn_tauddmc) then
+TRANSPORT1/diffusion11.f90:                 mfphelp = (grd_cap(iiig,ic)+grd_sig(ic))*dx(ix)*thelp
+TRANSPORT1/diffusion11.f90:                 mfphelp = ((grd_sig(ic)+grd_cap(iiig,ic))*dx(ix)+&
+TRANSPORT1/diffusion11.f90:                      (grd_sig(l)+grd_cap(iiig,l))*dx(ix-1))*thelp
+TRANSPORT1/diffusion11.f90:        if((grd_sig(l)+grd_cap(iiig,l))*dx(ix-1)*thelp < trn_tauddmc) then
+TRANSPORT1/diffusion11.f90:              mfphelp = (grd_cap(iiig,ic)+grd_sig(ic))*dx(ix)*thelp
+TRANSPORT1/diffusion11.f90:                   grd_sig(l))*dx(ix+1)*thelp<trn_tauddmc) then
+TRANSPORT1/diffusion11.f90:                 mfphelp = (grd_cap(iiig,ic)+grd_sig(ic))*dx(ix)*thelp
+TRANSPORT1/diffusion11.f90:                 mfphelp = ((grd_sig(ic)+grd_cap(iiig,ic))*dx(ix)+&
+TRANSPORT1/diffusion11.f90:                      (grd_sig(l)+grd_cap(iiig,l))*dx(ix+1))*thelp
+TRANSPORT1/diffusion11.f90:        if((grd_sig(l)+grd_cap(iiig,l))*dx(ix+1)*thelp < trn_tauddmc) then
+TRANSPORT1/diffusion11.f90:     if((grd_sig(ic)+grd_cap(ig,ic))*dist < trn_tauddmc) then
+Binary file TRANSPORT1/diffusion11.o matches
+TRANSPORT1/advection11.f90:     if((grd_sig(l)+grd_cap(ig,l))*dx(i) &
+Binary file TRANSPORT1/transport1.o matches
+TRANSPORT1/transport1.f90:  if(grd_sig(ic)>0d0) then
+TRANSPORT1/transport1.f90:     dthm = -log(r1)*thelpinv/(elabfact*grd_sig(ic))
+TRANSPORT1/transport1.f90:           if((grd_cap(ig,ic)+grd_sig(ic)) * &
+TRANSPORT1/transport1.f90:     if((grd_cap(ig,l)+grd_sig(l)) * &
+TRANSPORT1/transport1.f90:        help = (grd_cap(ig,l)+grd_sig(l)) * &
+TRANSPORT1/transport1.f90:     if((grd_cap(ig,l)+grd_sig(l)) * &
+TRANSPORT1/transport1.f90:        help = (grd_cap(ig,l)+grd_sig(l)) * &
+TRANSPORT1/transport1.f90:     if((grd_cap(ig,l)+grd_sig(l)) * &
+TRANSPORT1/transport1.f90:        help = (grd_cap(ig,l)+grd_sig(l)) * &
+TRANSPORT1/transport1.f90:     if((grd_cap(ig,ic)+grd_sig(ic)) * &
+TRANSPORT1/transport11.f90:  if(grd_sig(ic)>0d0) then
+TRANSPORT1/transport11.f90:     dthm = -log(r1)*thelpinv/(elabfact*grd_sig(ic))
+TRANSPORT1/transport11.f90:           if(((grd_sig(ic)+grd_cap(ig,ic))*dx(ix)*thelp >= trn_tauddmc) &
+TRANSPORT1/transport11.f90:     if((grd_sig(l)+grd_cap(ig,l)) * &
+TRANSPORT1/transport11.f90:        help= (grd_cap(ig,l)+grd_sig(l))*dx(ix+1)*thelp
+TRANSPORT1/transport11.f90:     if((grd_sig(l)+grd_cap(ig,l))*dx(ix-1) &
+TRANSPORT1/transport11.f90:        help = (grd_cap(ig,l)+grd_sig(l))*dx(ix-1)*thelp
+TRANSPORT1/transport11.f90:     if (((grd_sig(ic)+grd_cap(ig,ic))*dx(ix)* &
+Binary file TRANSPORT1/advection11.o matches
+Binary file TRANSPORT1/transport11.o matches
+Binary file TRANSPORT1/diffusion1.o matches
+Binary file TRANSPORT1/transport1.a matches
+Binary file TRANSPORT1/advection1.o matches
+TRANSPORT1/diffusion1.f90:                (grd_sig(ic) + grd_cap(iig,ic))*dist >= trn_tauddmc) then
+TRANSPORT1/diffusion1.f90:  if((grd_sig(ic) + grd_cap(ig,ic))*dist < trn_tauddmc) then
+TRANSPORT1/diffusion1.f90:           grd_sig(l))*min(dx(ix-1),xm(ix-1)*dyac(iy) , &
+TRANSPORT1/diffusion1.f90:        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dx(ix)*thelp
+TRANSPORT1/diffusion1.f90:        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dx(ix)+&
+TRANSPORT1/diffusion1.f90:             (grd_sig(l)+grd_cap(ig,l))*dx(ix-1))*thelp
+TRANSPORT1/diffusion1.f90:        lhelp = (grd_cap(ig,l)+grd_sig(l)) * &
+TRANSPORT1/diffusion1.f90:        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dx(ix)*thelp
+TRANSPORT1/diffusion1.f90:        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dx(ix)+&
+TRANSPORT1/diffusion1.f90:             (grd_sig(l)+grd_cap(ig,l))*dx(ix+1))*thelp
+TRANSPORT1/diffusion1.f90:             grd_sig(l))*min(dx(ix),xm(ix)*dyac(iy-1), &
+TRANSPORT1/diffusion1.f90:        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*xm(ix)*dyac(iy)*thelp
+TRANSPORT1/diffusion1.f90:        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dyac(iy) + &
+TRANSPORT1/diffusion1.f90:             (grd_sig(l)+grd_cap(ig,l))*dyac(iy-1))
+TRANSPORT1/diffusion1.f90:             grd_sig(l))*min(dx(ix),xm(ix)*dyac(iy+1), &
+TRANSPORT1/diffusion1.f90:        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*xm(ix)*dyac(iy)*thelp
+TRANSPORT1/diffusion1.f90:        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dyac(iy) + &
+TRANSPORT1/diffusion1.f90:             (grd_sig(l)+grd_cap(ig,l))*dyac(iy+1))
+TRANSPORT1/diffusion1.f90:              grd_sig(l))*min(dx(ix),xm(ix)*dyac(iy), &
+TRANSPORT1/diffusion1.f90:              grd_sig(l))*min(dx(ix),xm(ix)*dyac(iy), &
+TRANSPORT1/diffusion1.f90:           mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*xm(ix)*ym(iy) * &
+TRANSPORT1/diffusion1.f90:           mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dz(iz) + &
+TRANSPORT1/diffusion1.f90:                (grd_sig(l)+grd_cap(ig,l))*dz(iznext))
+TRANSPORT1/diffusion1.f90:              grd_sig(l))*min(dx(ix),xm(ix)*dyac(iy), &
+TRANSPORT1/diffusion1.f90:              grd_sig(l))*min(dx(ix),xm(ix)*dyac(iy), &
+TRANSPORT1/diffusion1.f90:           mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*xm(ix)*ym(iy) * &
+TRANSPORT1/diffusion1.f90:           mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dz(iz) + &
+TRANSPORT1/diffusion1.f90:                (grd_sig(l)+grd_cap(ig,l))*dz(iznext))
+TRANSPORT1/diffusion1.f90:           lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT1/diffusion1.f90:              mfphelp = (grd_cap(iiig,ic)+grd_sig(ic)) * &
+TRANSPORT1/diffusion1.f90:              mfphelp = ((grd_sig(ic)+grd_cap(iiig,ic))*dx(ix)+&
+TRANSPORT1/diffusion1.f90:                   (grd_sig(l)+grd_cap(iiig,l))*dx(ix-1))*thelp
+TRANSPORT1/diffusion1.f90:     lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT1/diffusion1.f90:              lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT1/diffusion1.f90:              mfphelp = (grd_cap(iiig,ic)+grd_sig(ic)) * &
+TRANSPORT1/diffusion1.f90:              mfphelp = ((grd_sig(ic)+grd_cap(iiig,ic))*dx(ix)+&
+TRANSPORT1/diffusion1.f90:                   (grd_sig(l)+grd_cap(iiig,l))*dx(ix+1))*thelp
+TRANSPORT1/diffusion1.f90:        lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT1/diffusion1.f90:           lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT1/diffusion1.f90:              mfphelp = (grd_cap(iiig,ic)+grd_sig(ic)) * &
+TRANSPORT1/diffusion1.f90:              mfphelp = ((grd_sig(ic)+grd_cap(iiig,ic))*dyac(iy) + &
+TRANSPORT1/diffusion1.f90:                   (grd_sig(l)+grd_cap(iiig,l))*dyac(iy-1))
+TRANSPORT1/diffusion1.f90:     lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT1/diffusion1.f90:           lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT1/diffusion1.f90:              mfphelp = (grd_cap(iiig,ic)+grd_sig(ic)) * &
+TRANSPORT1/diffusion1.f90:              mfphelp = ((grd_sig(ic)+grd_cap(iiig,ic))*dyac(iy) + &
+TRANSPORT1/diffusion1.f90:                   (grd_sig(l)+grd_cap(iiig,l))*dyac(iy+1))
+TRANSPORT1/diffusion1.f90:     lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT1/diffusion1.f90:           lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT1/diffusion1.f90:              mfphelp = (grd_cap(iiig,ic)+grd_sig(ic)) * &
+TRANSPORT1/diffusion1.f90:              mfphelp = ((grd_sig(ic)+grd_cap(iiig,ic))*dz(iz) + &
+TRANSPORT1/diffusion1.f90:                   (grd_sig(l)+grd_cap(iiig,l))*dz(iznext))
+TRANSPORT1/diffusion1.f90:     lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT1/diffusion1.f90:           lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT1/diffusion1.f90:              mfphelp = (grd_cap(iiig,ic)+grd_sig(ic)) * &
+TRANSPORT1/diffusion1.f90:              mfphelp = ((grd_sig(ic)+grd_cap(iiig,ic))*dz(iz) + &
+TRANSPORT1/diffusion1.f90:                   (grd_sig(l)+grd_cap(iiig,l))*dz(iznext))
+TRANSPORT1/diffusion1.f90:     lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT1/diffusion1.f90:     if((grd_sig(ic)+grd_cap(ig,ic))*dist < trn_tauddmc) then
+TRANSPORT1/advection1.f90:     if((grd_sig(l)+grd_cap(ig,l))* &
+TRANSPORT2/advection2.f90:        if((grd_sig(l)+grd_cap(ig,l)) * &!{{{
+TRANSPORT2/advection2.f90:           if((grd_sig(l)+grd_cap(ig,l)) * &
+TRANSPORT2/advection2.f90:           if((grd_sig(l)+grd_cap(ig,l)) * &
+Binary file TRANSPORT2/transport2.a matches
+Binary file TRANSPORT2/advection2.o matches
+TRANSPORT2/diffusion2.f90:                (grd_sig(ic) + grd_cap(iig,ic))*dist >= trn_tauddmc) then
+TRANSPORT2/diffusion2.f90:  if((grd_sig(ic) + grd_cap(ig,ic))*dist < trn_tauddmc) then
+TRANSPORT2/diffusion2.f90:        grd_sig(l))*min(dx(ix-1),dy(iy))* &
+TRANSPORT2/diffusion2.f90:        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dx(ix)*thelp
+TRANSPORT2/diffusion2.f90:        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dx(ix)+&
+TRANSPORT2/diffusion2.f90:             (grd_sig(l)+grd_cap(ig,l))*dx(ix-1))*thelp
+TRANSPORT2/diffusion2.f90:           grd_sig(l))*min(dx(ix+1),dy(iy))* &
+TRANSPORT2/diffusion2.f90:        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dx(ix)*thelp
+TRANSPORT2/diffusion2.f90:        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dx(ix)+&
+TRANSPORT2/diffusion2.f90:             (grd_sig(l)+grd_cap(ig,l))*dx(ix+1))*thelp
+TRANSPORT2/diffusion2.f90:             grd_sig(l))*min(dx(ix),dy(iy-1)) * &
+TRANSPORT2/diffusion2.f90:        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dy(iy)*thelp
+TRANSPORT2/diffusion2.f90:        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dy(iy)+&
+TRANSPORT2/diffusion2.f90:             (grd_sig(l)+grd_cap(ig,l))*dy(iy-1))*thelp
+TRANSPORT2/diffusion2.f90:             grd_sig(l))*min(dx(ix),dy(iy+1)) * &
+TRANSPORT2/diffusion2.f90:        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dy(iy)*thelp
+TRANSPORT2/diffusion2.f90:        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dy(iy)+&
+TRANSPORT2/diffusion2.f90:             (grd_sig(l)+grd_cap(ig,l))*dy(iy+1))*thelp
+TRANSPORT2/diffusion2.f90:              grd_sig(l))*min(dx(ix),dy(iy), &
+TRANSPORT2/diffusion2.f90:              grd_sig(l))*min(dx(ix),dy(iy), &
+TRANSPORT2/diffusion2.f90:           mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*xm(ix) * &
+TRANSPORT2/diffusion2.f90:           mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dz(iz) + &
+TRANSPORT2/diffusion2.f90:                (grd_sig(l)+grd_cap(ig,l))*dz(iznext))
+TRANSPORT2/diffusion2.f90:              grd_sig(l))*min(dx(ix),dy(iy), &
+TRANSPORT2/diffusion2.f90:              grd_sig(l))*min(dx(ix),dy(iy), &
+TRANSPORT2/diffusion2.f90:           mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*xm(ix) * &
+TRANSPORT2/diffusion2.f90:           mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dz(iz) + &
+TRANSPORT2/diffusion2.f90:                (grd_sig(l)+grd_cap(ig,l))*dz(iznext))
+TRANSPORT2/diffusion2.f90:                grd_sig(l))*min(dx(ix-1),dy(iy),xm(ix-1)*dz(iz)) * &
+TRANSPORT2/diffusion2.f90:              mfphelp = (grd_cap(iiig,ic)+grd_sig(ic)) * &
+TRANSPORT2/diffusion2.f90:              mfphelp = ((grd_sig(ic)+grd_cap(iiig,ic)) * &
+TRANSPORT2/diffusion2.f90:                   dx(ix)+(grd_sig(l) + &
+TRANSPORT2/diffusion2.f90:     lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT2/diffusion2.f90:              lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT2/diffusion2.f90:              mfphelp = (grd_cap(iiig,ic)+grd_sig(ic)) * &
+TRANSPORT2/diffusion2.f90:              mfphelp = ((grd_sig(ic)+grd_cap(iiig,ic)) * &
+TRANSPORT2/diffusion2.f90:                   (grd_sig(l)+grd_cap(iiig,l)) * &
+TRANSPORT2/diffusion2.f90:        lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT2/diffusion2.f90:              lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT2/diffusion2.f90:              mfphelp = (grd_cap(iiig,ic)+grd_sig(ic)) * &
+TRANSPORT2/diffusion2.f90:              mfphelp = ((grd_sig(ic)+grd_cap(iiig,ic)) * &
+TRANSPORT2/diffusion2.f90:                   (grd_sig(l)+grd_cap(iiig,l)) * &
+TRANSPORT2/diffusion2.f90:        lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT2/diffusion2.f90:              lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT2/diffusion2.f90:              mfphelp = (grd_cap(iiig,ic)+grd_sig(ic)) * &
+TRANSPORT2/diffusion2.f90:              mfphelp = ((grd_sig(ic)+grd_cap(iiig,ic)) * &
+TRANSPORT2/diffusion2.f90:                   (grd_sig(l)+grd_cap(iiig,l)) * &
+TRANSPORT2/diffusion2.f90:        lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT2/diffusion2.f90:           lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT2/diffusion2.f90:              mfphelp = (grd_cap(iiig,ic)+grd_sig(ic)) * &
+TRANSPORT2/diffusion2.f90:              mfphelp = ((grd_sig(ic)+grd_cap(iiig,ic))*dz(iz) + &
+TRANSPORT2/diffusion2.f90:                   (grd_sig(l)+grd_cap(iiig,l))*dz(iznext))
+TRANSPORT2/diffusion2.f90:     lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT2/diffusion2.f90:           lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT2/diffusion2.f90:              mfphelp = (grd_cap(iiig,ic)+grd_sig(ic)) * &
+TRANSPORT2/diffusion2.f90:              mfphelp = ((grd_sig(ic)+grd_cap(iiig,ic))*dz(iz) + &
+TRANSPORT2/diffusion2.f90:                   (grd_sig(l)+grd_cap(iiig,l))*dz(iznext))
+TRANSPORT2/diffusion2.f90:     lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT2/diffusion2.f90:     if((grd_sig(ic)+grd_cap(ig,ic))*dist < trn_tauddmc) then
+TRANSPORT2/transport2.f90:  if(grd_sig(ic)>0d0) then
+TRANSPORT2/transport2.f90:     dthm = -log(r1)*thelpinv/(elabfact*grd_sig(ic))
+TRANSPORT2/transport2.f90:           if((grd_cap(ig,ic)+grd_sig(ic)) * &
+TRANSPORT2/transport2.f90:     if((grd_cap(ig,l)+grd_sig(l)) * &
+TRANSPORT2/transport2.f90:        help = (grd_cap(ig,l)+grd_sig(l)) * &
+TRANSPORT2/transport2.f90:     if((grd_cap(ig,l)+grd_sig(l)) * &
+TRANSPORT2/transport2.f90:        help = (grd_cap(ig,l)+grd_sig(l)) * &
+TRANSPORT2/transport2.f90:     if((grd_cap(ig,l)+grd_sig(l)) * &
+TRANSPORT2/transport2.f90:        help = (grd_cap(ig,l)+grd_sig(l)) * &
+TRANSPORT2/transport2.f90:     if ((grd_sig(ic)+grd_cap(ig,ic)) * &
+Binary file TRANSPORT2/diffusion2.o matches
+Binary file TRANSPORT2/transport2.o matches
+TRANSPORT3/diffusion3.f90:                (grd_sig(ic) + grd_cap(iig,ic))*dist >= trn_tauddmc) then
+TRANSPORT3/diffusion3.f90:  if((grd_sig(ic) + grd_cap(ig,ic))*dist < trn_tauddmc) then
+TRANSPORT3/diffusion3.f90:           grd_sig(l))*min(dx(ix-1),dy(iy),dz(iz))* &
+TRANSPORT3/diffusion3.f90:        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dx(ix)*thelp
+TRANSPORT3/diffusion3.f90:             (grd_cap(ig,ic)+grd_sig(ic))
+TRANSPORT3/diffusion3.f90:        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dx(ix)+&
+TRANSPORT3/diffusion3.f90:             (grd_sig(l)+grd_cap(ig,l))*dx(ix-1))*thelp
+TRANSPORT3/diffusion3.f90:           grd_sig(l))*min(dx(ix+1),dy(iy),dz(iz))* &
+TRANSPORT3/diffusion3.f90:        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dx(ix)*thelp
+TRANSPORT3/diffusion3.f90:             (grd_cap(ig,ic)+grd_sig(ic))
+TRANSPORT3/diffusion3.f90:        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dx(ix)+&
+TRANSPORT3/diffusion3.f90:             (grd_sig(l)+grd_cap(ig,l))*dx(ix+1))*thelp
+TRANSPORT3/diffusion3.f90:           grd_sig(l))*min(dx(ix),dy(iy-1),dz(iz))* &
+TRANSPORT3/diffusion3.f90:        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dy(iy)*thelp
+TRANSPORT3/diffusion3.f90:             (grd_cap(ig,ic)+grd_sig(ic))
+TRANSPORT3/diffusion3.f90:        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dy(iy)+&
+TRANSPORT3/diffusion3.f90:             (grd_sig(l)+grd_cap(ig,l))*dy(iy-1))*thelp
+TRANSPORT3/diffusion3.f90:           grd_sig(l))*min(dx(ix),dy(iy+1),dz(iz))* &
+TRANSPORT3/diffusion3.f90:        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dy(iy)*thelp
+TRANSPORT3/diffusion3.f90:             (grd_cap(ig,ic)+grd_sig(ic))
+TRANSPORT3/diffusion3.f90:        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dy(iy)+&
+TRANSPORT3/diffusion3.f90:             (grd_sig(l)+grd_cap(ig,l))*dy(iy+1))*thelp
+TRANSPORT3/diffusion3.f90:           grd_sig(l))*min(dx(ix),dy(iy),dz(iz-1))* &
+TRANSPORT3/diffusion3.f90:        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dz(iz)*thelp
+TRANSPORT3/diffusion3.f90:             (grd_cap(ig,ic)+grd_sig(ic))
+TRANSPORT3/diffusion3.f90:        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dz(iz)+&
+TRANSPORT3/diffusion3.f90:             (grd_sig(l)+grd_cap(ig,l))*dz(iz-1))*thelp
+TRANSPORT3/diffusion3.f90:           grd_sig(l))*min(dx(ix),dy(iy),dz(iz+1))* &
+TRANSPORT3/diffusion3.f90:        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dz(iz)*thelp
+TRANSPORT3/diffusion3.f90:             (grd_cap(ig,ic)+grd_sig(ic))
+TRANSPORT3/diffusion3.f90:        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dz(iz)+&
+TRANSPORT3/diffusion3.f90:             (grd_sig(l)+grd_cap(ig,l))*dz(iz+1))*thelp
+TRANSPORT3/diffusion3.f90:              lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT3/diffusion3.f90:              mfphelp = (grd_cap(iiig,ic)+grd_sig(ic)) * &
+TRANSPORT3/diffusion3.f90:                   (grd_cap(iiig,ic)+grd_sig(ic))
+TRANSPORT3/diffusion3.f90:              mfphelp = ((grd_sig(ic)+grd_cap(iiig,ic)) * &
+TRANSPORT3/diffusion3.f90:                   (grd_sig(l)+grd_cap(iiig,l)) * &
+TRANSPORT3/diffusion3.f90:        lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT3/diffusion3.f90:              lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT3/diffusion3.f90:              mfphelp = (grd_cap(iiig,ic)+grd_sig(ic)) * &
+TRANSPORT3/diffusion3.f90:                   (grd_cap(iiig,ic)+grd_sig(ic))
+TRANSPORT3/diffusion3.f90:              mfphelp = ((grd_sig(ic)+grd_cap(iiig,ic)) * &
+TRANSPORT3/diffusion3.f90:                   (grd_sig(l)+grd_cap(iiig,l)) * &
+TRANSPORT3/diffusion3.f90:        lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT3/diffusion3.f90:              lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT3/diffusion3.f90:              mfphelp = (grd_cap(iiig,ic)+grd_sig(ic)) * &
+TRANSPORT3/diffusion3.f90:                   (grd_cap(iiig,ic)+grd_sig(ic))
+TRANSPORT3/diffusion3.f90:              mfphelp = ((grd_sig(ic)+grd_cap(iiig,ic)) * &
+TRANSPORT3/diffusion3.f90:                   (grd_sig(l)+grd_cap(iiig,l)) * &
+TRANSPORT3/diffusion3.f90:        lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT3/diffusion3.f90:              lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT3/diffusion3.f90:              mfphelp = (grd_cap(iiig,ic)+grd_sig(ic)) * &
+TRANSPORT3/diffusion3.f90:                   (grd_cap(iiig,ic)+grd_sig(ic))
+TRANSPORT3/diffusion3.f90:              mfphelp = ((grd_sig(ic)+grd_cap(iiig,ic)) * &
+TRANSPORT3/diffusion3.f90:                   (grd_sig(l)+grd_cap(iiig,l)) * &
+TRANSPORT3/diffusion3.f90:        lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT3/diffusion3.f90:              lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT3/diffusion3.f90:              mfphelp = (grd_cap(iiig,ic)+grd_sig(ic)) * &
+TRANSPORT3/diffusion3.f90:                   (grd_cap(iiig,ic)+grd_sig(ic))
+TRANSPORT3/diffusion3.f90:              mfphelp = ((grd_sig(ic)+grd_cap(iiig,ic)) * &
+TRANSPORT3/diffusion3.f90:                   (grd_sig(l)+grd_cap(iiig,l)) * &
+TRANSPORT3/diffusion3.f90:        lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT3/diffusion3.f90:              lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT3/diffusion3.f90:              mfphelp = (grd_cap(iiig,ic)+grd_sig(ic)) * &
+TRANSPORT3/diffusion3.f90:                   (grd_cap(iiig,ic)+grd_sig(ic))
+TRANSPORT3/diffusion3.f90:              mfphelp = ((grd_sig(ic)+grd_cap(iiig,ic)) * &
+TRANSPORT3/diffusion3.f90:                   (grd_sig(l)+grd_cap(iiig,l)) * &
+TRANSPORT3/diffusion3.f90:        lhelp = (grd_cap(iiig,l)+grd_sig(l)) * &
+TRANSPORT3/diffusion3.f90:     if((grd_sig(ic)+grd_cap(ig,ic))*dist < trn_tauddmc) then
+Binary file TRANSPORT3/transport3.o matches
+Binary file TRANSPORT3/advection3.o matches
+Binary file TRANSPORT3/transport3.a matches
+Binary file TRANSPORT3/diffusion3.o matches
+TRANSPORT3/transport3.f90:  if(grd_sig(ic)>0d0) then
+TRANSPORT3/transport3.f90:     dthm = -log(r1)*thelpinv/(elabfact*grd_sig(ic))
+TRANSPORT3/transport3.f90:           if((grd_cap(ig,ic)+grd_sig(ic)) * &
+TRANSPORT3/transport3.f90:     if((grd_cap(ig,l)+grd_sig(l)) * &
+TRANSPORT3/transport3.f90:        help = (grd_cap(ig,l)+grd_sig(l)) * &
+TRANSPORT3/transport3.f90:             (grd_cap(ig,l)+grd_sig(l))
+TRANSPORT3/transport3.f90:     if((grd_cap(ig,l)+grd_sig(l)) * &
+TRANSPORT3/transport3.f90:        help = (grd_cap(ig,l)+grd_sig(l)) * &
+TRANSPORT3/transport3.f90:             (grd_cap(ig,l)+grd_sig(l))
+TRANSPORT3/transport3.f90:     if((grd_cap(ig,l)+grd_sig(l)) * &
+TRANSPORT3/transport3.f90:        help = (grd_cap(ig,l)+grd_sig(l)) * &
+TRANSPORT3/transport3.f90:             (grd_cap(ig,l)+grd_sig(l))
+TRANSPORT3/transport3.f90:     if((grd_sig(ic)+grd_cap(ig,ic)) * &
+TRANSPORT3/advection3.f90:           if((grd_sig(l)+grd_cap(ig,l)) * &
+TRANSPORT3/advection3.f90:           if((grd_sig(l)+grd_cap(ig,l)) * &
+TRANSPORT3/advection3.f90:           if((grd_sig(l)+grd_cap(ig,l)) * &
+TRANSPORT3/advection3.f90:           if((grd_sig(l)+grd_cap(ig,l)) * &
+TRANSPORT3/advection3.f90:           if((grd_sig(l)+grd_cap(ig,l)) * &
+TRANSPORT3/advection3.f90:           if((grd_sig(l)+grd_cap(ig,l)) * &

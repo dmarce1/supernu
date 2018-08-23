@@ -174,6 +174,16 @@ c       HYDRO LSU
             grd_vy = 0.0d0
             grd_vz = 0.0d0
           endif
+                do i = 1, grd_nx
+                do j = 1, grd_ny
+                do k = 1, grd_nz
+                  l = grd_icell(i,j,k)
+                  grd_vx(l) = str_vx(i,j,k)
+                  grd_vy(l) = str_vy(i,j,k)
+                  grd_vz(l) = str_vz(i,j,k)
+                enddo
+                enddo
+                enddo
 
 
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

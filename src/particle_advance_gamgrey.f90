@@ -38,7 +38,7 @@ subroutine particle_advance_gamgrey(nmpi)
   real*8 :: t0,t1  !timing
   real*8 :: labfact, cmffact, mu1, mu2!, gm
   real*8 :: etot,pwr
-  real*8 :: om0, mu0, x0, y0, z0
+  real*8 :: om0, mu0
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
   real*8,pointer :: vx, vy, vz
@@ -83,6 +83,11 @@ subroutine particle_advance_gamgrey(nmpi)
 
 !-- base (flat,constant) particle number per cell over ALL RANKS
   n = count(grd_emitex>0d0)  !number of cells that emit
+
+  if( n .eq. 0 ) then
+    return
+  endif
+
   base = dble(nstot)/n  !uniform distribution
   base = basefrac*base
 

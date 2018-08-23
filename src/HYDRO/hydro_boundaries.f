@@ -4,7 +4,7 @@
       use mpimod
       implicit none
 
-      logical, parameter :: allow_inflow = .true.
+      logical, parameter :: allow_inflow = .false.
 
       real*8,dimension(nx,ny,nz,nf),intent(inout) :: U
       logical, intent(in) :: veldim(3)
@@ -13,8 +13,19 @@
 
       integer :: i, j, k, dm
       real*8, intent(in) :: t
+      real*8,dimension(nx,ny,nz,3) :: dummy2
+      integer :: xb,xe,yb,ye,zb,ze
 
+      real*8 :: dummy
+      dummy = t
+      dummy2 = X
 
+      xb = hydro_bw+1
+      yb = hydro_bw+1
+      zb = hydro_bw+1
+      xe = hydro_nx-bw
+      ye = hydro_ny-bw
+      ze = hydro_nz-bw
 
 c     Boundaries
 
@@ -22,10 +33,17 @@ c       pre-bound
 c          if(.not.allow_inflow) then
             do dm = 1, 3
               if( veldim(dm) ) then
-                U(:,:,:,egas_i) = U(:,:,:,egas_i) -
-     &                  U(:,:,:,px_i+dm-1)**2 * 0.5d0 / U(:,:,:,rho_i)
-                U(: ,:,:,px_i+dm-1) = U(:,:,:,px_i+dm-1) -
-     &                   U(:,:,:,rho_i)*X(:,:,:,dm) / t
+                U(xb:xe,yb:ye,zb:ze,egas_i)
+     &            = U(xb:xe,yb:ye,zb:ze,egas_i)-
+     &            U(xb:xe,yb:ye,zb:ze,px_i+dm-1)**2 * 0.5d0 /
+     &            U(xb:xe,yb:ye,zb:ze,rho_i)
+                U(xb:xe,yb:ye,zb:ze,px_i+dm-1) =
+     &            U(xb:xe,yb:ye,zb:ze,px_i+dm-1) -
+     &            U(xb:xe,yb:ye,zb:ze,rho_i)*X(xb:xe,yb:ye,zb:ze,dm) / t
+                U(xb:xe,yb:ye,zb:ze,egas_i)
+     &              = U(xb:xe,yb:ye,zb:ze,egas_i) +
+     &                  U(xb:xe,yb:ye,zb:ze,px_i+dm-1)**2 * 0.5d0 /
+     &                U(xb:xe,yb:ye,zb:ze,rho_i)
               endif
             enddo
 c          endif
@@ -120,6 +138,8 @@ c       post-bound
 c          if(.not.allow_inflow) then
             do dm = 1, 3
               if( veldim(dm) ) then
+                U(:,:,:,egas_i) = U(:,:,:,egas_i) -
+     &                   U(:,:,:,px_i+dm-1)**2 * 0.5d0 / U(:,:,:,rho_i)
                 U(:,:,:,px_i+dm-1) = U(:,:,:,px_i+dm-1) +
      &                   U(:,:,:,rho_i)*X(:,:,:,dm) / t
                 U(:,:,:,egas_i) = U(:,:,:,egas_i) +

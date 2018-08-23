@@ -134,7 +134,11 @@ c
       dx = x*abs(grp_wlinv(ig+1) - grp_wlinv(ig))
       x = x*.5d0*(grp_wlinv(ig+1) + grp_wlinv(ig))
 c
-      specint0 = ftpi4 * dx * x**3/(exp(x) - 1d0)
+      if( x .lt. 200d0 ) then
+        specint0 = ftpi4 * dx * x**3/(exp(x) - 1d0)
+      else
+        specint0 = 0d0
+      endif
 c!}}}
       end function specint0
 c
@@ -258,7 +262,11 @@ c
 c
       elemental real*8 function f(x)
       real*8,intent(in) :: x
-      f = x**3/(exp(x) - 1d0)
+      if( x .gt. 200d0 ) then
+         f = 0d0
+      else
+        f = x**3/(exp(x) - 1d0)
+      endif
       end function
 c!}}}
       end subroutine specintv

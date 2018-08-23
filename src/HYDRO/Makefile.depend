@@ -1,0 +1,5 @@
+hydro_setup.o: hydro_setup.f gridmod.mod hydromod.mod inputparmod.mod inputstrmod.mod mpimod.mod physconstmod.mod timestepmod.mod 
+hydro_update.o: hydro_update.f gasmod.mod gridmod.mod hydromod.mod ionsmod.mod mpimod.mod physconstmod.mod 
+hydro_output.o: hydro_output.f gridmod.mod hydromod.mod inputparmod.mod particlemod.mod physconstmod.mod timestepmod.mod transportmod.mod 
+hydro_boundaries.o: hydro_boundaries.f gridmod.mod hydromod.mod mpimod.mod 
+hydro_velinterp.o: hydro_velinterp.f gridmod.mod hydromod.mod timestepmod.mod 

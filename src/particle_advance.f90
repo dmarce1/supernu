@@ -46,7 +46,7 @@ subroutine particle_advance
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !    LSU MODIFICATION
   real*8, pointer :: vx, vy, vz
-  real*8 :: momb(3), mome(3), this_dt, help2, xold, yold, zold, eold, muold, tmp
+  real*8 :: momb(3), this_dt, help2, xold, yold, zold, eold, muold
   integer :: ixold, iyold, izold, itypeold, icxp, icxm, icyp, icym, iczp, iczm
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   real*8 :: eta, xi
@@ -492,17 +492,17 @@ subroutine particle_advance
 
 !-- check exit status
         if(ierr/=0 .or. ptcl2%istep>1000) then  !istep checker may cause issues in high-res simulations
-           write(0,*) 'pa: ierr,ipart,istep,idist:',ierr,ptcl2%ipart,ptcl2%istep,ptcl2%idist
-           write(0,*) 'dist:',ptcl2%dist
-           write(0,*) 't,taus,tauc:',ptcl%t,grd_sig(ic)*help,grd_cap(ig,ic)*help
-           write(0,*) 'ix,iy,iz,ic,ig:',ptcl2%ix,ptcl2%iy,ptcl2%iz,ptcl2%ic,ptcl2%ig
-           write(0,*) 'x,y,z:',ptcl%x,ptcl%y,ptcl%z
-           write(0,*) 'mu,om:',ptcl%mu,ptcl%om
-           write(0,*) 'mux,muy,muz:',ptcl2%mux,ptcl2%muy,ptcl2%muz
-           write(0,*)
            if(ierr>0) then
+              write(0,*) 'pa: ierr,ipart,istep,idist:',ierr,ptcl2%ipart,ptcl2%istep,ptcl2%idist
+              write(0,*) 'dist:',ptcl2%dist
+              write(0,*) 't,taus,tauc:',ptcl%t,grd_sig(ic)*help,grd_cap(ig,ic)*help
+              write(0,*) 'ix,iy,iz,ic,ig:',ptcl2%ix,ptcl2%iy,ptcl2%iz,ptcl2%ic,ptcl2%ig
+              write(0,*) 'x,y,z:',ptcl%x,ptcl%y,ptcl%z
+              write(0,*) 'mu,om:',ptcl%mu,ptcl%om
+              write(0,*) 'mux,muy,muz:',ptcl2%mux,ptcl2%muy,ptcl2%muz
+              write(0,*)
               if(trn_errorfatal) stop 'particle_advance: fatal transport error'
-              ptcl2%stat = 'dead'
+                 ptcl2%stat = 'dead'
               exit
            endif
         endif

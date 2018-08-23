@@ -27,6 +27,7 @@ subroutine initial_particles
   real*8 :: r1
   real*8 :: tradinv
   real*8 :: specarr(grp_ng)
+  real*8 :: tmp
 
 !-- shortcut
   pwr = in_srcepwr
@@ -43,7 +44,10 @@ subroutine initial_particles
         0.0d0,grd_nvolinit(l),nemit,nhere,ndmy)
      tradinv = (pc_acoef*grd_vol(l)/grd_evolinit(l))**(.25d0)
      call specintv(tradinv,grp_ng,specarr,1)
-     specarr = specarr/sum(specarr)
+     tmp = sum(specarr)
+     if( tmp .ne. 0d0 ) then
+        specarr = specarr/tmp
+     endif
   do ii=1,nhere
      ipart = ipart + 1!{{{
 !

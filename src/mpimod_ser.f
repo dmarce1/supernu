@@ -82,7 +82,7 @@ c      HYDRO LSU
 
       integer :: i, j, k, l, f
       integer :: i0, j0, k0, f0
-      real*8 :: eint
+      real*8 :: eint, tmp1
 
       do i = 1, grd_nx
       do j = 1, grd_ny
@@ -113,13 +113,6 @@ c          grd_vz(l) = grd_vz(l)+grd_momdep(i,j,k,3)/gas_mass(l)
      &              * gas_natom(l) / gas_vol(l) * gas_temp(l)
          hydro_state(i,j,k,tau_i) = eint**(1.0d0 / hydro_gamma)
          hydro_state(i,j,k,natom_i) = gas_natom(l) / gas_vol(l)
-         if( grd_igeom .eq. 11 ) then
-           hydro_state(i,j,k,egas_i) = eint +
-     &                               0.5d0*grd_vx(l)**2 * gas_rho(l)
-         else
-           hydro_state(i,j,k,egas_i) = eint + 0.5d0*
-     &     (grd_vx(l)**2 + grd_vy(l)**2 + grd_vz(l)**2) * gas_rho(l)
-         endif
          f = frac_i
          do f0 = 1, gas_nelem
            hydro_state(i,j,k,f) = gas_natom1fr(f0,l) * gas_natom(l)
@@ -134,9 +127,26 @@ c          grd_vz(l) = grd_vz(l)+grd_momdep(i,j,k,3)/gas_mass(l)
 c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
          hydro_state(i,j,k,nelec_i) = gas_nelec(l) * gas_natom(l)
      &                                             / gas_vol(l)
+c         call hydro_eos_from_temp(
+c     &            hydro_state(i,j,k,natom_i),
+c     &            hydro_state(i,j,k,nelec_i),
+c     &            gas_temp(l),
+c     &            hydro_state(i,j,k,frac_i:frac_i+gas_nelem-1) /
+c     &            hydro_state(i,j,k,natom_i),
+c     &            eint, tmp1)
+
+         if( grd_igeom .eq. 11 ) then
+           hydro_state(i,j,k,egas_i) = eint +
+     &                               0.5d0*grd_vx(l)**2 * gas_rho(l)
+         else
+           hydro_state(i,j,k,egas_i) = eint + 0.5d0*
+     &     (grd_vx(l)**2 + grd_vy(l)**2 + grd_vz(l)**2) * gas_rho(l)
+         endif
       enddo
       enddo
       enddo
+
+
       end subroutine gather_hydro
 
 
@@ -151,8 +161,7 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
 
       integer :: i, j, k, l, f
       integer :: i0, j0, k0, f0
-      real*8 :: natom, tmp
-      real*8 :: eint, nnuc
+      real*8 :: eint, tmp1
       do i = hydro_bw+1, hydro_nx - hydro_bw
       do j = hydro_bw+1, hydro_ny - hydro_bw
       do k = hydro_bw+1, hydro_nz - hydro_bw
@@ -171,10 +180,10 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
          eint = hydro_state(i,j,k,egas_i) -
      &          (grd_vx(l)**2+grd_vy(l)**2+grd_vz(l)**2)*0.50d0*
      &              hydro_state(i,j,k,rho_i)
-         if( eint .le. hydro_state(i,j,k,egas_i) * 0.1d0 ) then
-           eint = hydro_state(i,j,k,tau_i)**(hydro_gamma)
+         if( eint .le. hydro_state(i,j,k,egas_i) * des1 ) then
+            eint = hydro_state(i,j,k,tau_i)**(hydro_gamma)
          endif
-
+         eint = max(eint,1.0d-20)
 
          f = frac_i
          do f0 = 1, gas_nelem
@@ -185,26 +194,30 @@ c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
            gas_natom1fr(f0,l) = hydro_state(i,j,k,f) * gas_vol(l)
            f = f + 1
          enddo
-         gas_natom(l) = 0.0d0
-         nnuc = 0.0d0
-         do f = 1, gas_nelem
-           natom = gas_natom1fr(f,l)
-           nnuc = nnuc + natom * elem_data(f)%m
-           gas_natom(l) = gas_natom(l) + natom
-         enddo
          gas_natom(l) = hydro_state(i,j,k,natom_i) * gas_vol(l)
          gas_nelec(l) = hydro_state(i,j,k,nelec_i) * gas_vol(l)
      &                                             / gas_natom(l)
-         gas_ye(l) = gas_nelec(l) * gas_natom(l) / nnuc
-c         gas_nelec(l) = gas_nelec(l) / gas_natom(l)
          gas_bcoef(l) = 1.5d0*pc_kb*(1d0+gas_nelec(l))
      &              * gas_natom(l) / gas_vol(l)
          gas_temp(l) =    eint / gas_bcoef(l)
-         gas_temp(l) = max(gas_temp(l),1d3)
-c         write(*,*) l, gas_temp(l), eint, gas_bcoef(l)
+         if( gas_temp(l) /= gas_temp(l) ) then
+            write(*,*) l, eint, gas_bcoef(l),  gas_vol(l),
+     &             hydro_state(i,j,k,natom_i)
+            call abort()
+         endif
+         gas_temp(l) = min(gas_temp(l),1d15)
          if( grd_isvelocity) then
            gas_vol(l) = gas_vol(l) / (1.0d0 + tsp_dt / tsp_t )**3
          endif
+c         write(*,*) eint
+c         call hydro_eos_to_temp(
+c     &            hydro_state(i,j,k,natom_i),
+c     &            hydro_state(i,j,k,nelec_i),
+c     &            gas_temp(l),
+c     &            hydro_state(i,j,k,frac_i:frac_i+gas_nelem-1) /
+c     &            hydro_state(i,j,k,natom_i),
+c     &            eint, tmp1)
+
       enddo
       enddo
       enddo
@@ -225,7 +238,7 @@ c         write(*,*) l, gas_temp(l), eint, gas_bcoef(l)
      &   gas_natom1fr(gas_icr48,i)
         gas_natom1fr(23,i) = gas_natom1fr(23,i) -
      &   gas_natom1fr(gas_iv48,i)
-
+       gas_ye(i) = 0d0
        do l=1,gas_nelem
         gas_ye(i) = gas_ye(i) + gas_natom1fr(l,i)*l/elem_data(l)%m
        enddo

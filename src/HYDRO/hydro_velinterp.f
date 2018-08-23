@@ -41,6 +41,7 @@
             dr = (grd_xarr(i+1) - grd_xarr(i))
             grd_dvdx(i,:,:,1,1) =
      &         (u(i+1,1:ny,1:nz) - u(i-1,1:ny,1:nz))*0.5d0 / dr
+
           enddo
           grd_dvdx(:,:,:,1,2) = 0.0d0
           grd_dvdx(:,:,:,1,3) = 0.0d0

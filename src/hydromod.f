@@ -19,6 +19,9 @@ c
       integer, parameter :: nfracs = 2 * gas_nchain + gas_nelem
       integer, parameter :: hydro_nf = 8 + nfracs
       integer :: hydro_nx, hydro_ny, hydro_nz, hydro_bw
+      real(8), parameter :: des1 = 1d-3
+      real(8), parameter :: des2 = 1d-2
+
 
       real*8, allocatable :: hydro_state(:,:,:,:)
 
