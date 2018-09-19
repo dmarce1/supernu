@@ -43,7 +43,24 @@ subroutine fleck_factor(tempalt,capgreyalt)
      gas_fcoef(i) = 1.0/(1.0+in_alpha*beta*pc_c*tsp_dt*gas_capgrey(i))
 !-- sanity check
      if(gas_fcoef(i)<=0d0) stop 'fleck_factor: fcoef<=0d0'
-     if(gas_fcoef(i)/=gas_fcoef(i)) stop 'fleck_factor: fcoef nan'
+     if(gas_fcoef(i)/=gas_fcoef(i)) then
+        write(*,*) 'beta         =', beta
+        write(*,*) 'beta2        =', beta2
+        write(*,*) 'dlogsig      =', dlogsig
+        write(*,*) 'gas_capgrey  = ', gas_capgrey(i)
+        write(*,*) 'capgreyalt   = ', capgreyalt(i)
+        write(*,*) 'tempalt      = ', tempalt(i)
+        write(*,*) 'i            = ', i
+        write(*,*) 'gas_ur       = ', gas_ur(i)
+        write(*,*) 'Um           = ', Um
+        write(*,*) 'gas_eraddens = ', gas_eraddens(i)
+        write(*,*) 'gas_temp     = ', gas_temp(i)
+        write(*,*) 'gas_bcoef    = ', gas_bcoef(i)
+        write(*,*) 'gas_rho      = ', gas_rho(i)
+        write(*,*) 'gas_mass     = ', gas_mass(i)
+        write(*,*)
+        stop 'fleck_factor: fcoef nan'
+     endif
   enddo !i
 
 end subroutine fleck_factor

@@ -21,6 +21,16 @@ c
       real*8,allocatable :: grd_xarr(:)  !(nx+1), left cell edge values
       real*8,allocatable :: grd_yarr(:)  !(ny+1), left cell edge values
       real*8,allocatable :: grd_zarr(:)  !(nz+1), left cell edge values
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c        HYDRO LSU
+      logical :: grd_hydro_on = .false.
+      logical :: grd_radiation_on = .true.
+      real*8,allocatable :: grd_vx(:)
+      real*8,allocatable :: grd_vy(:)
+      real*8,allocatable :: grd_vz(:)
+      real*8,allocatable :: grd_v(:,:,:,:)
+      real*8,allocatable :: grd_dvdx(:,:,:,:,:)
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c-- maximum radial grid velocity
       real*8 :: grd_rout=0d0   !particle flux edge radius
@@ -56,7 +66,10 @@ c-- Fleck factor
       real*8,allocatable :: grd_fcoef(:)  !(ncell)
 
 
-
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     LSU MODIFICATION
+      real*8,allocatable :: grd_momdep(:,:,:,:)
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       real*8,allocatable :: grd_tally(:,:)   !(2,ncell) (edep,eraddens)
 c-- amplification factor excess
       real*8,allocatable :: grd_eamp(:)   !(ncell)
@@ -127,6 +140,16 @@ c
       allocate(grd_xarr(grd_nx+1))
       allocate(grd_yarr(grd_ny+1))
       allocate(grd_zarr(grd_nz+1))
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c        HYDRO LSU
+      allocate(grd_momdep(grd_nx,grd_ny,grd_nz,3))
+      grd_momdep=0d0
+      allocate(grd_vx(grd_ncell))
+      allocate(grd_vy(grd_ncell))
+      allocate(grd_vz(grd_ncell))
+      allocate(grd_v(grd_nx,grd_ny,grd_nz,3))
+      allocate(grd_dvdx(grd_nx,grd_ny,grd_nz,3,3))
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c-- polar
       if(grd_igeom==1) allocate(grd_yacos(grd_ny+1))
 c
@@ -208,7 +231,103 @@ c-- ndim=4 alloc
       deallocate(grd_emitprob)
 c-- ndim=4 alloc
       deallocate(grd_cap)!}}}
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c        HYDRO LSU
+      deallocate(grd_vx)
+      deallocate(grd_vy)
+      deallocate(grd_vz)
+      deallocate(grd_v)
+      deallocate(grd_dvdx)
+      deallocate(grd_momdep)
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       end subroutine grid_dealloc
 c
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c        HYDRO LSU
+      pure subroutine hydro_velocity_at( x, y, z, vx, vy, vz,xi,yi,zi,t)
+      implicit none
+
+      real*8, intent(in) :: x, y, z, t
+      real*8, intent(out) ::vx, vy, vz
+      integer, intent(in) :: xi, yi, zi
+
+      real*8 :: dx, dy, dz
+
+      dx = t
+
+      if( grd_hydro_on ) then
+        if( grd_igeom .ne. 11 ) then
+          dx = 0.5d0 * (x - grd_xarr(xi)) /
+     &                 (grd_xarr(xi+1) - grd_xarr(xi))
+          dy = 0.5d0 * (y - grd_yarr(yi)) /
+     &                 (grd_yarr(yi+1) - grd_yarr(yi))
+          dz = 0.5d0 * (z - grd_zarr(zi)) /
+     &                 (grd_zarr(zi+1) - grd_zarr(zi))
+          vx = grd_v(xi,yi,zi,1)
+          vy = grd_v(xi,yi,zi,2)
+          vz = grd_v(xi,yi,zi,3)
+          vx = vx + grd_dvdx(xi,yi,zi,1,1) * dx
+          vy = vy + grd_dvdx(xi,yi,zi,2,1) * dx
+          vz = vz + grd_dvdx(xi,yi,zi,3,1) * dx
+          vx = vx + grd_dvdx(xi,yi,zi,1,2) * dy
+          vy = vy + grd_dvdx(xi,yi,zi,2,2) * dy
+          vz = vz + grd_dvdx(xi,yi,zi,3,2) * dy
+          vx = vx + grd_dvdx(xi,yi,zi,1,3) * dz
+          vy = vy + grd_dvdx(xi,yi,zi,2,3) * dz
+          vz = vz + grd_dvdx(xi,yi,zi,3,3) * dz
+        else
+          dx = 0.5d0 * (x - grd_xarr(xi)) /
+     &                 (grd_xarr(xi+1) - grd_xarr(xi))
+          vx = grd_v(xi,yi,zi,1)
+          vx = vx + grd_dvdx(xi,yi,zi,1,1) * dx
+          vy = 0.0d0
+          vz = 0.0d0
+        endif
+      else if( grd_isvelocity ) then
+        vx = x
+        if( grd_igeom .ne. 1 .and. grd_igeom .ne. 11 ) then
+          vy = y
+        else
+          vy = 0.0d0
+        endif
+        if( grd_igeom .eq. 3 ) then
+          vz = z
+        else
+          vz = 0.0d0
+        endif
+      else
+        vx = 0.0d0
+        vy = 0.0d0
+        vz = 0.0d0
+       endif
+
+
+      end subroutine
+
+      pure subroutine hydro_velocity_at11( x, vx, xi, t )
+      implicit none
+
+      real*8, intent(in) :: x, t
+      real*8, intent(out) ::vx
+      integer, intent(in) :: xi
+
+      real*8 :: dx
+      dx = t
+      if( grd_hydro_on ) then
+        dx = 0.5d0 * (x - grd_xarr(xi)) /
+     &                 (grd_xarr(xi+1) - grd_xarr(xi))
+        vx = grd_v(xi,1,1,1)
+        vx = vx + grd_dvdx(xi,1,1,1,1) * dx
+      else if( grd_isvelocity ) then
+        vx = x
+      else
+        vx = 0.0d0
+      endif
+
+
+      end subroutine
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
       end module gridmod
 c vim: fdm=marker

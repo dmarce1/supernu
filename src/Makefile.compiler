@@ -1,11 +1,16 @@
-CXX = mpicxx
+#==== gfortran (current version: gcc 4.5) ====
+#FC = gfortran
 FC = mpif90
-CXXFLAGS = -O3 -std=c++11
-FCFLAGS = -O3 
-FCFLAGS += -m64 -march=native 
-FCFLAGS += -fopenmp
+
+
+FCFLAGS = -O3 -march=native  -fopenmp
+#FCFLAGS = -g -O0 -Wall -fbounds-check -fbacktrace -fstack-protector-all -Wno-real-q-constant  -ffpe-trap=invalid,zero,overflow
+#FCFLAGS = -g -O0 -Wall 
+
+
+#-- additional flags
 FCFLAGS_FF = -ffixed-form
-LDFLAGS = -fopenmp -lstdc++
+LDFLAGS = -fopenmp
 
 AR = ar
 RANLIB=ranlib

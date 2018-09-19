@@ -1,82 +1,3821 @@
+diff -r d244a10db46e GAS/fleck_factor.f90
+--- a/GAS/fleck_factor.f90	Mon Feb 20 16:32:09 2017 -0700
++++ b/GAS/fleck_factor.f90	Thu Aug 30 10:06:44 2018 -0500
+@@ -43,7 +43,24 @@
+      gas_fcoef(i) = 1.0/(1.0+in_alpha*beta*pc_c*tsp_dt*gas_capgrey(i))
+ !-- sanity check
+      if(gas_fcoef(i)<=0d0) stop 'fleck_factor: fcoef<=0d0'
+-     if(gas_fcoef(i)/=gas_fcoef(i)) stop 'fleck_factor: fcoef nan'
++     if(gas_fcoef(i)/=gas_fcoef(i)) then
++        write(*,*) 'beta         =', beta
++        write(*,*) 'beta2        =', beta2
++        write(*,*) 'dlogsig      =', dlogsig
++        write(*,*) 'gas_capgrey  = ', gas_capgrey(i)
++        write(*,*) 'capgreyalt   = ', capgreyalt(i)
++        write(*,*) 'tempalt      = ', tempalt(i)
++        write(*,*) 'i            = ', i
++        write(*,*) 'gas_ur       = ', gas_ur(i)
++        write(*,*) 'Um           = ', Um
++        write(*,*) 'gas_eraddens = ', gas_eraddens(i)
++        write(*,*) 'gas_temp     = ', gas_temp(i)
++        write(*,*) 'gas_bcoef    = ', gas_bcoef(i)
++        write(*,*) 'gas_rho      = ', gas_rho(i)
++        write(*,*) 'gas_mass     = ', gas_mass(i)
++        write(*,*)
++        stop 'fleck_factor: fcoef nan'
++     endif
+   enddo !i
+ 
+ end subroutine fleck_factor
 diff -r d244a10db46e GAS/gas_setup.f
 --- a/GAS/gas_setup.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/GAS/gas_setup.f	Fri Dec 15 15:43:23 2017 -0700
-@@ -75,6 +75,10 @@
-        gas_ye0 = gas_ye
-       endif
- c
-+      call set_cpp_gas(gas_temp, gas_eraddens, gas_ur, gas_rho,
-+     & gas_bcoef, gas_decaygamma, gas_vol, gas_mass, gas_ye, gas_natom,
-+     & gas_nelec, gas_natom1fr, gas_matsrc, gas_edep, gas_nelem, 6)
++++ b/GAS/gas_setup.f	Thu Aug 30 10:06:44 2018 -0500
+@@ -13,9 +13,10 @@
+ * Initialize the gas grid, the part that is constant with time and
+ * temperature. The part that changes is done in gas_grid_update.
+ ************************************************************************
+-      integer :: l,i
++      integer :: l
++      integer :: i
+       real*8 :: mass0fr(-2*gas_nchain:gas_nelem,gas_ncell)
+-c
 +
-       end subroutine gas_setup
+ c-- agnostic mass setup
+       gas_mass = str_massdd
  c
+@@ -48,7 +49,13 @@
  c
-@@ -208,5 +212,6 @@
+ c-- adopt partial masses from input file
+       mass0fr = 0d0
+-      if(.not.in_noreadstruct) then
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     LSU MODIFICATION
++c     old line
++c     if(.not.in_noreadstruct) then
++c     new line
++      if(.not.in_noreadstruct.or.in_test_problem.ne.0) then
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+        if(.not.allocated(str_massfrdd)) stop 'input.str data not avail'
+        do l=1,str_nabund
+         i = str_iabund(l)
+@@ -115,6 +122,7 @@
+ c
+ c-- partial mass
+        gas_natom1fr(:,i) = mass0fr(:,i)*gas_mass(i)
++
+ c
+ c-- take out radioactive part
+        gas_natom1fr(28,i) = gas_natom1fr(28,i) -
+@@ -201,12 +209,11 @@
+ c
+ c-- total natom
+        gas_natom(i) = sum(gas_natom1fr(1:,i))
+-c
+ c-- convert natoms to natom fractions
+        gas_natom1fr(:,i) = gas_natom1fr(:,i)/gas_natom(i)
+        gas_natom0fr(:,i,:) = gas_natom0fr(:,i,:)/gas_natom(i)
  c
        enddo !i
- c!}}}
-+
+-c!}}}
++c !}}}
        end subroutine massfr2natomfr
  c vim: fdm=marker
 diff -r d244a10db46e GAS/gas_update.f
 --- a/GAS/gas_update.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/GAS/gas_update.f	Fri Dec 15 15:43:23 2017 -0700
-@@ -116,6 +116,10 @@
-        i = i+1
++++ b/GAS/gas_update.f	Thu Aug 30 10:06:44 2018 -0500
+@@ -12,6 +12,11 @@
+       use gasmod
+       use inputparmod
+       use timingmod
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     HYDRO LSU
++      use mpimod
++      use hydromod
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       implicit none
+       integer,intent(in) :: it
+ ************************************************************************
+@@ -36,7 +41,6 @@
+ !     real*8 :: hlparr(grd_nx),hlparrdd(gas_ncell)
+ c-- timing
+       real*8 :: t0,t1
+-c
+ c-- begin
+       t0 = t_time()
+ c
+@@ -66,15 +70,25 @@
+ c-- current time step
+       if(grd_isvelocity.and.in_srctype=='none') then
+ c-- beginning of time step
+-       call update_natomfr(tsp_t)
++       if( grd_hydro_on .and. tsp_it .ne. 1) then
++         call update_natomfr(0d0)
++       else
++         call update_natomfr(tsp_t)
++       endif
+        natom1fr = gas_natom1fr
+ c-- end of time step
+-       call update_natomfr(tsp_t + tsp_dt)
++       if( grd_hydro_on .and. tsp_it .ne. 1 ) then
++         call update_natomfr(tsp_dt)
++       else
++         call update_natomfr(tsp_t+tsp_dt)
++       endif
+        natom2fr = gas_natom1fr
+ c
+ c-- update the abundances for the center time
+        !call update_natomfr(tsp_tcenter)
+-       call update_natomfr(tsp_t)
++       if( .not. grd_hydro_on ) then
++         call update_natomfr(tsp_t)
++       endif
+ c-- sanity check
+        if(any(gas_natom1fr<0d0)) stop 'gas_update: natom1fr<0'
+ !c-- print change in electron fraction
+@@ -85,11 +99,15 @@
+ c
+ c-- energy deposition
+ c-- gamma decay
++
++
+        gas_decaygamma =  !per average atom (mix of stable and unstable)
+      &   (natom1fr(gas_ini56,:) - natom2fr(gas_ini56,:)) *
+      &     (nuc_qhl_ni56 + nuc_qhl_co56) +!ni56 that decays adds to co56
+      &   (natom1fr(gas_ico56,:) - natom2fr(gas_ico56,:)) *
+      &     nuc_qhl_co56
++
++
+        gas_decaygamma = gas_decaygamma * gas_natom !total, units=ergs
+ c-- beta decay (off for backwards compatibility)
+ c      gas_decaybeta = (natom2fr(26,:) - natom1fr(26,:))*nuc_q_poskin
+@@ -109,6 +127,8 @@
+ !}}}
+ c
+ c
++
++
+ c-- update volume
+ c========================================
+       i = 0
+@@ -117,46 +137,78 @@
         gas_vol(i) = grd_vol(l)
        enddo !l
-+
-+
-+      call update_gas_cpp(tsp_dt)
-+
  c
- c
+-c
++
  c-- update density, start temperature derivative
+ c===============================================
+-      gas_rho = gas_mass/gas_vol
++
++        gas_rho = gas_mass/gas_vol
++
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     HYDRO LSU
++      if( grd_hydro_on .and. it_gt_0 ) then
++        gas_rho = gas_mass/gas_vol
++        if( lfirst ) then
++          call eos_update(.false.)
++       endif
++      endif
++
++
++      call gather_hydro
++      if( grd_hydro_on .and. it_gt_0 ) then
++        if( lfirst ) then
++          call hydro_output(0d0)
++        endif
++        call hydro_update(tsp_t, tsp_t + tsp_dt, help, .false.)
++      endif
++      call eos_update(.false.)
++
++      call hydro_output(tsp_t + tsp_dt)
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+ c-- temperature
+       gas_ur = pc_acoef*gas_temp**4
+ c
+ c-- sanity check temperatures
++
+       if(any(gas_temp/=gas_temp)) stop 'gas_temp NaN'
+       if(any(gas_temp<=0d0)) stop 'gas_temp<=0'
++
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     HYDRO LSU
++      if( in_radiation_on ) then
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+ c
+ c
+ c
+ c-- compute the starting tempurature derivative in the fleck factor
+-      if(lfirst .or. in_opacanaltype/='none') then
++        if(lfirst .or. in_opacanaltype/='none') then
+ c-- temporarily change!{{{
+-       gas_temp = dtempfrac*gas_temp
+-       if(in_opacanaltype=='none') then
+-        if(.not.in_noeos) call eos_update(.false.)
+-       endif
++         gas_temp = dtempfrac*gas_temp
++         if(in_opacanaltype=='none') then
++          if(.not.in_noeos) call eos_update(.false.)
++         endif
+ c
+-       if(in_opacanaltype/='none') then
+-        call analytic_opacity
+-       else
+-        call physical_opacity
+-       endif
+-       call opacity_planckmean
++         if(in_opacanaltype/='none') then
++          call analytic_opacity
++         else
++          call physical_opacity
++         endif
++         call opacity_planckmean
+ c
+ c-- save
+-       if(.not.allocated(tempalt)) then
+-        allocate(tempalt(gas_ncell))
+-        allocate(capgreyalt(gas_ncell))
+-       endif
+-       tempalt = gas_temp
+-       capgreyalt = gas_capgrey/gas_rho !per gram
++         if(.not.allocated(tempalt)) then
++          allocate(tempalt(gas_ncell))
++          allocate(capgreyalt(gas_ncell))
++         endif
++         tempalt = gas_temp
++         capgreyalt = gas_capgrey/gas_rho !per gram
+ c
+ c-- change back
+-       gas_temp = gas_temp/dtempfrac
++         gas_temp = gas_temp/dtempfrac
+ !}}}
+-      endif
++        endif
++
+ c
+ c
+ c
+@@ -165,6 +217,11 @@
+       do_output = (in_io_pdensdump=='each' .or.
+      &  (in_io_pdensdump=='one' .and. tsp_it==1))
+       if(.not.in_noeos) call eos_update(do_output)
++
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     HYDRO LSU
++      endif
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ c
+       if(in_gas_cvcoef>0d0) then
+ c-- calculate power law heat capacity
+@@ -185,81 +242,95 @@
+        tot_emat = sum(gas_bcoef*gas_temp*gas_vol)
+        tot_eext = tot_eext + tot_emat  !was initialized either in totalsmod or in totals_startup
+       endif      
++
++
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     HYDRO LSU
++      if( in_radiation_on ) then
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+ c
+ c
+ c
+ c-- calculate opacities
+ c======================
+ c-- gamma opacity
+-      gas_capgam = in_opcapgam*gas_ye*gas_rho
++        gas_capgam = in_opcapgam*gas_ye*gas_rho
+ c
+ c
+ c-- simple analytical group/grey opacities: Planck and Rosseland 
+-      if(in_opacanaltype/='none') then
+-       call analytic_opacity
+-      else
++        if(in_opacanaltype/='none') then
++         call analytic_opacity
++        else
+ c-- calculate physical opacities
+ c-- test existence of input.opac file
+-       inquire(file='input.opac',exist=lexist)
+-       if(.not.lexist) then
++         inquire(file='input.opac',exist=lexist)
++         if(.not.lexist) then
+ c-- calculate opacities
+-        call physical_opacity
+-       else
++          call physical_opacity
++         else
+ c-- read in opacities
+-        open(4,file='input.opac',status='old',iostat=istat)!{{{
+-        if(istat/=0) stop 'read_opac: no file: input.opac'
++          open(4,file='input.opac',status='old',iostat=istat)!{{{
++          if(istat/=0) stop 'read_opac: no file: input.opac'
+ c-- read header
+-        read(4,*,iostat=istat)
+-        if(istat/=0) stop 'read_opac: file empty: input.opac'
++          read(4,*,iostat=istat)
++          if(istat/=0) stop 'read_opac: file empty: input.opac'
+ c-- read each cell individually
+-        do j=1,tsp_it
++          do j=1,tsp_it
+ c-- skip delimiter
+          read(4,*,iostat=istat)
+-         if(istat/=0) stop 'read_opac: delimiter error: input.opac'
++           if(istat/=0) stop 'read_opac: delimiter error: input.opac'
+ c-- read data
+-         do i=1,gas_ncell
+-          read(4,*,iostat=istat) help,gas_sig(i),gas_cap(:,i)
+-          if(istat/=0) stop 'read_opac: body error: input.opac'
+-         enddo !i
+-        enddo !j
+-        close(4)
+-        write(6,*) 'read_opac: read successfully'
++           do i=1,gas_ncell
++            read(4,*,iostat=istat) help,gas_sig(i),gas_cap(:,i)
++            if(istat/=0) stop 'read_opac: body error: input.opac'
++           enddo !i
++          enddo !j
++          close(4)
++          write(6,*) 'read_opac: read successfully'
+ !}}}
+-       endif
+-      endif
+-      call opacity_planckmean
++         endif
++        endif
++        call opacity_planckmean
+ c
+ c
+ c-- write out opacities
+ c----------------------
+-      if(trim(in_io_opacdump)=='off') then !{{{
+-c-- donothing
+-      else
+-       open(4,file='output.opac',status='unknown',position='append')
+-      endif !off
++        if(trim(in_io_opacdump)=='off') then !{{{
++c-- don othing
++       else
++         open(4,file='output.opac',status='unknown',position='append')
++        endif !off
+ c
+ c-- write opacity grid
+-      inquire(4,opened=do_output)
+-      if(do_output) then
++        inquire(4,opened=do_output)
++        if(do_output) then
+ c-- header
+-       if(tsp_it==1) write(4,'("#",3i8)') gas_ncell,tsp_nt
+-       write(4,'("#",3i8)') tsp_it
++         if(tsp_it==1) write(4,'("#",3i8)') gas_ncell,tsp_nt
++         write(4,'("#",3i8)') tsp_it
+ c-- body
+-       do i=1,gas_ncell
+-        write(4,'(1p,9999e12.4)') gas_temp(i),gas_sig(i),gas_cap(:,i)
+-       enddo
++         do i=1,gas_ncell
++          write(4,'(1p,9999e12.4)') gas_temp(i),gas_sig(i),gas_cap(:,i)
++         enddo
+ c-- close file
+-       close(4)
+-      endif !do_output !}}}
++        close(4)
++        endif !do_output !}}}
+ c
+ c
+ c-- Calculating Fleck factor, leakage opacities
+-      call fleck_factor(tempalt,capgreyalt)
++        call fleck_factor(tempalt,capgreyalt)
+ c
+ c
+ c-- save previous values for gentile-fleck factor calculation in next iter
+-      tempalt = gas_temp
+-      capgreyalt = gas_capgrey/gas_rho
++        tempalt = gas_temp
++        capgreyalt = gas_capgrey/gas_rho
++
++
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     HYDRO LSU
++      endif
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+ c
+       lfirst = .false.
+ c
+@@ -279,6 +350,8 @@
+ c     ----------------------------!{{{
+       use nucdatamod
+       use gasmod
++      use gridmod
++      use timestepmod
+       implicit none
+       real*8,intent(in) :: t
+ ************************************************************************
+@@ -291,7 +364,7 @@
+       real*8 :: dye(gas_ncell) !delta natom*ye
+ c
+ c-- save norm for conservation check
+-      natom = sum(gas_natom1fr(22:28,:),dim=1)
++      natom = sum(gas_natom1fr(1:,:),dim=1)
+ c
+ c-- zero
+       gas_natom1fr(22:28,:) = 0d0
+@@ -327,6 +400,7 @@
+       dye = dye - x(:,1)*(25d0/52)
+ c-- update
+       call nucdecay3(gas_ncell,t,nuc_thl_fe52,nuc_thl_mn52,x)
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ c-- current radioactive natom
+       gas_natom1fr(gas_ife52,:) = x(:,2)
+       gas_natom1fr(gas_imn52,:) = x(:,1)
+@@ -367,9 +441,11 @@
+ c
+ c-- natom conservation check
+       do i=1,gas_ncell
+-       help = sum(gas_natom1fr(22:28,i))
+-       if(abs(help-natom(i))>1d-14*natom(i)) stop
+-     &   'update_natomfr: natom not conserved'
++       help = sum(gas_natom1fr(1:,i))
++       if(abs(help-natom(i))>1d-14*natom(i)) then
++       write(*,*) help, natom(i),i
++       stop 'update_natomfr: natom not conserved'
++       endif
+       enddo
+ c
+ c-- calculate Ye
 diff -r d244a10db46e GRID/grid_setup.f
 --- a/GRID/grid_setup.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/GRID/grid_setup.f	Fri Dec 15 15:43:23 2017 -0700
-@@ -30,6 +30,7 @@
-       loop_k: do k=1,grd_nz
-        do j=1,grd_ny
-        do i=1,grd_nx
-+        write(*,*) grd_xarr(i)
-         idcell = idcell + 1
-         if(idcell == str_idcell(l)) then
-          grd_icell(i,j,k) = l
-@@ -126,6 +127,11 @@
++++ b/GRID/grid_setup.f	Thu Aug 30 10:06:44 2018 -0500
+@@ -6,6 +6,10 @@
+       use inputparmod
+       use inputstrmod
+       use physconstmod
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     HYDRO LSU
++      use hydromod
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       implicit none
+ ************************************************************************
+ * Setup the grid on the computational domain
+@@ -60,6 +64,7 @@
+ c-- maximum grid velocity
+       select case(grd_igeom)
+       case(1,11)
++       write(*,*) grd_nx
+        grd_rout = grd_xarr(grd_nx+1)
+ c-- cylindrical
+       case(2)
+@@ -122,6 +127,66 @@
+ c
+ c-- zero amplification-factor energy to begin with
+       grd_eamp = 0d0
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c       HYDRO LSU
++          if( grd_isvelocity ) then
++            if(in_test_problem .eq. 0) then
++                do i = 1, grd_nx
++                do j = 1, grd_ny
++                do k = 1, grd_nz
++                  l = grd_icell(i,j,k)
++                  grd_vx(l) = (grd_xarr(i+1) + grd_xarr(i))*0.5d0
++                  grd_v(i,j,k,:) = 0d0
++                  grd_dvdx(i,j,k,:,:) = 0d0
++                  grd_v(i,j,k,1) = grd_vx(l)
++                  grd_dvdx(i,j,k,1,1) = 1d0
++                  if( (grd_igeom .eq. 1) .or. (grd_igeom .eq. 11) ) then
++                    grd_vy(l) = 0d0
++                  else
++                    grd_vy(l) = (grd_yarr(j+1) + grd_yarr(j))*0.5d0
++                    grd_v(i,j,k,2) = grd_vy(l)
++                    grd_dvdx(i,j,k,2,2) = 1d0
++                  endif
++                  if( grd_igeom .eq. 3 ) then
++                    grd_vz(l) = (grd_zarr(k+1) + grd_zarr(k))*0.5d0
++                    grd_v(i,j,k,3) = grd_vz(l)
++                    grd_dvdx(i,j,k,3,3) = 1d0
++                  else
++                    grd_vz(l) = 0d0
++                  endif
++                enddo
++                enddo
++                enddo
++            else
++                do i = 1, grd_nx
++                do j = 1, grd_ny
++                do k = 1, grd_nz
++                  l = grd_icell(i,j,k)
++                  grd_vx(l) = str_vx(i,j,k)
++                  grd_vy(l) = str_vy(i,j,k)
++                  grd_vz(l) = str_vz(i,j,k)
++                enddo
++                enddo
++                enddo
++            end if
++          else
++            grd_vx = 0.0d0
++            grd_vy = 0.0d0
++            grd_vz = 0.0d0
++          endif
++                do i = 1, grd_nx
++                do j = 1, grd_ny
++                do k = 1, grd_nz
++                  l = grd_icell(i,j,k)
++                  grd_vx(l) = str_vx(i,j,k)
++                  grd_vy(l) = str_vy(i,j,k)
++                  grd_vz(l) = str_vz(i,j,k)
++                enddo
++                enddo
++                enddo
++
++
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ c
  c-- read preset temperature profiles
        inquire(file='input.temp',exist=lexist)
-       if(lexist) call read_temp_preset
-+
-+
-+      call set_cpp_grid(grd_icell,grd_xarr, grd_yarr, grd_zarr, grd_nx,
-+     & grd_ny, grd_nz, grd_ncell)
-+
+diff -r d244a10db46e GRID/grid_volume.f
+--- a/GRID/grid_volume.f	Mon Feb 20 16:32:09 2017 -0700
++++ b/GRID/grid_volume.f	Thu Aug 30 10:06:44 2018 -0500
+@@ -23,6 +23,7 @@
+        t = 1d0
+       endif
  c
-       end subroutine grid_setup
- c vim: fdm=marker
++
+       select case(igeom)
+       case(1,11)
+        forall(i=1:grd_nx,j=1:grd_ny,k=1:grd_nz)
+@@ -56,6 +57,7 @@
+       do i=1,grd_nx
+        l = grd_icell(i,j,k)
+        grd_vol(l) = grd_vol(l) + vol(i,j,k) !multiple void cells are linked to the dummy cell
++
+       enddo
+       enddo
+       enddo
 diff -r d244a10db46e Makefile
 --- a/Makefile	Mon Feb 20 16:32:09 2017 -0700
-+++ b/Makefile	Fri Dec 15 15:43:23 2017 -0700
-@@ -33,7 +33,7 @@
++++ b/Makefile	Thu Aug 30 10:06:44 2018 -0500
+@@ -26,14 +26,14 @@
+   miscmod.o ionsmod.o ffxsmod.o bfxsmod.o bbxsmod.o \
+   inputparmod.o timestepmod.o groupmod.o gridmod.o gasmod.o inputstrmod.o \
+   particlemod.o timingmod.o countersmod.o manufacmod.o fluxmod.o totalsmod.o \
+-  transportmod.o sourcemod.o
+-
++  transportmod.o sourcemod.o hydromod.o momentum.o
++  
+ FILES := banner.o \
+   particle_advance.o particle_advance_gamgrey.o fluxtally.o \
    dealloc_all.o read_bbxs_data.o tau_update.o
  
  LIBRARIES := TRANSPORT1/transport1.a TRANSPORT2/transport2.a TRANSPORT3/transport3.a \
 -  SOURCE/source.a GAS/gas.a GRID/grid.a MISC/misc.a OUTPUT/output.a
-+  SOURCE/source.a GAS/gas.a GRID/grid.a MISC/misc.a OUTPUT/output.a cpp/wrapper.a
++  SOURCE/source.a GAS/gas.a GRID/grid.a MISC/misc.a OUTPUT/output.a HYDRO/hydro.a
  SUBDIRS := $(dir $(LIBRARIES))
  SUBCLEAN = $(addsuffix .clean, $(SUBDIRS))
  
-diff -r d244a10db46e supernu.f90
---- a/supernu.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/supernu.f90	Fri Dec 15 15:43:23 2017 -0700
-@@ -34,6 +34,8 @@
-   integer :: iitflux,itflux=0
-   real*8 :: t0, t1 !timing
-   character(15) :: msg
+diff -r d244a10db46e SOURCE/boundary_source.f90
+--- a/SOURCE/boundary_source.f90	Mon Feb 20 16:32:09 2017 -0700
++++ b/SOURCE/boundary_source.f90	Thu Aug 30 10:06:44 2018 -0500
+@@ -36,6 +36,7 @@
+   dyac(l) = grd_yacos(l) - grd_yacos(l+1)
+   ym(l) = sqrt(1d0-0.25*(grd_yarr(l+1)+grd_yarr(l))**2)
+ 
++  if( src_nsurftot .gt. 0 ) then
+   esurfpart = tot_esurf/dble(src_nsurftot)
+ 
+   if(grd_isvelocity) then
+@@ -351,6 +352,7 @@
+ 
+   enddo
+ 
++  endif
+ 
+ end subroutine boundary_source
+ ! vim: fdm=marker
+diff -r d244a10db46e SOURCE/initial_particles.f90
+--- a/SOURCE/initial_particles.f90	Mon Feb 20 16:32:09 2017 -0700
++++ b/SOURCE/initial_particles.f90	Thu Aug 30 10:06:44 2018 -0500
+@@ -27,6 +27,7 @@
+   real*8 :: r1
+   real*8 :: tradinv
+   real*8 :: specarr(grp_ng)
++  real*8 :: tmp
+ 
+ !-- shortcut
+   pwr = in_srcepwr
+@@ -43,7 +44,10 @@
+         0.0d0,grd_nvolinit(l),nemit,nhere,ndmy)
+      tradinv = (pc_acoef*grd_vol(l)/grd_evolinit(l))**(.25d0)
+      call specintv(tradinv,grp_ng,specarr,1)
+-     specarr = specarr/sum(specarr)
++     tmp = sum(specarr)
++     if( tmp .ne. 0d0 ) then
++        specarr = specarr/tmp
++     endif
+   do ii=1,nhere
+      ipart = ipart + 1!{{{
+ !
+diff -r d244a10db46e SOURCE/sourceenergy.f90
+--- a/SOURCE/sourceenergy.f90	Mon Feb 20 16:32:09 2017 -0700
++++ b/SOURCE/sourceenergy.f90	Thu Aug 30 10:06:44 2018 -0500
+@@ -58,5 +58,6 @@
+      tot_sdecaybeta = 0d0
+   endif
+ 
++
+ end subroutine sourceenergy
+ ! vim: fdm=marker
+diff -r d244a10db46e SOURCE/sourceenergy_misc.f
+--- a/SOURCE/sourceenergy_misc.f	Mon Feb 20 16:32:09 2017 -0700
++++ b/SOURCE/sourceenergy_misc.f	Thu Aug 30 10:06:44 2018 -0500
+@@ -25,6 +25,7 @@
+ c
+ c-- gamma deposition is energy source
+       grd_emit = grd_emit + grd_tally(1,:)
++
+       if(lmpi0) tot_sdeposgamma = sum(grd_tally(1,:))
+ c-- clear eamp in the dummy cell
+       if(grd_ivoid>0) grd_eamp(grd_ncell) = 0d0
+diff -r d244a10db46e SOURCE/sourcenumbers.f90
+--- a/SOURCE/sourcenumbers.f90	Mon Feb 20 16:32:09 2017 -0700
++++ b/SOURCE/sourcenumbers.f90	Thu Aug 30 10:06:44 2018 -0500
+@@ -130,6 +130,7 @@
+      src_nnonth = src_nnonth + nvolex
+   enddo
+ !}}}
++
+ end subroutine sourcenumbers
+ 
+ 
+diff -r d244a10db46e TRANSPORT1/diffusion11.f90
+--- a/TRANSPORT1/diffusion11.f90	Mon Feb 20 16:32:09 2017 -0700
++++ b/TRANSPORT1/diffusion11.f90	Thu Aug 30 10:06:44 2018 -0500
+@@ -1,6 +1,6 @@
+ !This file is part of SuperNu.  SuperNu is released under the terms of the GNU GPLv3, see COPYING.
+ !Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
+-pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
++subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
+ 
+   use randommod
+   use miscmod
+@@ -34,6 +34,12 @@
+   real*8 :: r1, r2, thelp
+   real*8 :: denom, denom2, denom3
+   real*8 :: ddmct, tau, tcensus, pa
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++  real*8 :: v0
++  real*8 :: velopacleak(2), flxopacleak(2), help2
++  integer :: icxp, icxm
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ !-- lumped quantities -----------------------------------------
+ 
+   real*8 :: emitlump, caplump
+@@ -55,8 +61,14 @@
+ !-- statement function
+   integer :: l
+   real*8 :: dx,dx3
++
+   dx(l) = grd_xarr(l+1) - grd_xarr(l)
+   dx3(l) = grd_xarr(l+1)**3 - grd_xarr(l)**3
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++  real*8,pointer :: vx
++  vx => ptcl2%vx
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ 
+   ix => ptcl2%ix
+   ic => ptcl2%ic
+@@ -67,6 +79,8 @@
+   e0 => ptcl%e0
+   wl => ptcl%wl
+ 
++  call hydro_velocity_at11(x, vx, ix, tsp_t)
++
+   capgreyinv => cache%capgreyinv
+   speclump => cache%speclump
+   glumps => cache%glumps
+@@ -92,7 +106,11 @@
+   if(ic/=cache%ic) then
+      cache%ic = ic!{{{
+      cache%istat = 0 !specarr is not cached yet
+-     capgreyinv = max(1d0/grd_capgrey(ic),0d0) !catch nans
++     if( grd_capgrey(ic) .eq. 0d0 ) then
++       capgreyinv = 0d0
++     else
++       capgreyinv = 1d0/grd_capgrey(ic)
++     endif
+ 
+ !
+ !-- lump testing ---------------------------------------------
+@@ -165,7 +183,7 @@
+   if(glump>0) then
+ !-- leakage opacities
+      opacleak = grd_opaclump(1:2,ic)
+-!-- calculating unlumped values
++!!-- calculating unlumped values
+   else
+ !{{{
+ !-- inward
+@@ -186,6 +204,9 @@
+         opacleak(1)=2.0d0*(thelp*grd_xarr(ix))**2/ &
+              (mfphelp*thelp**3*dx3(ix))
+      endif
++
 +
 +
  !
- !-- mpi initialization
-   call mpi_init(ierr) !MPI
+ !-- outward
+      if(ix==grd_nx) then
+@@ -210,6 +231,77 @@
+              (mfphelp*thelp**3*dx3(ix))
+      endif!}}}
+   endif
++
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++  if(glump>0) then
++!-- inward
++     if(ix/=1) l = grd_icell(ix-1,iy,iz)
++     if(ix==1) then
++        opacleak(1) = 0d0
++     elseif((grd_cap(ig,l)+ &
++          grd_sig(l))*dx(ix-1)*thelp<trn_tauddmc) then
++!-- DDMC interface
++        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dx(ix)*thelp
++        ppl = 4d0/(3d0*mfphelp+6d0*pc_dext)
++        flxopacleak(1)= 1.5d0*ppl/(thelp*dx(ix))
++     else
++!-- DDMC interior
++        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dx(ix)+&
++             (grd_sig(l)+grd_cap(ig,l))*dx(ix-1))*thelp
++        flxopacleak(1)=2.0d0/(mfphelp*thelp*dx(ix))
++     endif
++!
++!-- outward
++     if(ix==grd_nx) then
++        lhelp = .true.
++     else
++        l = grd_icell(ix+1,iy,iz)
++        lhelp = (grd_cap(ig,l)+ &
++           grd_sig(l))*dx(ix+1)*thelp<trn_tauddmc
++     endif
++!
++     if(lhelp) then
++!-- DDMC interface
++        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dx(ix)*thelp
++        ppr = 4d0/(3d0*mfphelp+6d0*pc_dext)
++        flxopacleak(2)=1.5d0*ppr/(thelp*dx(ix))
++     else
++!-- DDMC interior
++        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dx(ix)+&
++             (grd_sig(l)+grd_cap(ig,l))*dx(ix+1))*thelp
++        flxopacleak(2)=2.0d0/(mfphelp*thelp*dx(ix))
++     endif!}}}
++  else
++     if( grd_xarr(ix) .ne. 0d0) then
++       flxopacleak(1) = opacleak(1) * (dx3(ix)) / (dx(ix) * grd_xarr(ix)**2)
++     else
++       flxopacleak(1) = 0d0
++     endif
++     if( grd_xarr(ix+1) .ne. 0d0) then
++       flxopacleak(2) = opacleak(2) * (dx3(ix)) / (dx(ix) * grd_xarr(ix+1)**2)
++     else
++       flxopacleak(2) = 0d0
++     endif
++  endif
++  flxopacleak = flxopacleak * (1d0/3d0)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++  if( grd_hydro_on ) then
++    v0 = grd_v(ix,iy,iz,1)
++    if( grd_isvelocity ) then
++      v0 = v0 - (grd_xarr(ix+1)+grd_xarr(ix)) / (2d0)
++    endif
++    v0 = v0 / pc_c
++    velopacleak(2) = max(v0,0d0)*(grd_xarr(ix+1))**2/ &
++             (thelp*dx3(ix))
++    velopacleak(1) = min(v0,0d0)*(grd_xarr(ix))**2/ &
++             (thelp*dx3(ix))
++    opacleak = opacleak + velopacleak
++  endif
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ !
+ !-------------------------------------------------------------
+ !
+@@ -247,6 +339,22 @@
+   endif
+ 
+ 
++  help2 = eraddens * ddmct / 2d0 * dx(ix) * thelp
++  if( ix .gt. 1 ) then
++    icxm = grd_icell(ix-1,iy,iz)
++    grd_momdep(ix-1,iy,iz,1)=grd_momdep(ix-1,iy,iz,1) - &
++                                     help2 * (grd_sig(icxm)+grd_cap(ig,icxm)) * flxopacleak(1)
++     grd_momdep(ix,iy,iz,1)=grd_momdep(ix,iy,iz,1) - &
++       help2 * (grd_sig(ic)+grd_cap(ig,ic)) * flxopacleak(1)
++   endif
++   if( ix .lt. grd_nx ) then
++     icxp = grd_icell(ix+1,iy,iz)
++     grd_momdep(ix+1,iy,iz,1)=grd_momdep(ix+1,iy,iz,1) + &
++                                     help2 * (grd_sig(icxp)+grd_cap(ig,icxp)) * flxopacleak(2)
++   endif
++   grd_momdep(ix,iy,iz,1)=grd_momdep(ix,iy,iz,1) + &
++                                     help2 * (grd_sig(ic)+grd_cap(ig,ic)) * flxopacleak(2)
++
+ !-- updating particle time
+   ptcl%t = ptcl%t+ddmct
+ 
+@@ -311,7 +419,14 @@
+ !-- sample group
+            call rnd_r(r1,rndstate)
+            denom2 = 0d0
+-           help = 1d0/opacleak(1)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MOD
++!  Old code
++!          help = 1d0/opacleak(1)
++!  New code
++           help = 1d0/(opacleak(1) - velopacleak(1))
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+            do iig=1,glump
+               iiig = glumps(iig)
+               specig = cache%specarr(iiig)
+@@ -349,23 +464,38 @@
+            call rnd_r(r2,rndstate)
+            mu = -max(r1,r2)
+ !-- doppler and aberration corrections
+-           if(grd_isvelocity) then
+-              mu = (mu+x*cinv)/(1.0+x*mu*cinv)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!           if(grd_isvelocity) then
++!              mu = (mu+x*cinv)/(1.0+x*mu*cinv)
+ !-- velocity effects accounting
+-              help = 1d0/(1.0-x*mu*cinv)
++!              help = 1d0/(1.0-x*mu*cinv)
++!              totevelo = totevelo+e*(1d0 - help)
++!
++!              e = e*help
++!              e0 = e0*help
++!              wl = wl*(1.0-x*mu*cinv)
++!           endif
++! New code
++           if(grd_isvelocity.or.grd_hydro_on) then
++              call hydro_velocity_at11(x, vx, ix, tsp_t)
++              mu = (mu+vx*cinv)/(1.0+vx*mu*cinv)
++!-- velocity effects accounting
++              help = 1d0/(1.0-vx*mu*cinv)
+               totevelo = totevelo+e*(1d0 - help)
+ !
+               e = e*help
+               e0 = e0*help
+-              wl = wl*(1.0-x*mu*cinv)
++              wl = wl*(1.0-vx*mu*cinv)
+            endif
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+         endif
+-!
+ !-- update particle
+         ix = ix-1
+         ic = grd_icell(ix,iy,iz)
+         ig = iiig
+-
+      endif!}}}
+ 
+ 
+@@ -385,7 +515,15 @@
+ !-- sample group
+            call rnd_r(r1,rndstate)
+            denom2 = 0d0
+-           help = 1d0/opacleak(2)
++
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MOD
++!  Old code
++!           help = 1d0/opacleak(2)
++!  New code
++           help = 1d0/(opacleak(2)-velopacleak(2))
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+            do iig=1,glump
+               iiig=glumps(iig)
+               specig = cache%specarr(iiig)
+@@ -406,17 +544,34 @@
+ !-- position
+         x=grd_xarr(grd_nx+1)
+ !-- changing from comoving frame to observer frame
+-        if(grd_isvelocity) then
+-           help = 1d0+mu*x*cinv
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!        if(grd_isvelocity) then
++!           help = 1d0+mu*x*cinv
++!-- velocity effects accounting
++!           totevelo = totevelo+e*(1d0 - help)
++!           wl = wl/help
++!           e = e*help
++!           e0 = e0*help
++!           mu = (mu+x*cinv)/(1d0+x*mu*cinv)
++!        endif
++! New code
++        if(grd_isvelocity.or.grd_hydro_on) then
++           call hydro_velocity_at11(x, vx, ix, tsp_t)
++           help = 1d0+mu*vx*cinv
+ !-- velocity effects accounting
+            totevelo = totevelo+e*(1d0 - help)
+            wl = wl/help
+            e = e*help
+            e0 = e0*help
+-           mu = (mu+x*cinv)/(1d0+x*mu*cinv)
++           mu = (mu+vx*cinv)/(1d0+vx*mu*cinv)
+         endif
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ !-- observer time correction
+         ptcl%t=ptcl%t-mu*x*thelp*cinv
++!-- LSU - subtract momentum
++        grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) - e * mu / pc_c
+         return
+ !
+ !!}}}
+@@ -430,7 +585,13 @@
+ !-- sample group
+            call rnd_r(r1,rndstate)
+            denom2 = 0d0
+-           help = 1d0/opacleak(2)
++           !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MOD
++!  Old code
++!           help = 1d0/opacleak(2)
++!  New code
++           help = 1d0/(opacleak(2)-velopacleak(2))
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            do iig=1,glump
+               iiig = glumps(iig)
+               specig = cache%specarr(iiig)
+@@ -470,16 +631,32 @@
+            mu = max(r1,r2)
+ !
+ !-- doppler and aberration corrections
+-           if(grd_isvelocity) then
+-              mu = (mu+x*cinv)/(1.0+x*mu*cinv)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!           if(grd_isvelocity) then
++!              mu = (mu+x*cinv)/(1.0+x*mu*cinv)
+ !-- velocity effects accounting
+-              help = 1d0/(1.0-x*mu*cinv)
++!              help = 1d0/(1.0-x*mu*cinv)
++!              totevelo = totevelo+e*(1d0 - help)
++!
++!              e = e*help
++!              e0 = e0*help
++!              wl = wl*(1.0-x*mu*cinv)
++!           endif
++! New code
++           if(grd_isvelocity.or.grd_hydro_on) then
++              call hydro_velocity_at11(x, vx, ix, tsp_t)
++              mu = (mu+vx*cinv)/(1.0+vx*mu*cinv)
++!-- velocity effects accounting
++              help = 1d0/(1.0-vx*mu*cinv)
+               totevelo = totevelo+e*(1d0 - help)
+ !
+               e = e*help
+               e0 = e0*help
+-              wl = wl*(1.0-x*mu*cinv)
++              wl = wl*(1.0-vx*mu*cinv)
+            endif
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+         endif
+ !
+ !-- update particle
+@@ -508,7 +685,7 @@
+ !-- don't sample, it will end up in the lump anyway
+         else
+ !-- always put this in the single most likely group
+-           ig = nint(grd_opaclump(9,ic))
++           iiig = max(1,nint(grd_opaclump(9,ic)))
+            return
+         endif
+      else
+@@ -546,19 +723,43 @@
+         x = min(x,grd_xarr(ix+1))
+         x = max(x,grd_xarr(ix))
+ !-- doppler and aberration corrections
+-        if(grd_isvelocity) then
+-           mu = (mu+x*cinv)/(1.0+x*mu*cinv)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!        if(grd_isvelocity) then
++!           mu = (mu+x*cinv)/(1.0+x*mu*cinv)
+ !-- velocity effects accounting
+-           help = 1d0/(1d0-x*mu*cinv)
++!           help = 1d0/(1d0-x*mu*cinv)
++!           totevelo = totevelo+e*(1d0 - help)
++!
++!           e = e*help
++!           e0 = e0*help
++!           wl = wl*(1.0-x*mu*cinv)
++!        endif
++! New code
++        if(grd_isvelocity.or.grd_hydro_on) then
++           call hydro_velocity_at11(x, vx, ix, tsp_t)
++           mu = (mu+vx*cinv)/(1.0+vx*mu*cinv)
++!-- velocity effects accounting
++           help = 1d0/(1d0-vx*mu*cinv)
+            totevelo = totevelo+e*(1d0 - help)
+ !
+            e = e*help
+            e0 = e0*help
+-           wl = wl*(1.0-x*mu*cinv)
++           wl = wl*(1.0-vx*mu*cinv)
+         endif
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      endif
+ !}}}
+   endif
+ 
++  call hydro_velocity_at11(x, vx, ix, tsp_t)
++
++
++!-- LSU - subtract momentum
++  if( ptcl2%itype .eq. 1 ) then
++    grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) - e * mu / pc_c
++  endif
++
+ end subroutine diffusion11
+ ! vim: fdm=marker
+diff -r d244a10db46e TRANSPORT1/transport11.f90
+--- a/TRANSPORT1/transport11.f90	Mon Feb 20 16:32:09 2017 -0700
++++ b/TRANSPORT1/transport11.f90	Thu Aug 30 10:06:44 2018 -0500
+@@ -1,6 +1,6 @@
+ !This file is part of SuperNu.  SuperNu is released under the terms of the GNU GPLv3, see COPYING.
+ !Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
+-pure subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
++subroutine transport11(ptcl,ptcl2,rndstate,edep,eraddens,eamp,totevelo,ierr)
+ 
+   use randommod
+   use miscmod
+@@ -18,6 +18,11 @@
+   type(rnd_t),intent(inout) :: rndstate
+   real*8,intent(out) :: edep, eraddens, eamp
+   real*8,intent(inout) :: totevelo
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++!    LSU MODIFICATION
++  real*8, pointer :: vx
++  real*8 :: eold
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+   integer,intent(out) :: ierr
+ !##################################################
+ !This subroutine passes particle parameters as input and modifies
+@@ -53,6 +58,10 @@
+   ig => ptcl2%ig
+   d => ptcl2%dist
+   x => ptcl%x
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++!    LSU MODIFICATION
++  vx => ptcl2%vx
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+   mu => ptcl%mu
+   e => ptcl%e
+   e0 => ptcl%e0
+@@ -66,14 +75,38 @@
+   eamp = 0d0
+ !
+ !-- setting vel-grid helper variables  
+-  if(grd_isvelocity) then
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++!LSU MODIFICATION
++! Old code
++!  if(grd_isvelocity) then
+ !-- calculating initial transformation factors
+-     elabfact = 1d0 - mu*x*cinv
++!     elabfact = 1d0 - mu*x*cinv
++!     thelp = tsp_t
++!  else
++!     elabfact = 1d0
++!     thelp = 1d0
++!  endif
++! New code
++
++
++  !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! compute fluid velocity at particle position
++  call hydro_velocity_at11(x, vx, ix, tsp_t)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
++  if(grd_isvelocity) then
+      thelp = tsp_t
+   else
+-     elabfact = 1d0
+      thelp = 1d0
+   endif
++  if(grd_isvelocity .or. grd_hydro_on) then
++     elabfact = 1d0 - mu*vx*cinv
++  else
++     elabfact = 1d0
++  endif
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+ !
+ !-- inverting vel-grid factor
+   thelpinv = 1d0/thelp
+@@ -83,6 +116,7 @@
+ 
+ !-- census distance
+   dcen = abs(pc_c*(tsp_t1-ptcl%t)*thelpinv)
++!  write(*,*) tsp_t1, ptcl%t, dcen / pc_c * thelp, ptcl2%ipart
+ !
+ !-- boundary distances
+   if(ix==1 .or. mu>=-sqrt(1d0-(grd_xarr(ix)/x)**2)) then
+@@ -125,8 +159,20 @@
+   endif
+ !
+ !-- Doppler shift distance
+-  if(grd_isvelocity.and.ig<grp_ng) then
+-     ddop = pc_c*(elabfact-wl*grp_wlinv(ig+1))
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!  if(grd_isvelocity.and.ig<grp_ng) then
++!     ddop = pc_c*(elabfact-wl*grp_wlinv(ig+1))
++! New code
++  if((grd_isvelocity .or. grd_hydro_on) .and.ig<grp_ng) then
++     if( grd_hydro_on ) then
++       help = grd_dvdx(ix,iy,iz,1,1)
++     else
++       help = 1d0
++     endif
++     ddop = pc_c*(elabfact-wl*help*grp_wlinv(ig+1))
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      if(ddop<0d0) then
+         ddop = far
+      endif
+@@ -157,6 +203,13 @@
+      mu = (xold*mu+d)/x
+   endif
+ 
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! compute fluid velocity at particle position
++  call hydro_velocity_at11(x, vx, ix, tsp_t)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
++
+ !
+ !-- updating time
+   ptcl%t = ptcl%t + thelp*cinv*d
+@@ -184,32 +237,54 @@
+           (1d0-exp(-grd_fcoef(ic)*grd_cap(ig,ic) * &
+           elabfact*d*thelp))*elabfact
+ !-- reducing particle energy
++     eold = e
+      e = e*exp(-grd_fcoef(ic)*grd_cap(ig,ic) * &
+           elabfact*d*thelp)
++!--LSU - depositing momentum
++    grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) + mu*(eold - e)/pc_c
+   endif
+ 
+ !
+ !-- updating transformation factors
+-  if(grd_isvelocity) then
+-     elabfact = 1d0 - mu*x*cinv
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!  if(grd_isvelocity) then
++!     elabfact = 1d0 - mu*x*cinv
++!  endif
++! New code
++  if(grd_isvelocity.or.grd_hydro_on) then
++     elabfact = 1d0 - mu*vx*cinv
+   endif
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+ 
+ !
+ !-- census
+   if(d == dcen) then
+      ptcl2%stat = 'cens'
++
+      return
+   endif
+ 
+ !-- common manipulations for collisions
+   if(d==dthm.or.d==dcol) then
++
+      call rnd_r(r1,rndstate)
+      mu = 1d0-2d0*r1
+      if(abs(mu)<0.0000001d0) then
+         mu = 0.0000001d0
+      endif
+ !-- checking velocity dependence
+-     if(grd_isvelocity) mu=(mu+x*cinv)/(1d0+x*mu*cinv)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!     if(grd_isvelocity) mu=(mu+x*cinv)/(1d0+x*mu*cinv)
++! New code
++     if(grd_isvelocity.or.grd_hydro_on) then
++       mu=(mu+vx*cinv)/(1d0+vx*mu*cinv)
++     endif
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+   elseif(d==db) then
+      lout = mu>=0d0.and.ix==grd_nx
+      if(lout) then
+@@ -224,21 +299,44 @@
+ !
+ !-- Thomson scatter
+   if(d == dthm) then
++
++! LSU
++     grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) + e * mu / pc_c
++
+ !-- checking velocity dependence
+-     if(grd_isvelocity) then
+ !-- lab wavelength
+-        wl = wl*(1d0-mu*x*cinv)/elabfact        
+-        help = elabfact/(1d0-mu*x*cinv)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!     if(grd_isvelocity) then
++!        wl = wl*(1d0-mu*x*cinv)/elabfact
++!        help = elabfact/(1d0-mu*x*cinv)
++! New code
++     if(grd_isvelocity .or. grd_hydro_on) then
++        wl = wl*(1d0-mu*vx*cinv)/elabfact
++        help = elabfact/(1d0-mu*vx*cinv)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+ !-- velocity effects accounting
+         totevelo=totevelo+e*(1d0-help)
+ !-- energy weight
+         e = e*help
+         e0 = e0*help
++
++
+      endif
+ 
++
++! LSU
++     grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) - e * mu / pc_c
+ !
+ !-- effective collision
+   elseif(d == dcol) then
++
++
++! LSU
++     grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) + e * mu / pc_c
++
+      call rnd_r(r1,rndstate)
+ !-- checking if analog
+      if(trn_isimcanlog.and.r1<=grd_fcoef(ic)) then
+@@ -248,12 +346,20 @@
+         edep = e*elabfact
+ !-- velocity effects accounting
+         totevelo = totevelo+e*(1d0-elabfact)
++        grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) - mu*e/pc_c
+         return
+      else
+ !-- effective scattering
+ !-- transforming to lab
+-        if(grd_isvelocity) then
+-           help = elabfact/(1d0-mu*x*cinv)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!        if(grd_isvelocity) then
++!           help = elabfact/(1d0-mu*x*cinv)
++! New code
++        if(grd_isvelocity.or.grd_hydro_on) then
++           help = elabfact/(1d0-mu*vx*cinv)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ !-- velocity effects accounting
+            totevelo = totevelo+e*(1d0-help)
+ !-- energy weight
+@@ -279,20 +385,44 @@
+ !-- checking for DDMC in new group
+         if(ptcl2%itype==2) then
+ !-- transforming to cmf
+-           if(grd_isvelocity) then
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!           if(grd_isvelocity) then
+ !-- velocity effects accounting
+-              totevelo = totevelo+e*x*mu*cinv
++!              totevelo = totevelo+e*x*mu*cinv
+ !-- energy weight
+-              e = e*(1d0-x*mu*cinv)
+-              e0 = e0*(1d0-x*mu*cinv)
++!              e = e*(1d0-x*mu*cinv)
++!              e0 = e0*(1d0-x*mu*cinv)
++!           endif
++! New code
++           if(grd_isvelocity.or.grd_hydro_on) then
++!-- velocity effects accounting
++              totevelo = totevelo+e*vx*mu*cinv
++!-- energy weight
++              e = e*(1d0-vx*mu*cinv)
++              e0 = e0*(1d0-vx*mu*cinv)
+            endif
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            wl = 0d0 !workaround ifort 13.1.3 bug
+         else
+ !-- uniformly in new group
+            call rnd_r(r1,rndstate)
+            wl = 1d0/((1d0-r1)*grp_wlinv(ig)+r1*grp_wlinv(ig+1))
+ !-- converting comoving wavelength to lab frame wavelength
+-           if(grd_isvelocity) wl = wl*(1d0-x*mu*cinv)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!           if(grd_isvelocity) wl = wl*(1d0-x*mu*cinv)
++! New code
++           if(grd_isvelocity.or.grd_hydro_on) then
++             wl = wl*(1d0-vx*mu*cinv)
++           endif
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
++! LSU
++           grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) - e * mu / pc_c
++
+         endif
+      endif
+      
+@@ -308,18 +438,37 @@
+         x = grd_xarr(ix+1)
+         ix = ix+1
+         ic = grd_icell(ix,iy,iz)    
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! compute fluid velocity at particle position
++        call hydro_velocity_at11(x, vx, ix, tsp_t)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      else
+ !-- DDMC in adjacent cell
+-        if(grd_isvelocity) then
+-           mu = (mu-x*cinv)/(1d0-x*mu*cinv)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!        if(grd_isvelocity) then
++!           mu = (mu-x*cinv)/(1d0-x*mu*cinv)
++!        endif
++! New code
++        if(grd_isvelocity.or.grd_hydro_on) then
++          mu = (mu-vx*cinv)/(1d0-vx*mu*cinv)
+         endif
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+         help= (grd_cap(ig,l)+grd_sig(l))*dx(ix+1)*thelp
+         help = 4d0/(3d0*help+6d0*pc_dext)
+ !-- sampling
+         call rnd_r(r1,rndstate)
+         if (r1 < help*(1d0+1.5*abs(mu))) then
+            ptcl2%itype = 2
+-           if(grd_isvelocity) then
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!           if(grd_isvelocity) then
++! New code
++           if(grd_isvelocity.or.grd_hydro_on) then
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ !-- velocity effects accounting
+               totevelo=totevelo+e*(1d0-elabfact)
+               e = e*elabfact
+@@ -333,10 +482,23 @@
+            call rnd_r(r1,rndstate)
+            call rnd_r(r2,rndstate)
+            mu = -max(r1,r2)
+-           if(grd_isvelocity) then
+-              mu = (mu+x*cinv)/(1d0+x*mu*cinv)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!           if(grd_isvelocity) then
++!              mu = (mu+x*cinv)/(1d0+x*mu*cinv)
++!           endif
++! New code
++           if(grd_isvelocity .or. grd_hydro_on) then
++              mu = (mu+vx*cinv)/(1d0+vx*mu*cinv)
+            endif
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            x = grd_xarr(ix+1)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! compute fluid velocity at particle position
++           call hydro_velocity_at11(x, vx, ix, tsp_t)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+         endif
+      endif!}}}
+ 
+@@ -352,11 +514,24 @@
+         x = grd_xarr(ix)
+         ix = ix-1
+         ic = grd_icell(ix,iy,iz)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! compute fluid velocity at particle position
++        call hydro_velocity_at11(x, vx, ix, tsp_t)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      else
+ !-- DDMC in adjacent cell
+-        if(grd_isvelocity) then
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!        if(grd_isvelocity) then
+ !-- transforming x-cosine to cmf
+-           mu = (mu-x*cinv)/(1d0-x*mu*cinv)
++!           mu = (mu-x*cinv)/(1d0-x*mu*cinv)
++! New code
++        if(grd_isvelocity.or.grd_hydro_on) then
++!-- transforming x-cosine to cmf
++           mu = (mu-vx*cinv)/(1d0-vx*mu*cinv)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ !-- amplification factor
+            if(.not.trn_noampfact .and. mu<0d0) then
+               help = 1d0/abs(mu)
+@@ -379,7 +554,13 @@
+         call rnd_r(r1,rndstate)
+         if (r1 < help*(1d0+1.5d0*abs(mu))) then
+            ptcl2%itype = 2
+-           if(grd_isvelocity) then
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!           if(grd_isvelocity) then
++! New code
++           if(grd_isvelocity.or.grd_hydro_on) then
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ !-- velocity effects accounting
+               totevelo = totevelo+e*(1d0-elabfact)
+ !
+@@ -395,15 +576,32 @@
+            call rnd_r(r2,rndstate)
+            mu = max(r1,r2)
+ !-- transforming mu to lab
+-           if(grd_isvelocity) mu=(mu+x*cinv)/(1d0+x*mu*cinv)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!           if(grd_isvelocity) mu=(mu+x*cinv)/(1d0+x*mu*cinv)
++! New code
++           if(grd_isvelocity.or.grd_hydro_on) mu=(mu+vx*cinv)/(1d0+vx*mu*cinv)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            x = grd_xarr(ix)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! compute fluid velocity at particle position
++           call hydro_velocity_at11(x, vx, ix, tsp_t)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+         endif
+      endif!}}}
+ 
+ !
+ !-- Doppler shift
+   elseif(d == ddop) then
+-     if(.not.grd_isvelocity) then
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!     if(.not.grd_isvelocity) then
++! New code
++     if((.not.grd_isvelocity).and.(.not.grd_hydro_on)) then
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ !       stop 'transport11: ddop and no velocity'
+         ierr = 16
+         return
+@@ -425,7 +623,13 @@
+         ptcl2%itype = 2
+         if(grd_isvelocity) then
+ !-- velocity effects accounting
+-           totevelo=totevelo+e*x*mu*cinv
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!           totevelo=totevelo+e*x*mu*cinv
++! New code
++           totevelo=totevelo+e*vx*mu*cinv
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ !
+            e = e*elabfact
+            e0 = e0*elabfact
+@@ -438,5 +642,12 @@
+      return     
+   endif
+ 
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! compute fluid velocity at particle position
++  call hydro_velocity_at11(x, vx, ix, tsp_t)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
++
+ end subroutine transport11
+ ! vim: fdm=marker
+diff -r d244a10db46e TRANSPORT1/transport11_gamgrey.f90
+--- a/TRANSPORT1/transport11_gamgrey.f90	Mon Feb 20 16:32:09 2017 -0700
++++ b/TRANSPORT1/transport11_gamgrey.f90	Thu Aug 30 10:06:44 2018 -0500
+@@ -1,6 +1,6 @@
+ !This file is part of SuperNu.  SuperNu is released under the terms of the GNU GPLv3, see COPYING.
+ !Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
+-pure subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
++subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
+ 
+   use randommod
+   use gridmod
+@@ -38,6 +38,14 @@
+   integer,parameter :: iy=1,iz=1
+   real*8,pointer :: x, mu, e, d
+ 
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++  real*8, pointer :: vx
++  real*8 :: eold
++
++  vx => ptcl2%vx
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+   ix => ptcl2%ix
+   ic => ptcl2%ic
+   d => ptcl2%dist
+@@ -50,15 +58,35 @@
+ !-- init
+   edep = 0d0
+ 
++  call hydro_velocity_at11(x, vx, ix, tsp_t)
++
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++!LSU MODIFICATION
++! Old code
++!  if(grd_isvelocity) then
++!     siglabfact = 1.0d0 - mu*x*cinv
++!     dcollabfact = tsp_t*(1d0-mu*x*cinv)
++!     thelp = tsp_t
++!  else
++!     siglabfact = 1d0
++!     dcollabfact = 1d0
++!     thelp = 1d0
++!  endif
++! New code
+   if(grd_isvelocity) then
+-     siglabfact = 1.0d0 - mu*x*cinv
+-     dcollabfact = tsp_t*(1d0-mu*x*cinv)
+      thelp = tsp_t
+   else
++     thelp = 1d0
++  endif
++  if(grd_isvelocity .or. grd_hydro_on) then
++     siglabfact = 1.0d0 - mu*vx*cinv
++     dcollabfact = tsp_t*(1d0-mu*vx*cinv)
++  else
+      siglabfact = 1d0
+      dcollabfact = 1d0
+-     thelp = 1d0
+   endif
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+   thelpinv = 1d0/thelp
+ 
+ !-- distance longer than distance to census
+@@ -116,31 +144,65 @@
+   endif
+ 
+ !-- transformation factor set
+-  if(grd_isvelocity) then
+-     elabfact = 1d0 - muold*rold*cinv
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!  if(grd_isvelocity) then
++!     elabfact = 1d0 - muold*rold*cinv
++!  else
++!     elabfact = 1d0
++!  endif
++! New code
++  if(grd_isvelocity.or.grd_hydro_on) then
++     elabfact = 1d0 - muold*vx*cinv
+   else
+      elabfact = 1d0
+   endif
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+   !calculating energy deposition and density
+   !
+   if(.not.trn_isimcanlog) then
+      edep = e*(1d0-exp( &
+           -grd_capgam(ic)*siglabfact*d*thelp))*elabfact
+      !--
++     eold = e
+      e = e*exp(-grd_capgam(ic)*siglabfact*d*thelp)
+ 
++!--LSU - depositing momentum
++    grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) + mu*(eold - e)/pc_c
++
+   endif
+ 
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! compute fluid velocity at particle position
++     call hydro_velocity_at11(x, vx, ix, tsp_t)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+ !-- transformation factor reset
+-  if(grd_isvelocity) then
+-     elabfact = 1d0 - mu*x*cinv
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!  if(grd_isvelocity) then
++!     elabfact = 1d0 - muold*rold*cinv
++!  else
++!     elabfact = 1d0
++!  endif
++! New code
++  if(grd_isvelocity.or.grd_hydro_on) then
++     elabfact = 1d0 - muold*vx*cinv
+   else
+      elabfact = 1d0
+   endif
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ 
+ !
+ !-- fictitious scattering with implicit capture
+   if (d == dcol) then
++
++! LSU
++     grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) + e * mu / pc_c
++
+      !!{{{
+      call rnd_r(r1,rndstate)
+      if(r1<=1d0.and.trn_isimcanlog) then
+@@ -154,18 +216,35 @@
+         if(abs(mu)<0.0000001d0) then
+            mu = 0.0000001d0
+         endif
+-        if(grd_isvelocity) then
+-           mu = (mu+x*cinv)/(1d0+x*mu*cinv)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!        if(grd_isvelocity) then
++!           mu = (mu+x*cinv)/(1d0+x*mu*cinv)
+ !-- velocity effects accounting
+-           help = 1d0/(1d0-mu*x*cinv)
++!           help = 1d0/(1d0-mu*x*cinv)
++!
++!           e = e*elabfact*help
++!
++!       endif
++! New code
++        if(grd_isvelocity.or.grd_hydro_on) then
++           mu = (mu+vx*cinv)/(1d0+vx*mu*cinv)
++!-- velocity effects accounting
++           help = 1d0/(1d0-mu*vx*cinv)
+ !
+            e = e*elabfact*help
+            
+         endif
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+ !
+         call rnd_r(r1,rndstate)
+      endif
+      !!}}}
++
++! LSU
++     grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) - e * mu / pc_c
+ !
+ !------boundary crossing ----
+   elseif (d == db) then
+@@ -188,5 +267,7 @@
+      ic = grd_icell(ix,iy,iz)!}}}
+   endif
+ 
++  call hydro_velocity_at11(x, vx, ix, tsp_t)
++
+ end subroutine transport11_gamgrey
+ ! vim: fdm=marker
+diff -r d244a10db46e dealloc_all.f
+--- a/dealloc_all.f	Mon Feb 20 16:32:09 2017 -0700
++++ b/dealloc_all.f	Thu Aug 30 10:06:44 2018 -0500
+@@ -13,6 +13,10 @@
+       use sourcemod
+       use randommod
+       use timestepmod
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     MODIFICATION BY LSU
++      use hydromod
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       implicit none
+ ************************************************************************
+ * deallocate all that was used till the end of the program. Any
+@@ -20,6 +24,10 @@
+ * with earlier.  This helps to catch memory leaks! (drr)
+ ************************************************************************
+ c-- ionsmod
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     MODIFICATION BY LSU
++      call hydromod_dealloc
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       call ions_dealloc
+       call gas_dealloc
+       call grid_dealloc
+diff -r d244a10db46e gridmod.f
+--- a/gridmod.f	Mon Feb 20 16:32:09 2017 -0700
++++ b/gridmod.f	Thu Aug 30 10:06:44 2018 -0500
+@@ -21,6 +21,16 @@
+       real*8,allocatable :: grd_xarr(:)  !(nx+1), left cell edge values
+       real*8,allocatable :: grd_yarr(:)  !(ny+1), left cell edge values
+       real*8,allocatable :: grd_zarr(:)  !(nz+1), left cell edge values
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c        HYDRO LSU
++      logical :: grd_hydro_on = .false.
++      logical :: grd_radiation_on = .true.
++      real*8,allocatable :: grd_vx(:)
++      real*8,allocatable :: grd_vy(:)
++      real*8,allocatable :: grd_vz(:)
++      real*8,allocatable :: grd_v(:,:,:,:)
++      real*8,allocatable :: grd_dvdx(:,:,:,:,:)
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ c
+ c-- maximum radial grid velocity
+       real*8 :: grd_rout=0d0   !particle flux edge radius
+@@ -56,7 +66,10 @@
+       real*8,allocatable :: grd_fcoef(:)  !(ncell)
+ 
+ 
+-
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     LSU MODIFICATION
++      real*8,allocatable :: grd_momdep(:,:,:,:)
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       real*8,allocatable :: grd_tally(:,:)   !(2,ncell) (edep,eraddens)
+ c-- amplification factor excess
+       real*8,allocatable :: grd_eamp(:)   !(ncell)
+@@ -127,6 +140,16 @@
+       allocate(grd_xarr(grd_nx+1))
+       allocate(grd_yarr(grd_ny+1))
+       allocate(grd_zarr(grd_nz+1))
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c        HYDRO LSU
++      allocate(grd_momdep(grd_nx,grd_ny,grd_nz,3))
++      grd_momdep=0d0
++      allocate(grd_vx(grd_ncell))
++      allocate(grd_vy(grd_ncell))
++      allocate(grd_vz(grd_ncell))
++      allocate(grd_v(grd_nx,grd_ny,grd_nz,3))
++      allocate(grd_dvdx(grd_nx,grd_ny,grd_nz,3,3))
++ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ c-- polar
+       if(grd_igeom==1) allocate(grd_yacos(grd_ny+1))
+ c
+@@ -208,7 +231,103 @@
+       deallocate(grd_emitprob)
+ c-- ndim=4 alloc
+       deallocate(grd_cap)!}}}
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c        HYDRO LSU
++      deallocate(grd_vx)
++      deallocate(grd_vy)
++      deallocate(grd_vz)
++      deallocate(grd_v)
++      deallocate(grd_dvdx)
++      deallocate(grd_momdep)
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       end subroutine grid_dealloc
+ c
++
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c        HYDRO LSU
++      pure subroutine hydro_velocity_at( x, y, z, vx, vy, vz,xi,yi,zi,t)
++      implicit none
++
++      real*8, intent(in) :: x, y, z, t
++      real*8, intent(out) ::vx, vy, vz
++      integer, intent(in) :: xi, yi, zi
++
++      real*8 :: dx, dy, dz
++
++      dx = t
++
++      if( grd_hydro_on ) then
++        if( grd_igeom .ne. 11 ) then
++          dx = 0.5d0 * (x - grd_xarr(xi)) /
++     &                 (grd_xarr(xi+1) - grd_xarr(xi))
++          dy = 0.5d0 * (y - grd_yarr(yi)) /
++     &                 (grd_yarr(yi+1) - grd_yarr(yi))
++          dz = 0.5d0 * (z - grd_zarr(zi)) /
++     &                 (grd_zarr(zi+1) - grd_zarr(zi))
++          vx = grd_v(xi,yi,zi,1)
++          vy = grd_v(xi,yi,zi,2)
++          vz = grd_v(xi,yi,zi,3)
++          vx = vx + grd_dvdx(xi,yi,zi,1,1) * dx
++          vy = vy + grd_dvdx(xi,yi,zi,2,1) * dx
++          vz = vz + grd_dvdx(xi,yi,zi,3,1) * dx
++          vx = vx + grd_dvdx(xi,yi,zi,1,2) * dy
++          vy = vy + grd_dvdx(xi,yi,zi,2,2) * dy
++          vz = vz + grd_dvdx(xi,yi,zi,3,2) * dy
++          vx = vx + grd_dvdx(xi,yi,zi,1,3) * dz
++          vy = vy + grd_dvdx(xi,yi,zi,2,3) * dz
++          vz = vz + grd_dvdx(xi,yi,zi,3,3) * dz
++        else
++          dx = 0.5d0 * (x - grd_xarr(xi)) /
++     &                 (grd_xarr(xi+1) - grd_xarr(xi))
++          vx = grd_v(xi,yi,zi,1)
++          vx = vx + grd_dvdx(xi,yi,zi,1,1) * dx
++          vy = 0.0d0
++          vz = 0.0d0
++        endif
++      else if( grd_isvelocity ) then
++        vx = x
++        if( grd_igeom .ne. 1 .and. grd_igeom .ne. 11 ) then
++          vy = y
++        else
++          vy = 0.0d0
++        endif
++        if( grd_igeom .eq. 3 ) then
++          vz = z
++        else
++          vz = 0.0d0
++        endif
++      else
++        vx = 0.0d0
++        vy = 0.0d0
++        vz = 0.0d0
++       endif
++
++
++      end subroutine
++
++      pure subroutine hydro_velocity_at11( x, vx, xi, t )
++      implicit none
++
++      real*8, intent(in) :: x, t
++      real*8, intent(out) ::vx
++      integer, intent(in) :: xi
++
++      real*8 :: dx
++      dx = t
++      if( grd_hydro_on ) then
++        dx = 0.5d0 * (x - grd_xarr(xi)) /
++     &                 (grd_xarr(xi+1) - grd_xarr(xi))
++        vx = grd_v(xi,1,1,1)
++        vx = vx + grd_dvdx(xi,1,1,1,1) * dx
++      else if( grd_isvelocity ) then
++        vx = x
++      else
++        vx = 0.0d0
++      endif
++
++
++      end subroutine
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+       end module gridmod
+ c vim: fdm=marker
+diff -r d244a10db46e groupmod.f
+--- a/groupmod.f	Mon Feb 20 16:32:09 2017 -0700
++++ b/groupmod.f	Thu Aug 30 10:06:44 2018 -0500
+@@ -134,7 +134,11 @@
+       dx = x*abs(grp_wlinv(ig+1) - grp_wlinv(ig))
+       x = x*.5d0*(grp_wlinv(ig+1) + grp_wlinv(ig))
+ c
+-      specint0 = ftpi4 * dx * x**3/(exp(x) - 1d0)
++      if( x .lt. 200d0 ) then
++        specint0 = ftpi4 * dx * x**3/(exp(x) - 1d0)
++      else
++        specint0 = 0d0
++      endif
+ c!}}}
+       end function specint0
+ c
+@@ -258,7 +262,11 @@
+ c
+       elemental real*8 function f(x)
+       real*8,intent(in) :: x
+-      f = x**3/(exp(x) - 1d0)
++      if( x .gt. 200d0 ) then
++         f = 0d0
++      else
++        f = x**3/(exp(x) - 1d0)
++      endif
+       end function
+ c!}}}
+       end subroutine specintv
+diff -r d244a10db46e inputparmod.f
+--- a/inputparmod.f	Mon Feb 20 16:32:09 2017 -0700
++++ b/inputparmod.f	Thu Aug 30 10:06:44 2018 -0500
+@@ -23,6 +23,16 @@
+       integer :: in_grd_igeom = 0 !geometry: 1=sph, 2=cyl, 3=car, 11=1Dsph
+       integer :: in_ndim(3) = [1, 1, 1]  !number of x-direction cells
+       logical :: in_isvelocity = .true.  !switch underlying grid between spatial+static to velocity+expanding
++
++ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     HYDRO LSU
++      logical :: in_hydro_on = .true.
++      logical :: in_radiation_on = .true.
++      integer :: in_test_problem = 0
++c                0 - no test, read from file or input params
++c                1 - Blast wave
++ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+ c
+ c
+ c-- read input structure file instead of specifying the stucture with input parameters
+@@ -196,7 +206,12 @@
+ !io
+      & in_io_grabstdout,
+      & in_io_nogriddump,in_io_dogrdtally,
+-     & in_io_opacdump,in_io_pdensdump
++     & in_io_opacdump,in_io_pdensdump,
++ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     HYDRO LSU
++     & in_hydro_on, in_radiation_on, in_test_problem
++ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+ c
+ c-- pointers
+ c
+@@ -540,6 +555,10 @@
+        stop 'in_grd_igeom invalid'
+       endselect
+ c
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     LSU MOD
++      if( in_test_problem .eq. 0 ) then
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       if(in_isvelocity) then
+        if(in_str_lx>0d0) stop 'vel grid: use str_velout, not in_str_lx'
+        if(in_str_ly>0d0) stop 'vel grid: use str_velout, not in_str_ly'
+@@ -564,6 +583,10 @@
+        if(in_str_dentype/='none') stop
+      &   '!noreadstruct & str_dentype/=none'
+       endif
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     LSU MOD
++      endif
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ c
+ c-- special grid
+       if(.not.in_noreadstruct) then
+@@ -717,6 +740,10 @@
+       use groupmod
+       use gasmod
+       use gridmod
++ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     MODIFICATION BY LSU
++      use hydromod
++ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       implicit none
+       integer,intent(in) :: nmpi
+ ************************************************************************
+@@ -785,6 +812,11 @@
+       grd_ny    = in_ndim(2)
+       grd_nz    = in_ndim(3)
+       grd_isvelocity = in_isvelocity
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     MODIFICATION BY LSU
++      grd_hydro_on = in_hydro_on
++      grd_radiation_on = in_radiation_on
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ c!}}}
+       end subroutine provide_inputpars
+ c
+diff -r d244a10db46e inputstrmod.f
+--- a/inputstrmod.f	Mon Feb 20 16:32:09 2017 -0700
++++ b/inputstrmod.f	Thu Aug 30 10:06:44 2018 -0500
+@@ -20,6 +20,12 @@
+       real*8,allocatable :: str_temp(:,:,:) !(nx,ny,nz)
+       real*8,allocatable :: str_ye(:,:,:) !(nx,ny,nz)
+       real*8,allocatable :: str_massfr(:,:,:,:) !(nabund,nx,ny,nz)
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     LSU MODIFICATION
++      real*8,allocatable :: str_vx(:,:,:)
++      real*8,allocatable :: str_vy(:,:,:)
++      real*8,allocatable :: str_vz(:,:,:)
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ c
+ c-- domain compression
+       logical :: str_lvoid=.false.  !flag existence of void cells
+@@ -70,6 +76,7 @@
+ c     --------------------------------------------------------!{{{
+       use physconstmod
+       use miscmod
++      use inputparmod!{{{
+       implicit none
+       integer,intent(in) :: igeomin,nmpi
+       integer,intent(in) :: ndim(3)
+@@ -78,7 +85,7 @@
+ * Read the input structure file
+ ************************************************************************
+       integer :: i,j,k,l,ierr,nx_r,ny_r,nz_r,ini56,nvar,ncol
+-      integer :: jmass,jxleft,jye,jtemp
++      integer :: jmass,jxleft,jye,jtemp,jvelx,jvely,jvelz
+       integer :: ncorner,nvoid,ncell,ncpr
+       character(2) :: dmy
+       character(8),allocatable :: labl(:)
+@@ -120,15 +127,27 @@
+       if(ierr/=0) stop 'read_inputstr: input.str fmt err: col labels'
+ c
+ c-- var pointers
++      jvelx = 0
++      jvely = 0
++      jvelz = 0
+       jxleft = 0
+       jmass = 0
+       jye = 0
+       jtemp = 0
+       do i=1,nvar
+-       if(lcase(trim(labl(i)))=='x_left') jxleft = i
++       if(lcase(trim(labl(i)))=='x_left') then
++          write(*,*) 'Found x_left column'
++          jxleft = i
++       endif
+        if(lcase(trim(labl(i)))=='mass') jmass = i
+        if(lcase(trim(labl(i)))=='ye') jye = i
+        if(lcase(trim(labl(i)))=='temp') jtemp = i
++       if(lcase(trim(labl(i)))=='velx') then
++            write(*,*) 'Found x velocity column'
++            jvelx = i
++       endif
++       if(lcase(trim(labl(i)))=='vely') jvely = i
++       if(lcase(trim(labl(i)))=='velz') jvelz = i
+       enddo
+       if(jmass==0) stop 'read_inputstr: mass label not found'
+       if(jtemp>0) str_ltemp = .true.
+@@ -143,6 +162,16 @@
+       if(str_ltemp) allocate(str_temp(nx,ny,nz))
+       if(str_lye) allocate(str_ye(nx,ny,nz))
+       allocate(raw(ncol,nx*ny*nz))
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     LSU MODIFICATION
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++      allocate(str_vx(nx,ny,nz))
++      allocate(str_vy(nx,ny,nz))
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     LSU MODIFICATION
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++      allocate(str_vz(nx,ny,nz))
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ c
+ c-- read body
+       read(4,*,iostat=ierr) raw
+@@ -214,8 +243,11 @@
+ c-- check grid monotonicity
+       help = str_xleft(1)
+       do i=2,nx+1
+-       if(str_xleft(i)<=help) stop
++       if(str_xleft(i)<=help) then
++          write(*,*) str_xleft(i), help, i
++          stop
+      &   'read_inputstr: x grid not increasing'
++       endif
+        help = str_xleft(i)
+       enddo
+ c
+@@ -243,6 +275,33 @@
+        str_mass(i,j,k) = raw(jmass,l)
+        if(str_ltemp) str_temp(i,j,k)=raw(jtemp,l)
+        if(str_lye) str_ye(i,j,k)=raw(jye,l)
++       if(jvelx.ne.0) then
++          str_vx(i,j,k)=raw(jvelx,l)
++       else
++          if( in_isvelocity ) then
++             str_vx(i,j,k) = (str_xleft(i) + str_xleft(i+1))/2d0
++          else
++             str_vx(i,j,k) = 0d0
++          endif
++       endif
++       if(jvely.ne.0) then
++          str_vy(i,j,k)=raw(jvely,l)
++       else
++          if( in_isvelocity .and. (igeom.eq.2.or.igeom.eq.3)) then
++             str_vy(i,j,k) = (str_yleft(j) + str_yleft(j+1))/2d0
++          else
++             str_vy(i,j,k) = 0d0
++          endif
++       endif
++       if(jvelz.ne.0) then
++          str_vz(i,j,k)=raw(jvelz,l)
++       else
++          if( in_isvelocity .and. igeom.eq.3) then
++             str_vz(i,j,k) = (str_zleft(k) + str_zleft(k+1))/2d0
++          else
++             str_vz(i,j,k) = 0d0
++          endif
++       endif
+       enddo
+       enddo
+       enddo
+@@ -340,6 +399,7 @@
+ * put valid (non-void) cells in sequence, link the other (void) cells
+ * to the dummy cell at the end of the sequence.
+ ************************************************************************
++
+       integer :: i,j,k,l
+       integer :: idcell
+ c
+@@ -400,11 +460,50 @@
+ c
+       subroutine generate_inputstr(igeomin)
+ c     ---------------------------------------------!{{{
+-      implicit none
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     LSU MODIFICATION
++      use inputparmod
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc      implicit none
+       integer,intent(in) :: igeomin
++      integer :: ini56
+ ************************************************************************
+ * wrapper around routines for different geometries
+-************************************************************************
++**********************************
++
++
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     LSU MODIFICATION
++      if( in_test_problem .ne. 0 ) then
++         nx = in_ndim(1)
++         ny = in_ndim(2)
++         nz = in_ndim(3)
++         str_nabund = 1
++         allocate(str_abundlabl(1))
++         str_abundlabl(1) = 'h'
++         str_ltemp=.true.
++         allocate(str_mass(nx,ny,nz))
++         allocate(str_massfr(str_nabund,nx,ny,nz))
++         allocate(str_temp(nx,ny,nz))
++         allocate(str_xleft(nx+1))
++         allocate(str_yleft(nx+1))
++         allocate(str_zleft(nx+1))
++         allocate(str_ye(nx,ny,nz))
++         allocate(str_vx(nx,ny,nz))
++         allocate(str_vy(nx,ny,nz))
++         allocate(str_vz(nx,ny,nz))
++         call elnam2elcode(ini56)
++        select case(in_test_problem)
++          case(1)
++            write(*,*) 'Setting up Sedov-Taylor blast wave'
++            call sedov_setup
++        end select
++
++
++      else
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
++
++**************************************
+       igeom = igeomin
+       select case(igeom)
+       case(1,11)
+@@ -421,6 +520,11 @@
+       if(.not.allocated(str_yleft)) allocate(str_yleft(2))
+       if(.not.allocated(str_zleft)) allocate(str_zleft(2))
+ c!}}}
++
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     LSU MODIFICATION
++      endif
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       end subroutine generate_inputstr
+ c
+ c
+@@ -530,6 +634,8 @@
+       allocate(str_zleft(nz+1))
+       allocate(str_mass(nx,ny,nz))
+ c
++
++
+ c-- create unit cylinder radii xout
+       dx = 1d0/nx
+       forall(i=1:nx+1) xout(i) = (i-1)*dx
+@@ -607,6 +713,9 @@
+ c-- deallocating helper arrays
+       deallocate(xout,yout)
+ c!}}}
++
++
++
+       end subroutine generate_inputstr2
+ c
+ c
+@@ -782,7 +891,6 @@
+         iabund = j
+        endselect
+        !write(6,*) 'el found: ',elname,iabund
+-c
+ c-- store element code (pointer to mass0fr)
+        str_iabund(l) = iabund
+       enddo!}}}
+diff -r d244a10db46e ionsmod.f
+--- a/ionsmod.f	Mon Feb 20 16:32:09 2017 -0700
++++ b/ionsmod.f	Thu Aug 30 10:06:44 2018 -0500
+@@ -144,12 +144,31 @@
+       end subroutine ions_dealloc
+ c
+ c
+-c
++
+       subroutine ions_solve_eos(natomfr,temp,ndens,nelec,iconv)
+ c     --------------------------------------------------------!{{{
+       use physconstmod
+       use miscmod, only:warn
+       implicit none
++      real*8 :: pot
++      real*8,intent(in) :: natomfr(nelem)
++      real*8,intent(in) :: temp,ndens
++      real*8,intent(inout) :: nelec
++      integer,intent(out) :: iconv
++
++      call ions_solve_eos_energy(natomfr,temp,ndens,nelec,iconv,pot)
++
++      end subroutine
++
++c
++      subroutine ions_solve_eos_energy
++     &          (natomfr,temp,ndens,nelec,iconv,pot_i)
++c     --------------------------------------------------------!{{{
++      use physconstmod
++      use gasmod
++      use miscmod, only:warn
++      implicit none
++      real*8,intent(out) :: pot_i
+       real*8,intent(in) :: natomfr(nelem)
+       real*8,intent(in) :: temp,ndens
+       real*8,intent(inout) :: nelec
+@@ -167,9 +186,9 @@
+ * - nelec: number of electrons relative to the total number of atoms,
+ *          where sum(natomfr)==1
+ ************************************************************************
+-      integer,parameter :: nconv=40 !max number of convergence iterations
++      integer,parameter :: nconv=400 !max number of convergence iterations
+       real*8,parameter :: acc=1d-8 !accuracy requirment for convergence
+-      integer :: ii,iz,iprev,ihelp
++      integer :: ii,iz,iprev,ihelp,jj
+       real*8 :: kti,sahac,sahac2 !constants
+       real*8 :: help
+ c
+@@ -179,6 +198,16 @@
+       end type nelec_conv
+       type(nelec_conv) :: nec
+       real*8 :: nelec_new,err,dxdy,ynew
++
++      nelec = max(nelec,1d-3)
++
++c      if( temp .lt. 1d3 ) then
++c        nelec = 0d0
++c        pot_ex = 0d0
++c        pot_i = 0d0
++c        return
++c      endif
++
+ c
+ c-- constant
+       kti = 1d0/(pc_kb*temp)
+@@ -189,12 +218,29 @@
+ c
+ c-- sanity check
+       if(nelem==0) stop 'ions_solve_eos: nelem error'
++
++      help = kti*ion_el(1)%i(1)%e
++      pot_i = 0d0
++
++c      if( help .gt. 50.0d0 ) then
++c         nelec = 0d0
++c         do iz=1,nelem
++c           ion_el(iz)%i(1)%n = 1d0
++c           do ii=2,ion_el(iz)%ni
++c             ion_el(iz)%i(ii)%n = 0d0
++c           enddo !ii
++c         enddo
++c         return
++c      endif
++
++
+ c
+ c
+ c-- evaluate partition functions: Q = Sum_i(g_i exp(e_i/kt)
+ c--
+       do iz=1,nelem
+        do ii=1,ion_el(iz)%ni-1
++c        ion_el(iz)%i(ii)%q = ion_el(iz)%i(ii)%glev(1)
+         ion_el(iz)%i(ii)%q = sum(ion_el(iz)%i(ii)%glev(:)*
+      &    exp(-kti*ion_el(iz)%i(ii)%elev(:))) !elev is h*c*chi, with [chi]=1/cm
+        enddo !ii
+@@ -210,6 +256,7 @@
+ !      enddo
+ !     endif
+       enddo !iz
++
+ c
+ c
+ c-- repeat saha solver until convergence in nelec is achieved
+@@ -218,7 +265,13 @@
+       do iconv=1,nconv !max number of convergence iterations
+        sahac2 = 2d0/(nelec*ndens)*sahac !constant for saha_nelec
+ c-- solve saha equations for each element
++c       write(*,*) iconv, nelec
+        call saha_nelec(nelec_new)
++       if( nelec_new .le. 1d-10 ) then
++          nelec = 1d-10
++c          write(*,*) 'nele = zero'
++          exit
++       endif
+        err = nelec/nelec_new - 1d0
+ !      write(6,*) iconv,nelec,nelec_new,err,iprev !useful debug output
+ c
+@@ -231,6 +284,7 @@
+ c-- save results: replace the value on the same side of zero
+        ihelp = maxloc(err*nec%err(:),dim=1) !equal signs yield positive number
+        nec%nel(ihelp) = nelec
++c       write(*,*) '!!!!!11', nelec
+        nec%err(ihelp) = err
+ c
+ c-- check bracket
+@@ -270,14 +324,36 @@
+ c       nelec = max(1d-5*nelec_new,nelec) !limit
+        endif
+       enddo !iconv
+-      if(iconv.gt.nconv) call warn('ions_solve_eos',
++      if(iconv.gt.nconv) then
++        write(*,*) acc, nelec, nelec_new, temp
++        call warn('ions_solve_eos',
+      &  'accuracy in nelec not reached')
++      endif
++
++
++
++c      pot_ex = 0d0
++      do iz=1,nelem
++       do ii=1,ion_el(iz)%ni
++c        pot_ex = pot_ex+sum(ion_el(iz)%i(ii)%n*ion_el(iz)%i(ii)%elev(:)*
++c     &                  ion_el(iz)%i(ii)%glev(:)*
++c     &                  exp(-kti*ion_el(iz)%i(ii)%elev(:))) /
++c     &                  ion_el(iz)%i(ii)%q * natomfr(iz)
++        if( ii .gt. 1 ) then
++          pot_i = pot_i + ion_el(iz)%i(ii)%n *
++     &    sum(ion_el(iz)%i(1:ii-1)%e) * natomfr(iz)
++        endif
++       enddo !ii
++      enddo !iz
++      pot_i = pot_i * ndens
++c      pot_ex = pot_ex * ndens
++c      pot = 0d0
+ c
+ c-- print ionization balance
+-c     do iz=1,nelem
++c      do iz=1,nelem
+ c      ihelp = ion_el(iz)%ni
+-c      write(7,'(i3,1p,31e12.4)') iz,(ion_el(iz)%i(ii)%n,ii=1,ihelp)
+-c     enddo
++c      write(*,'(i3,1p,31e12.4)') iz,(ion_el(iz)%i(ii)%n,ii=1,ihelp)
++c      enddo
+ c
+       contains
+ c
+@@ -299,18 +375,32 @@
+        do istart=1,nion-1
+         ion_el(iz)%i(istart)%n = 1d0 !use arbitrary start value for n_1
+         do ii=istart+1,nion
++c        write(*,*)  sahac2,exp(-kti*ion_el(iz)%i(ii-1)%e),
++c     &     ion_el(iz)%i(ii-1)%n,ion_el(iz)%i(ii)%q,ion_el(iz)%i(ii-1)%q
+          help = sahac2*exp(-kti*ion_el(iz)%i(ii-1)%e)*
+      &     ion_el(iz)%i(ii-1)%n*ion_el(iz)%i(ii)%q/ion_el(iz)%i(ii-1)%q
+-         ion_el(iz)%i(ii)%n = help
++         if( help/=help .or. help >huge(nsum)) then
++           ion_el(iz)%i(ii)%n = 1d0
++           exit
++         else
++           ion_el(iz)%i(ii)%n = help
++         endif
+         enddo !ii
+-        if(help<huge(nsum)) exit  !no overflow, we're done
++        if(help<huge(nsum)) then
++          exit
++        endif
+        enddo !istart
++c       if( ion_el(iz)%i(nion)%n /= ion_el(iz)%i(nion)%n ) then
++c          write(*,*) 'yes'
++c          ion_el(iz)%i(nion)%n = ndens
++c          ion_el(iz)%i(1:nion-1)%n = 0d0
++c       endif
+ c
+ c-- normalize n_i
+        nsum = sum(ion_el(iz)%i(:nion)%n)
+        if(nsum/=nsum .or. nsum>huge(nsum) .or. nsum<tiny(nsum)) then !verify nsum
+         write(6,*) 'nsum,iz,nion,iconv=',nsum,iz,nion,iconv
+-        write(6,*) 'sahac,sahac2,kti',sahac,sahac2,kti
++        write(*,*) 'sahac,sahac2,kti,temp',sahac,sahac2,kti,temp
+         write(6,*) 'nelec,ndens',nelec,ndens
+         write(6,*) 'n'
+         write(6,*) (ion_el(iz)%i(ii)%n,ii=1,nion)
+@@ -318,6 +408,8 @@
+         write(6,*) (ion_el(iz)%i(ii)%e,ii=1,nion)
+         write(6,*) 'q'
+         write(6,*) (ion_el(iz)%i(ii)%q,ii=1,nion)
++        write(6,*) ion_el(iz)%i(:)%n
++        call abort();
+         stop 'saha_nelec: nsum invalid'
+        endif
+        nsum = 1d0/nsum
+@@ -339,7 +431,7 @@
+ c
+       end subroutine saha_nelec
+ c!}}}
+-      end subroutine ions_solve_eos
++      end subroutine ions_solve_eos_energy
+ c
+ c
+ c
+@@ -443,7 +535,7 @@
+        ilast = 0
+        ilc = 0
+        do l=1,nlevel
+-        if(l==nlevel) then
++         if(l==nlevel) then
+          ilc = ilc + 1
+          ion_el(iz)%i(ii)%elev(ilc) = pc_h*pc_c*chisum/(l - ilast) !convert [cm^-1] to [erg]
+          ion_el(iz)%i(ii)%glev(ilc) = gsum
+diff -r d244a10db46e mpimod_ser.f
+--- a/mpimod_ser.f	Mon Feb 20 16:32:09 2017 -0700
++++ b/mpimod_ser.f	Thu Aug 30 10:06:44 2018 -0500
+@@ -71,7 +71,223 @@
+       subroutine allreduce_gammaenergy
+       end subroutine allreduce_gammaenergy
+ c
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c      HYDRO LSU
++      subroutine gather_hydro
++      use gridmod
++      use hydromod
++      use gasmod
++      use physconstmod
++      implicit none
++
++      integer :: i, j, k, l, f
++      integer :: i0, j0, k0, f0
++      real*8 :: eint, tmp1
++
++      do i = 1, grd_nx
++      do j = 1, grd_ny
++      do k = 1, grd_nz
++
++
++        l = grd_icell(i,j,k)
++        grd_vx(l) = grd_vx(l)+grd_momdep(i,j,k,1)/gas_mass(l)
++        if( grd_igeom .ne. 11 ) then
++          grd_vy(l) = grd_vy(l)+grd_momdep(i,j,k,2)/gas_mass(l)
++          grd_vz(l) = grd_vz(l)+grd_momdep(i,j,k,3)/gas_mass(l)
++        endif
++      enddo
++      enddo
++      enddo
++      grd_momdep=0d0
++
++      do i = hydro_bw+1, hydro_nx - hydro_bw
++      do j = hydro_bw+1, hydro_ny - hydro_bw
++      do k = hydro_bw+1, hydro_nz - hydro_bw
++         i0 = i - hydro_bw
++         j0 = j - hydro_bw
++         k0 = k - hydro_bw
++         l = grd_icell(i0, j0, k0)
++         hydro_state(i,j,k,rho_i) = gas_mass(l) / gas_vol(l)
++         hydro_state(i,j,k,px_i) = grd_vx(l) * gas_rho(l)
++         hydro_state(i,j,k,py_i) = grd_vy(l) * gas_rho(l)
++         hydro_state(i,j,k,pz_i) = grd_vz(l) * gas_rho(l)
++         eint =  1.5d0*pc_kb*(1.0d0+gas_nelec(l))
++     &              * gas_natom(l) / gas_vol(l) * gas_temp(l)
++         hydro_state(i,j,k,tau_i) = eint**(1.0d0 / hydro_gamma)
++         hydro_state(i,j,k,natom_i) = gas_natom(l) / gas_vol(l)
++         f = frac_i
++         do f0 = 1, gas_nelem
++           hydro_state(i,j,k,f) = gas_natom1fr(f0,l) * gas_natom(l)
++     &                                               / gas_vol(l)
++           f = f + 1
++         enddo
++         do f0 = -2*gas_nchain, -1
++           hydro_state(i,j,k,f) = gas_natom1fr(f0,l) * gas_natom(l) /
++     &                                                 gas_vol(l)
++           f = f + 1
++         enddo
++c         write(*,*) i,j,k,gas_nelem,gas_natom1fr(1:gas_nelem,l)
++         hydro_state(i,j,k,nelec_i) = gas_nelec(l) * gas_natom(l)
++     &                                             / gas_vol(l)
++c         call hydro_eos_from_temp(
++c     &            hydro_state(i,j,k,natom_i),
++c     &            hydro_state(i,j,k,nelec_i),
++c     &            gas_temp(l),
++c     &            hydro_state(i,j,k,frac_i:frac_i+gas_nelem-1) /
++c     &            hydro_state(i,j,k,natom_i),
++c     &            eint, tmp1)
++
++         if( grd_igeom .eq. 11 ) then
++           hydro_state(i,j,k,egas_i) = eint +
++     &                               0.5d0*grd_vx(l)**2 * gas_rho(l)
++         else
++           hydro_state(i,j,k,egas_i) = eint + 0.5d0*
++     &     (grd_vx(l)**2 + grd_vy(l)**2 + grd_vz(l)**2) * gas_rho(l)
++         endif
++      enddo
++      enddo
++      enddo
++
++
++      end subroutine gather_hydro
++
++
++      subroutine scatter_hydro
++      use gridmod
++      use hydromod
++      use gasmod
++      use physconstmod
++      use timestepmod
++      use elemdatamod
++      implicit none
++
++      integer :: i, j, k, l, f
++      integer :: i0, j0, k0, f0
++      real*8 :: eint, tmp1
++      do i = hydro_bw+1, hydro_nx - hydro_bw
++      do j = hydro_bw+1, hydro_ny - hydro_bw
++      do k = hydro_bw+1, hydro_nz - hydro_bw
++         i0 = i - hydro_bw
++         j0 = j - hydro_bw
++         k0 = k - hydro_bw
++         l = grd_icell(i0, j0, k0)
++         if( grd_isvelocity) then
++           gas_vol(l) = gas_vol(l) * (1.0d0 + tsp_dt / tsp_t )**3
++         endif
++         gas_rho(l) = hydro_state(i,j,k,rho_i)
++         gas_mass(l) = gas_rho(l) * gas_vol(l)
++         grd_vx(l) = hydro_state(i,j,k,px_i) / gas_rho(l)
++         grd_vy(l) = hydro_state(i,j,k,py_i) / gas_rho(l)
++         grd_vz(l) = hydro_state(i,j,k,pz_i) / gas_rho(l)
++         eint = hydro_state(i,j,k,egas_i) -
++     &          (grd_vx(l)**2+grd_vy(l)**2+grd_vz(l)**2)*0.50d0*
++     &              hydro_state(i,j,k,rho_i)
++         if( eint .le. hydro_state(i,j,k,egas_i) * des1 ) then
++            eint = hydro_state(i,j,k,tau_i)**(hydro_gamma)
++         endif
++         eint = max(eint,1.0d-20)
++
++         f = frac_i
++         do f0 = 1, gas_nelem
++           gas_natom1fr(f0,l) = hydro_state(i,j,k,f) * gas_vol(l)
++           f = f + 1
++         enddo
++         do f0 = -2*gas_nchain, -1
++           gas_natom1fr(f0,l) = hydro_state(i,j,k,f) * gas_vol(l)
++           f = f + 1
++         enddo
++         gas_natom(l) = hydro_state(i,j,k,natom_i) * gas_vol(l)
++         gas_nelec(l) = hydro_state(i,j,k,nelec_i) * gas_vol(l)
++     &                                             / gas_natom(l)
++         gas_bcoef(l) = 1.5d0*pc_kb*(1d0+gas_nelec(l))
++     &              * gas_natom(l) / gas_vol(l)
++         gas_temp(l) =    eint / gas_bcoef(l)
++         if( gas_temp(l) /= gas_temp(l) ) then
++            write(*,*) l, eint, gas_bcoef(l),  gas_vol(l),
++     &             hydro_state(i,j,k,natom_i)
++            call abort()
++         endif
++         gas_temp(l) = min(gas_temp(l),1d15)
++         if( grd_isvelocity) then
++           gas_vol(l) = gas_vol(l) / (1.0d0 + tsp_dt / tsp_t )**3
++         endif
++c         write(*,*) eint
++c         call hydro_eos_to_temp(
++c     &            hydro_state(i,j,k,natom_i),
++c     &            hydro_state(i,j,k,nelec_i),
++c     &            gas_temp(l),
++c     &            hydro_state(i,j,k,frac_i:frac_i+gas_nelem-1) /
++c     &            hydro_state(i,j,k,natom_i),
++c     &            eint, tmp1)
++
++      enddo
++      enddo
++      enddo
++
++
++      do i = 1, gas_ncell
++
++
++        gas_natom1fr(28,i) = gas_natom1fr(28,i) -
++     &   gas_natom1fr(gas_ini56,i)
++        gas_natom1fr(27,i) = gas_natom1fr(27,i) -
++     &   gas_natom1fr(gas_ico56,i)
++        gas_natom1fr(26,i) = gas_natom1fr(26,i) -
++     &   gas_natom1fr(gas_ife52,i)
++        gas_natom1fr(25,i) = gas_natom1fr(25,i) -
++     &   gas_natom1fr(gas_imn52,i)
++        gas_natom1fr(24,i) = gas_natom1fr(24,i) -
++     &   gas_natom1fr(gas_icr48,i)
++        gas_natom1fr(23,i) = gas_natom1fr(23,i) -
++     &   gas_natom1fr(gas_iv48,i)
++       gas_ye(i) = 0d0
++       do l=1,gas_nelem
++        gas_ye(i) = gas_ye(i) + gas_natom1fr(l,i)*l/elem_data(l)%m
++       enddo
++       if(gas_nchain/=3) stop 'massfr2natomfr: gas_nchain updated'
++       gas_ye(i) = gas_ye(i) + gas_natom1fr(gas_ini56,i)*(28/56d0)
++       gas_ye(i) = gas_ye(i) + gas_natom1fr(gas_ico56,i)*(27/56d0)
++       gas_ye(i) = gas_ye(i) + gas_natom1fr(gas_ife52,i)*(26/52d0)
++       gas_ye(i) = gas_ye(i) + gas_natom1fr(gas_imn52,i)*(25/52d0)
++       gas_ye(i) = gas_ye(i) + gas_natom1fr(gas_icr48,i)*(24/48d0)
++       gas_ye(i) = gas_ye(i) + gas_natom1fr(gas_iv48,i)*(23/48d0)
++       gas_ye(i) = gas_ye(i)/sum(gas_natom1fr(:,i))
++
++        gas_natom0fr(-2,i,1) = gas_natom1fr(gas_ini56,i)!unstable
++        gas_natom0fr(-1,i,1) = gas_natom1fr(gas_ico56,i)!unstable
++        gas_natom0fr(0:2,i,1) = gas_natom1fr(26:28,i)!stable
++c-- fe/mn/cr
++        gas_natom0fr(-2,i,2) = gas_natom1fr(gas_ife52,i)!unstable
++        gas_natom0fr(-1,i,2) = gas_natom1fr(gas_imn52,i)!unstable
++        gas_natom0fr(0:2,i,2) = gas_natom1fr(24:26,i)!stable
++c-- cr/v/ti
++        gas_natom0fr(-2,i,3) = gas_natom1fr(gas_icr48,i)!unstable
++        gas_natom0fr(-1,i,3) = gas_natom1fr(gas_iv48,i)!unstable
++        gas_natom0fr(0:2,i,3) = gas_natom1fr(22:24,i)!stable
+ c
++        gas_natom1fr(28,i) = gas_natom1fr(28,i) +
++     &   gas_natom1fr(gas_ini56,i)
++        gas_natom1fr(27,i) = gas_natom1fr(27,i) +
++     &   gas_natom1fr(gas_ico56,i)
++        gas_natom1fr(26,i) = gas_natom1fr(26,i) +
++     &   gas_natom1fr(gas_ife52,i)
++        gas_natom1fr(25,i) = gas_natom1fr(25,i) +
++     &   gas_natom1fr(gas_imn52,i)
++        gas_natom1fr(24,i) = gas_natom1fr(24,i) +
++     &   gas_natom1fr(gas_icr48,i)
++        gas_natom1fr(23,i) = gas_natom1fr(23,i) +
++     &   gas_natom1fr(gas_iv48,i)
++c
++        gas_natom(i) = sum(gas_natom1fr(1:,i))
++        gas_natom1fr(:,i) = gas_natom1fr(:,i)/gas_natom(i)
++        gas_natom0fr(:,i,:) = gas_natom0fr(:,i,:)/gas_natom(i)
++      enddo
++
++
++c      call abort()
++
++      end subroutine scatter_hydro
++cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+       subroutine bcast_nonpermanent
+       use gridmod
+       use gasmod
+@@ -85,6 +301,8 @@
+ c-- domain decomposition
+       grd_tempinv = reshape(1d0/gas_temp,[grd_ncell])
+       grd_emit = reshape(gas_emit,[grd_ncell])
++
++
+       grd_emitex = reshape(gas_emitex,[grd_ncell])
+       grd_evolinit = reshape(gas_evolinit,[grd_ncell])
+ c
+diff -r d244a10db46e particle_advance.f90
+--- a/particle_advance.f90	Mon Feb 20 16:32:09 2017 -0700
++++ b/particle_advance.f90	Thu Aug 30 10:06:44 2018 -0500
+@@ -4,6 +4,10 @@
+ subroutine particle_advance
+ 
+ !$ use omp_lib
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++!    LSU MODIFICATION
++  use hydromod
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+   use randommod
+   use transportmod
+   use miscmod
+@@ -39,6 +43,12 @@
+   integer, pointer :: ig, ic
+   integer, pointer :: ix, iy, iz
+   real*8, pointer :: x,y,z, mu, e, e0, wl, om
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++!    LSU MODIFICATION
++  real*8, pointer :: vx, vy, vz
++  real*8 :: this_dt, help2, xold, yold, zold, eold, muold
++  integer :: ixold, iyold, izold, itypeold, icxp, icxm, icyp, icym, iczp, iczm
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+   real*8 :: eta, xi
+   real*8 :: t0,t1  !timing
+   real*8 :: labfact, mu1, mu2
+@@ -138,6 +148,13 @@
+   x => ptcl%x
+   y => ptcl%y
+   z => ptcl%z
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++!    LSU MODIFICATION
++  grd_momdep = 0d0
++  vx => ptcl2%vx
++  vy => ptcl2%vy
++  vz => ptcl2%vz
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+   mu => ptcl%mu
+   om => ptcl%om
+   wl => ptcl%wl
+@@ -184,6 +201,12 @@
+      !if(ptcl%t<tsp_t) write(0,*) ptcl%t,tsp_t,(ptcl%t-tsp_t)/(ptcl%t+tsp_t),x
+      if(ptcl%t<tsp_t) stop 'particle_advance: ptcl%t < tsp_t'
+ 
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! compute fluid velocity at particle position
++     call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+ !
+ !-- determine particle type
+      select case(grd_igeom)
+@@ -206,18 +229,39 @@
+ 
+ !
+ !-- transform IMC particle into lab frame
+-     if(grd_isvelocity.and.ptcl2%itype==1) then
+-        select case(grd_igeom)
+-        case(1,11)
+-           labfact = 1d0-x*mu/pc_c
+-        case(2)
+-           labfact = 1d0-(mu*y + sqrt(1d0-mu**2) * cos(om)*x)/pc_c
+-        case(3)
+-           help = sqrt(1d0-mu**2)
+-           mu1 = help*cos(om)
+-           mu2 = help*sin(om)
+-           labfact = 1d0-(mu*z + mu1*x + mu2*y)/pc_c
+-        endselect
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! MODIFIED BY LSU
++! Old code -
++!     if(grd_isvelocity.and.ptcl2%itype==1) then
++!        select case(grd_igeom)
++!        case(1,11)
++!           labfact = 1d0-x*mu/pc_c
++!        case(2)
++!           labfact = 1d0-(mu*y + sqrt(1d0-mu**2) * cos(om)*x)/pc_c
++!        case(3)
++!           help = sqrt(1d0-mu**2)
++!           mu1 = help*cos(om)
++!           mu2 = help*sin(om)
++!           labfact = 1d0-(mu*z + mu1*x + mu2*y)/pc_c
++!        endselect
++! New code -
++     if((grd_isvelocity.or.grd_hydro_on).and.ptcl2%itype==1) then
++        if( grd_igeom .eq. 11 ) then
++          labfact = 1d0 - mu*vx/pc_c
++        else
++           help2 = sqrt(1d0-mu**2)
++           mu1 = help2*cos(om)
++           mu2 = help2*sin(om)
++          select case(grd_igeom)
++          case(1)
++             labfact = 1d0-(mu*vx + mu1*vy + mu2*vz)/pc_c
++          case(2)
++             labfact = 1d0-(mu*vy + mu1*vx + mu2*vz)/pc_c
++          case(3)
++             labfact = 1d0-(mu*vz + mu1*vx + mu2*vy)/pc_c
++          endselect
++        endif
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ !-- transform into lab frame
+         wl = wl*labfact
+         e = e/labfact
+@@ -228,6 +272,7 @@
+ !-- First portion of operator split particle velocity position adjustment
+      if(grd_isvelocity.and.ptcl2%itype==1) then
+         call advection(.true.,ptcl,ptcl2) !procedure pointer to advection[123]
++        call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
+      endif
+ 
+ !-- velocity components in cartesian basis
+@@ -258,6 +303,26 @@
+ 
+      do while (ptcl2%stat=='live')
+         ptcl2%istep = ptcl2%istep + 1
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++        if( grd_hydro_on ) then
++          itypeold = ptcl2%itype
++          eold = e
++          muold = mu
++          xold = x
++          yold = y
++          zold = z
++          ixold = ix
++          iyold = iy
++          izold = iz
++          this_dt = ptcl%t
++!          if( ptcl2%itype .eq. 1 ) then
++!            call particle_momentum( ptcl, momb )
++!          else
++!            momb = 0d0
++!          endif
++        endif
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+         icold = ic
+         if(ptcl2%itype==1 .or. in_puretran) then
+            nstepimc = nstepimc + 1
+@@ -280,6 +345,76 @@
+         ndist(i) = ndist(i) + 1
+ !-- tally rest
+         grd_tally(:,icold) = grd_tally(:,icold) + [edep,eraddens]
++
++
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++!        if( grd_hydro_on ) then
++!          if( itypeold .eq. 2 ) then
++!            this_dt = ptcl%t - this_dt
++
++!            help2 = eraddens * this_dt / 2d0 * dx(ixold) * thelp
++!            if( ixold .gt. 1 ) then
++!              icxm = grd_icell(ixold-1,iyold,izold)
++!              grd_momdep(ixold-1,iyold,izold,1)=grd_momdep(ixold-1,iyold,izold,1) - &
++!                                     help2 * (grd_sig(icxm)+grd_capgrey(icxm)) * grd_opaclump(1,icold)
++!            endif
++!            if( ixold .lt. grd_nx ) then
++!              icxp = grd_icell(ixold+1,iyold,izold)
++!              grd_momdep(ixold+1,iyold,izold,1)=grd_momdep(ixold+1,iyold,izold,1) + &
++!                                     help2 * (grd_sig(icxp)+grd_capgrey(icxp)) * grd_opaclump(2,icold)
++!            endif
++
++!            if( ixold .gt. 1 .or. grd_igeom .eq. 3 ) then
++!              grd_momdep(ixold,iyold,izold,1)=grd_momdep(ixold,iyold,izold,1) - &
++!                                     help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(1,icold)
++!            endif
++
++!            grd_momdep(ixold,iyold,izold,1)=grd_momdep(ixold,iyold,izold,1) + &
++!                                     help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(2,icold)
++
++!            if( grd_igeom .ne. 11 ) then
++
++!             write(*,*) 'geometry not yet supported'
++!             call abort
++
++!              help2 = eraddens * this_dt / 2d0 * dy(iyold)
++!              if( iyold .gt. 1 ) then
++!                icym = grd_icell(ixold,iyold-1,izold)
++!                grd_momdep(ixold,iyold-1,izold,2)=grd_momdep(ixold,iyold-1,izold,2) - &
++!                                       help2 * (grd_sig(icym)+grd_capgrey(icym)) * grd_opaclump(3,icold)
++!              endif
++!              if( iyold .lt. grd_ny ) then
++!                icyp = grd_icell(ixold,iyold+1,izold)
++!                grd_momdep(ixold,iyold+1,izold,2)=grd_momdep(ixold,iyold+1,izold,2) + &
++!                                       help2 * (grd_sig(icyp)+grd_capgrey(icyp)) * grd_opaclump(4,icold)
++!              endif
++!              grd_momdep(ixold,iyold,izold,2)=grd_momdep(ixold,iyold,izold,2) - &
++!                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(3,icold)
++!              grd_momdep(ixold,iyold,izold,2)=grd_momdep(ixold,iyold,izold,2) + &
++!                                      help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(4,icold)
++
++!              help2 = eraddens * this_dt / 2d0 * dz(izold)
++!              if( izold .gt. 1 ) then
++!                iczm = grd_icell(ixold,iyold,izold-1)
++!                grd_momdep(ixold,iyold,izold-1,3)=grd_momdep(ixold,iyold,izold-1,3) - &
++!                                       help2 * (grd_sig(iczm)+grd_capgrey(iczm)) * grd_opaclump(5,icold)
++!              endif
++!              if( izold .lt. grd_nz ) then
++!                iczp = grd_icell(ixold,iyold,izold+1)
++!                grd_momdep(ixold,iyold,izold+1,3)=grd_momdep(ixold,iyold,izold+1,3) + &
++!                                       help2 * (grd_sig(iczp)+grd_capgrey(iczp)) * grd_opaclump(6,icold)
++!              endif
++!              grd_momdep(ixold,iyold,izold,3)=grd_momdep(ixold,iyold,izold,  3) - &
++!                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(5,icold)
++!              grd_momdep(ixold,iyold,izold,3)=grd_momdep(ixold,iyold,izold,  3) + &
++!                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(6,icold)
++!            endif
++!          endif
++!         endif
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
++
+ !
+ !-- Russian roulette for termination of exhausted particles
+         if(e<1d-6*e0 .and. ptcl2%stat=='live' .and. &
+@@ -288,16 +423,36 @@
+            if(.not.grd_isvelocity .or. ptcl2%itype==2) then
+               labfact = 1d0
+            else
+-              select case(grd_igeom)
+-              case(1,11)
+-                 labfact = 1d0 - mu*x/pc_c
+-              case(2)
+-                 labfact = 1d0-(mu*y+sqrt(1d0-mu**2) * &
+-                    cos(om)*x)/pc_c
+-              case(3)
+-                 labfact = 1d0-(mu*z+sqrt(1d0-mu**2) * &
+-                    (cos(om)*x+sin(om)*y))/pc_c
+-              endselect
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! MODIFIED BY LSU
++! Old code -
++!              select case(grd_igeom)
++!              case(1,11)
++!                 labfact = 1d0 - mu*x/pc_c
++!              case(2)
++!                 labfact = 1d0-(mu*y+sqrt(1d0-mu**2) * &
++!                    cos(om)*x)/pc_c
++!              case(3)
++!                 labfact = 1d0-(mu*z+sqrt(1d0-mu**2) * &
++!                    (cos(om)*x+sin(om)*y))/pc_c
++!              endselect
++! New code -
++             if( grd_igeom .eq. 11 ) then
++               labfact = 1d0 - mu*vx/pc_c
++             else
++               help2 = sqrt(1d0-mu**2)
++               mu1 = help2*cos(om)
++               mu2 = help2*sin(om)
++               select case(grd_igeom)
++                 case(1)
++                   labfact = 1d0-(mu*vx + mu1*vy + mu2*vz)/pc_c
++                 case(2)
++                   labfact = 1d0-(mu*vy + mu1*vx + mu2*vz)/pc_c
++                 case(3)
++                   labfact = 1d0-(mu*vz + mu1*vx + mu2*vy)/pc_c
++               endselect
++             endif
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+            endif
+ !
+            call rnd_r(r1,rndstate)
+@@ -337,17 +492,17 @@
+ 
+ !-- check exit status
+         if(ierr/=0 .or. ptcl2%istep>1000) then  !istep checker may cause issues in high-res simulations
+-           write(0,*) 'pa: ierr,ipart,istep,idist:',ierr,ptcl2%ipart,ptcl2%istep,ptcl2%idist
+-           write(0,*) 'dist:',ptcl2%dist
+-           write(0,*) 't,taus,tauc:',ptcl%t,grd_sig(ic)*help,grd_cap(ig,ic)*help
+-           write(0,*) 'ix,iy,iz,ic,ig:',ptcl2%ix,ptcl2%iy,ptcl2%iz,ptcl2%ic,ptcl2%ig
+-           write(0,*) 'x,y,z:',ptcl%x,ptcl%y,ptcl%z
+-           write(0,*) 'mu,om:',ptcl%mu,ptcl%om
+-           write(0,*) 'mux,muy,muz:',ptcl2%mux,ptcl2%muy,ptcl2%muz
+-           write(0,*)
+            if(ierr>0) then
++              write(0,*) 'pa: ierr,ipart,istep,idist:',ierr,ptcl2%ipart,ptcl2%istep,ptcl2%idist
++              write(0,*) 'dist:',ptcl2%dist
++              write(0,*) 't,taus,tauc:',ptcl%t,grd_sig(ic)*help,grd_cap(ig,ic)*help
++              write(0,*) 'ix,iy,iz,ic,ig:',ptcl2%ix,ptcl2%iy,ptcl2%iz,ptcl2%ic,ptcl2%ig
++              write(0,*) 'x,y,z:',ptcl%x,ptcl%y,ptcl%z
++              write(0,*) 'mu,om:',ptcl%mu,ptcl%om
++              write(0,*) 'mux,muy,muz:',ptcl2%mux,ptcl2%muy,ptcl2%muz
++              write(0,*)
+               if(trn_errorfatal) stop 'particle_advance: fatal transport error'
+-              ptcl2%stat = 'dead'
++                 ptcl2%stat = 'dead'
+               exit
+            endif
+         endif
+@@ -392,19 +547,43 @@
+ !
+ !-- exact particle time
+         help = abs(ptcl%t-tsp_t1)/(ptcl%t+tsp_t1)
+-        if(help>1e-15) stop 'particle_advance: census time inaccurate'
++        if(help>1e-15) then
++           write(*,*) ptcl%t, tsp_t1, ptcl2%itype
++           call abort
++        endif !stop 'particle_advance: census time inaccurate'
+         ptcl%t = tsp_t1
+ 
+ !
+ !-- Redshifting DDMC particle energy weights and wavelengths
+-        if(ptcl2%itype==2 .and. grd_isvelocity) then
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!        if(ptcl2%itype==2 .and. grd_isvelocity) then
++!-- r   edshifting energy weight!{{{
++!           tot_evelo = tot_evelo + e*(1d0-exp(-tsp_dt/tsp_t))
++!           e = e*exp(-tsp_dt/tsp_t)
++!           e0 = e0*exp(-tsp_dt/tsp_t)
++! New code
++        if(ptcl2%itype==2 .and. (grd_isvelocity.or.grd_hydro_on)) then
+ !-- r   edshifting energy weight!{{{
+-           tot_evelo = tot_evelo + e*(1d0-exp(-tsp_dt/tsp_t))
+-           e = e*exp(-tsp_dt/tsp_t)
+-           e0 = e0*exp(-tsp_dt/tsp_t)
+-           !
++           if( grd_hydro_on ) then
++              select case(grd_igeom)
++                case(11)
++                  help = (1d0/3d0)*(grd_dvdx(ix,iy,iz,1,1) + grd_v(ix,iy,iz,1)*4d0/(grd_xarr(ix+1)+grd_xarr(ix)))
++                case default
++                  stop 'particle_advance.f90: coord sys not implemented'
++               end select
++           else
++             help = 1d0
++           endif
++           help = help / tsp_t
++           tot_evelo = tot_evelo + e*(1d0-exp(-tsp_dt*help))
++           e = e*exp(-tsp_dt*help)
++           e0 = e0*exp(-tsp_dt*help)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ !
+-!-- f   ind group
++!
++!-- find group
+            ig = binsrch(wl,grp_wl,grp_ng+1,.false.)
+ !
+            call rnd_r(r1,rndstate)
+@@ -420,6 +599,7 @@
+ 
+         if(grd_isvelocity.and.ptcl2%itype==1) then
+            call advection(.false.,ptcl,ptcl2) !procedure pointer to advection[123]
++           call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
+         endif
+ 
+ !-- renergy at census
+@@ -467,25 +647,54 @@
+            call rnd_r(r1,rndstate)
+            om = pc_pi2*r1
+ !
+-           if(grd_isvelocity) call direction2lab(x,y,z,mu,om)
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! MODIFIED BY LSU
++! Old code -
++!           if(grd_isvelocity) call direction2lab(x,y,z,mu,om)
++! New code -
++            if(grd_isvelocity.or.grd_hydro_on) then
++              call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
++              call direction2lab(vx,vy,vz,mu,om)
++            endif
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+         endif
+ 
+ !
+ !-- transform IMC particle energy to comoving frame for storage
+         if(grd_isvelocity.and.ptcl2%itype==1) then
+-           select case(grd_igeom)
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! MODIFIED BY LSU
++! Old code -
++!           select case(grd_igeom)
+ !-- [123]D spherical
+-           case(1,11)
+-              labfact = 1d0-x*mu/pc_c
++!           case(1,11)
++!              labfact = 1d0-x*mu/pc_c
+ !-- 2D
+-           case(2)
+-              labfact = 1d0-(mu*y+sqrt(1d0-mu**2) * cos(om)*x)/pc_c
++!           case(2)
++!              labfact = 1d0-(mu*y+sqrt(1d0-mu**2) * cos(om)*x)/pc_c
+ !-- 3D
+-           case(3)
+-              mu1 = sqrt(1d0-mu**2)*cos(om)
+-              mu2 = sqrt(1d0-mu**2)*sin(om)
+-              labfact = 1d0-(mu*z+mu1*x+mu2*y)/pc_c
+-           endselect
++!           case(3)
++!              mu1 = sqrt(1d0-mu**2)*cos(om)
++!              mu2 = sqrt(1d0-mu**2)*sin(om)
++!              labfact = 1d0-(mu*z+mu1*x+mu2*y)/pc_c
++!           endselect
++! New code -
++           if( grd_igeom .eq. 11 ) then
++             labfact = 1d0 - mu*vx/pc_c
++           else
++             help = sqrt(1d0-mu**2)
++             mu1 = help*cos(om)
++             mu2 = help*sin(om)
++             select case(grd_igeom)
++               case(1)
++                 labfact = 1d0-(mu*vx + mu1*vy + mu2*vz)/pc_c
++               case(2)
++                 labfact = 1d0-(mu*vy + mu1*vx + mu2*vz)/pc_c
++               case(3)
++                 labfact = 1d0-(mu*vz + mu1*vx + mu2*vy)/pc_c
++             endselect
++           endif
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ 
+ !-- apply inverse labfact for symmetry (since gamma factor is missing)
+            wl = wl/labfact
+diff -r d244a10db46e particle_advance_gamgrey.f90
+--- a/particle_advance_gamgrey.f90	Mon Feb 20 16:32:09 2017 -0700
++++ b/particle_advance_gamgrey.f90	Thu Aug 30 10:06:44 2018 -0500
+@@ -36,9 +36,13 @@
+   real*8,pointer :: x,y,z,mu,om,e,e0
+   real*8 :: eta, xi
+   real*8 :: t0,t1  !timing
+-  real*8 :: labfact, cmffact, mu1, mu2, gm
++  real*8 :: labfact, cmffact, mu1, mu2!, gm
+   real*8 :: etot,pwr
+-  real*8 :: om0, mu0, x0, y0, z0
++  real*8 :: om0, mu0
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++  real*8,pointer :: vx, vy, vz
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ !
+   integer :: nvol(grd_ncell)
+ !
+@@ -79,6 +83,11 @@
+ 
+ !-- base (flat,constant) particle number per cell over ALL RANKS
+   n = count(grd_emitex>0d0)  !number of cells that emit
++
++  if( n .eq. 0 ) then
++    return
++  endif
++
+   base = dble(nstot)/n  !uniform distribution
+   base = basefrac*base
+ 
+@@ -123,7 +132,7 @@
+ 
+ !$omp parallel &
+ !$omp shared(nvol) &
+-!$omp private(ptcl,ptcl2,x0,y0,z0,mu0,om0,cmffact,gm,mu1,mu2,eta,xi,labfact,iom,imu, &
++!$omp private(ptcl,ptcl2,mu0,om0,cmffact,mu1,mu2,eta,xi,labfact,iom,imu, &
+ !$omp    rndstate,edep,ierr, iomp, &
+ !$omp    x,y,z,mu,om,e,e0,ix,iy,iz,ic,icold,r1, &
+ !$omp    i,j,k) &
+@@ -139,6 +148,12 @@
+   x => ptcl%x
+   y => ptcl%y
+   z => ptcl%z
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++  vx => ptcl2%vx
++  vy => ptcl2%vy
++  vz => ptcl2%vz
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+   mu => ptcl%mu
+   om => ptcl%om
+   e => ptcl%e
+@@ -190,6 +205,13 @@
+      call rnd_r(r1,rndstate)
+      z = r1*grd_zarr(k+1) + (1d0-r1) * grd_zarr(k)
+ 
++
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! compute fluid velocity at particle position
++     call hydro_velocity_at11(x, vx, ix, tsp_t)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+ !-- direction cosine (comoving)
+      call rnd_r(r1,rndstate)
+      mu0 = 1d0-2d0*r1
+@@ -197,50 +219,86 @@
+      om0 = pc_pi2*r1
+ 
+ !-- transform direction
+-     if(.not.grd_isvelocity) then
+-         mu = mu0
+-         om = om0
+-     else
+-        select case(grd_igeom)!{{{
+-        case(1,11)
+-           x0 = x
+-           cmffact = 1d0+mu0*x0/pc_c !-- 1+dir*v/c
+-           mu = (mu0+x0/pc_c)/cmffact
+-           om = om0
+-        case(2)
+-           x0 = x
+-           y0 = y
++
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++
++! Old
++!     if(.not.grd_isvelocity) then
++!         mu = mu0
++!         om = om0
++!     else
++!        select case(grd_igeom)!{{{
++!        case(1,11)
++!           x0 = x
++!           cmffact = 1d0+mu0*x0/pc_c !-- 1+dir*v/c
++!           mu = (mu0+x0/pc_c)/cmffact
++!           om = om0
++!        case(2)
++!           x0 = x
++!           y0 = y
+ !-- 1+dir*v/c
+-           cmffact = 1d0+(mu0*y0+sqrt(1d0-mu0**2)*cos(om0)*x0)/pc_c
+-           gm = 1d0/sqrt(1d0-(x**2+y**2)/pc_c**2)
++!           cmffact = 1d0+(mu0*y0+sqrt(1d0-mu0**2)*cos(om0)*x0)/pc_c
++!           gm = 1d0/sqrt(1d0-(x**2+y**2)/pc_c**2)
+ !-- om
+-           om = atan2(sqrt(1d0-mu0**2)*sin(om0) , &
+-                sqrt(1d0-mu0**2)*cos(om0)+(gm*x/pc_c) * &
+-                (1d0+gm*(cmffact-1d0)/(gm+1d0)))
+-           if(om<0d0) om = om+pc_pi2
++!           om = atan2(sqrt(1d0-mu0**2)*sin(om0) , &
++!                sqrt(1d0-mu0**2)*cos(om0)+(gm*x/pc_c) * &
++!                (1d0+gm*(cmffact-1d0)/(gm+1d0)))
++!           if(om<0d0) om = om+pc_pi2
++!-- mu
++!           mu = (mu0+(gm*y/pc_c)*(1d0+gm*(cmffact-1d0)/(1d0+gm))) / &
++!                (gm*cmffact)
++!        case(3)
++!           x0 = x
++!           y0 = y
++!           z0 = z
++!-- 1+dir*v/c
++!           mu1 = sqrt(1d0-mu0**2)*cos(om0)
++!           mu2 = sqrt(1d0-mu0**2)*sin(om0)
++!           cmffact = 1d0+(mu0*z0+mu1*x0+mu2*y0)/pc_c
+ !-- mu
+-           mu = (mu0+(gm*y/pc_c)*(1d0+gm*(cmffact-1d0)/(1d0+gm))) / &
+-                (gm*cmffact)
+-        case(3)
+-           x0 = x
+-           y0 = y
+-           z0 = z
+-!-- 1+dir*v/c
+-           mu1 = sqrt(1d0-mu0**2)*cos(om0)
+-           mu2 = sqrt(1d0-mu0**2)*sin(om0)
+-           cmffact = 1d0+(mu0*z0+mu1*x0+mu2*y0)/pc_c
+-!-- mu
+-           mu = (mu0+z0/pc_c)/cmffact
+-           if(mu>1d0) then
+-              mu = 1d0
+-           elseif(mu<-1d0) then
+-              mu = -1d0
+-           endif
++!           mu = (mu0+z0/pc_c)/cmffact
++!           if(mu>1d0) then
++!              mu = 1d0
++!           elseif(mu<-1d0) then
++!              mu = -1d0
++!           endif
+ !-- om
+-           om = atan2(mu2+y0/pc_c,mu1+x0/pc_c)
+-           if(om<0d0) om = om+pc_pi2
+-        endselect!}}}
++!           om = atan2(mu2+y0/pc_c,mu1+x0/pc_c)
++!           if(om<0d0) om = om+pc_pi2
++!        endselect!}}}
++!     endif
++
++! New code
++        if( grd_igeom .eq. 11 ) then
++          cmffact = 1d0 + mu0*vx/pc_c
++        else
++           help = sqrt(1d0-mu0**2)
++           mu1 = help*cos(om0)
++           mu2 = help*sin(om0)
++          select case(grd_igeom)
++          case(1)
++             cmffact = 1d0+(mu0*vx + mu1*vy + mu2*vz)/pc_c
++          case(2)
++             cmffact = 1d0+(mu0*vy + mu1*vx + mu2*vz)/pc_c
++          case(3)
++             cmffact = 1d0+(mu0*vz + mu1*vx + mu2*vy)/pc_c
++          endselect
++        endif
++
++     if(grd_isvelocity.or.grd_hydro_on) then
++       if( grd_igeom .eq. 11 ) then
++         call direction2lab11(vx,mu0)
++         om0 = 0d0
++       else
++         call direction2lab(vx,vy,vz,mu0,om0)
++       endif
+      endif
++     mu = mu0
++     om = om0
++
++
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ 
+ !-- velocity components in cartesian basis
+      if(grd_igeom==1) then
+@@ -263,7 +321,15 @@
+ !
+ !-- emission energy per particle
+      e = grd_emitex(ic)/nvol(ic)
+-     if(grd_isvelocity) e = e*cmffact
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++
++! Old code
++!     if(grd_isvelocity) e = e*cmffact
++
++! New code
++     if(grd_isvelocity.or.grd_hydro_on) e = e*cmffact
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      e0 = e
+ 
+ !-----------------------------------------------------------------------
+@@ -277,7 +343,9 @@
+      do while (ptcl2%stat=='live')
+         ptcl2%istep = ptcl2%istep + 1
+         icold = ic
++        call hydro_velocity_at11(x, vx, ix, tsp_t)
+         call transport_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
++        call hydro_velocity_at11(x, vx, ix, tsp_t)
+ !-- tally
+         grd_tally(1,icold) = grd_tally(1,icold) + edep
+ 
+@@ -286,17 +354,38 @@
+            call rnd_r(r1,rndstate)!{{{
+            if(r1<0.5d0) then
+ !-- transformation factor
+-              if(grd_isvelocity) then
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++! Old code
++!             if(grd_isvelocity) then
++!                 select case(grd_igeom)
++!                 case(1,11)
++!                    labfact = 1.0d0 - mu*x/pc_c
++!                 case(2)
++!                    labfact = 1d0-(mu*y+sqrt(1d0-mu**2) * &
++!                         cos(om)*x)/pc_c
++!                 case(3)
++!                    labfact = 1d0-(mu*z+sqrt(1d0-mu**2) * &
++!                         (cos(om)*x+sin(om)*y))/pc_c
++!                 endselect
++! New code
++             if((grd_isvelocity.or.grd_hydro_on)) then
++               if( grd_igeom .eq. 11 ) then
++                 labfact = 1d0 - mu*vx/pc_c
++               else
++                 help = sqrt(1d0-mu**2)
++                 mu1 = help*cos(om)
++                 mu2 = help*sin(om)
+                  select case(grd_igeom)
+-                 case(1,11)
+-                    labfact = 1.0d0 - mu*x/pc_c
+-                 case(2)
+-                    labfact = 1d0-(mu*y+sqrt(1d0-mu**2) * &
+-                         cos(om)*x)/pc_c
+-                 case(3)
+-                    labfact = 1d0-(mu*z+sqrt(1d0-mu**2) * &
+-                         (cos(om)*x+sin(om)*y))/pc_c
++                   case(1)
++                     labfact = 1d0-(mu*vx + mu1*vy + mu2*vz)/pc_c
++                   case(2)
++                     labfact = 1d0-(mu*vy + mu1*vx + mu2*vz)/pc_c
++                   case(3)
++                     labfact = 1d0-(mu*vz + mu1*vx + mu2*vy)/pc_c
+                  endselect
++               endif
++ !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+               else
+                  labfact = 1d0
+               endif
+@@ -363,6 +452,9 @@
+            labfact = (mu*z+sqrt(1d0-mu**2) * &
+                 (cos(om)*x+sin(om)*y))/pc_c
+         endselect
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION (pending)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+         if(grd_isvelocity) labfact=labfact*tsp_t
+         help=help-labfact
+ !-- tally outbound luminosity        
+diff -r d244a10db46e particlemod.f90
+--- a/particlemod.f90	Mon Feb 20 16:32:09 2017 -0700
++++ b/particlemod.f90	Thu Aug 30 10:06:44 2018 -0500
+@@ -16,6 +16,10 @@
+      real*8 :: dist          !particle travel distance
+      character(4) :: stat    !particle status: live, cens, flux, dead
+      integer :: ix, iy, iz   !positional cell indices
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++! LSU MODIFICATION
++     real*8 :: vx, vy, vz   !fluid velocities
++!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      integer :: ic, ig       !index into compressed domain arrays, group index
+      integer :: itype        !IMC or DDMC type
+      integer :: ipart, istep !particle number and transport step number
+diff -r d244a10db46e supernu.f90
+--- a/supernu.f90	Mon Feb 20 16:32:09 2017 -0700
++++ b/supernu.f90	Thu Aug 30 10:06:44 2018 -0500
+@@ -24,7 +24,10 @@
+   use ffxsmod, only:ffxs_read_data
+   use timingmod
+   use countersmod
+-
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++!     MODIFICATION BY LSU
++  use hydromod
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+   implicit none
+ !***********************************************************************
+ ! TODO and wishlist:
+@@ -70,7 +73,7 @@
+        call generate_inputstr(in_grd_igeom)
+      endif
+ !-- compressed domain, serialize non-void cells
+-     call inputstr_compress
++    call inputstr_compress
+ 
+ !-- READ DATA
+ !-- read ion and level data
+@@ -94,6 +97,7 @@
+ !--
+ !-- setup remaining modules
+ !==========================
++
+   call timestepmod_init
+ 
+ !-- wlgrid (before grid setup)
+@@ -103,6 +107,15 @@
+ !-- setup spatial grid
+   call gridmod_init(lmpi0,grp_ng,str_nc,str_lvoid,icell1,ncell)
+   call grid_setup
++
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++!     MODIFICATION BY LSU
++  call hydromod_init
++  call hydro_setup
++  call grid_volume(grd_igeom,grd_isvelocity,tsp_t)
++
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+ !-- setup gas
+   call gasmod_init(lmpi0,icell1,ncell,grp_ng)
+   call gas_setup
+@@ -147,9 +160,17 @@
+      write(6,'(1x,a5,a9,1x,a5,a10,4(a7,1x),a7)') 'it','t[day]','itflx','e_err','nsrc','ncens','nflux','nflxbuf','usage'
+   endif
+ !
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++!     HYDRO LSU
++!  tsp_itrestart = max(1,tsp_itrestart)
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+   do it=tsp_itrestart,tsp_nt
+      t_timelin(1) = t_time() !timeline
+ !-- allow negative and zero it for temperature initialization purposes
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++!     HYDRO LSU
++     it_gt_0 = it .gt. 0
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      tsp_it = max(it,1)
+ 
+ !-- Update tsp_t etc
+@@ -163,6 +184,11 @@
+      call grid_update(tsp_t)
+      call gas_update(it)
+ 
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++!     MODIFICATION BY LSU
++     if( in_radiation_on ) then
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+ !-- source energy: gamma and material
+      call sourceenergy
+ 
+@@ -237,6 +263,7 @@
+      call temperature_update
+      call reduce_gastemp !MPI  !for output
+ 
++
+ !-- output
+      if(lmpi0) then
+ !-- total energy startup values and energy conservation
+@@ -261,6 +288,11 @@
+         endif
+      endif !impi
+ 
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++!     MODIFICATION BY LSU
++     endif !( in_radiation_on ) then
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++
+ !-- write timestep timing to file
+      call timing_cycle(impi,it<=0)
+      call counters_cycle(impi,it<=0)
+diff -r d244a10db46e timestepmod.f90
+--- a/timestepmod.f90	Mon Feb 20 16:32:09 2017 -0700
++++ b/timestepmod.f90	Thu Aug 30 10:06:44 2018 -0500
+@@ -13,6 +13,10 @@
+   real*8,allocatable :: tsp_tpreset(:)  !store preset time steps from input.tsp_time
+   real*8 :: tsp_tcenter,tsp_tfirst,tsp_tlast
+   real*8 :: tsp_dt,tsp_dtinv
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++!     HYDRO LSU
++  logical :: it_gt_0
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ 
+   private read_timestep_preset
+ 
+@@ -40,10 +44,15 @@
+     allocate(tsp_tarr(tsp_nt+1))
+     tsp_tarr(1) = tsp_t
+ !!}}}
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++!     HYDRO LSU
++    it_gt_0 = .false.
++!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+   end subroutine timestepmod_init
+ 
+ 
+   subroutine timestep_update
++    use gridmod
+     implicit none!{{{
+ !***********************************************************************
+ ! update the timestep variables
+@@ -51,26 +60,46 @@
+     real*8 :: help
+ !
+ !-- preset time step sizes
+-    select case(tsp_gridtype)
+-    case('read')
+-       if(.not.allocated(tsp_tpreset)) stop 'timestep_update: tpreset not allocated'
+-       tsp_t = tsp_tpreset(tsp_it)
+-       tsp_t1 = tsp_tpreset(tsp_it+1)
+-       tsp_dt = tsp_t1 - tsp_t
+-    case('lin ')
++!    if( grd_hydro_on .and. tsp_it .gt. 1 ) then
++!      tsp_t = tsp_tarr(tsp_it)
++!      call hydro_update( tsp_t, tsp_t, tsp_dt, .true. )
++!      tsp_dt = tsp_dt * 2d0
++!      select case(tsp_gridtype)
++!      case('read')
++!         stop
++!      case('lin ')
+ !-- linear time grid
+-       tsp_dt = (tsp_tlast - tsp_tfirst)/tsp_nt
+-       tsp_t1 = tsp_tfirst + tsp_it*tsp_dt  !beginning of the time step
+-       tsp_t = tsp_tfirst + (tsp_it-1)*tsp_dt  !beginning of the time step
+-    case('expo')
++!         tsp_dt = min(tsp_dt,(tsp_tlast - tsp_tfirst)/tsp_nt)
++!      case('expo')
+ !-- exponential time grid
+-       help = log(tsp_tlast/tsp_tfirst)/tsp_nt
+-       tsp_t1 = tsp_tfirst*exp(tsp_it*help)  !beginning of the time step
+-       tsp_t = tsp_tfirst*exp((tsp_it-1)*help)  !beginning of the time step
+-       tsp_dt = tsp_t1 - tsp_t
+-    case default
+-       stop 'timestep_update: invalid tsp_gridtype'
+-    end select
++!         stop
++!      case default
++!         stop 'timestep_update: invalid tsp_gridtype'
++!      end select
++!      tsp_t1 = tsp_t + tsp_dt
++!    else
++      select case(tsp_gridtype)
++      case('read')
++         if(.not.allocated(tsp_tpreset)) stop 'timestep_update: tpreset not allocated'
++         tsp_t = tsp_tpreset(tsp_it)
++         tsp_t1 = tsp_tpreset(tsp_it+1)
++         tsp_dt = tsp_t1 - tsp_t
++      case('lin ')
++!-- linear time grid
++         tsp_dt = (tsp_tlast - tsp_tfirst)/tsp_nt
++         tsp_t1 = tsp_tfirst + tsp_it*tsp_dt  !beginning of the time step
++         tsp_t = tsp_tfirst + (tsp_it-1)*tsp_dt  !beginning of the time step
++      case('expo')
++!-- exponential time grid
++         help = log(tsp_tlast/tsp_tfirst)/tsp_nt
++         tsp_t1 = tsp_tfirst*exp(tsp_it*help)  !beginning of the time step
++         tsp_t = tsp_tfirst*exp((tsp_it-1)*help)  !beginning of the time step
++         tsp_dt = tsp_t1 - tsp_t
++      case default
++         stop 'timestep_update: invalid tsp_gridtype'
++      end select
++!    endif
++
+ 
+ !-- append in time array
+     tsp_tarr(tsp_it+1) = tsp_t1
+diff -r d244a10db46e totalsmod.f
+--- a/totalsmod.f	Mon Feb 20 16:32:09 2017 -0700
++++ b/totalsmod.f	Thu Aug 30 10:06:44 2018 -0500
+@@ -63,8 +63,12 @@
+ * Check that all particle energy (weight) is accounted for from
+ * conservation in comoving quantities.
+ ************************************************************************
+-      tot_eerror = (tot_eext-tot_evelo-tot_eout-tot_erad-tot_emat)/
+-     &  tot_eext
++      if( tot_eext .eq. 0d0 ) then
++        tot_eerror = 0d0
++      else
++        tot_eerror = (tot_eext-tot_evelo-tot_eout-tot_erad-tot_emat)/
++     &     tot_eext
++      endif
+ c!}}}
+       end subroutine totals_error
+ c
+diff -r d244a10db46e transportmod.f
+--- a/transportmod.f	Mon Feb 20 16:32:09 2017 -0700
++++ b/transportmod.f	Thu Aug 30 10:06:44 2018 -0500
+@@ -202,11 +202,21 @@
+ c
+ c-- abstract interfaces
+       abstract interface
+-      subroutine direction2lab_(x0,y0,z0,mu0,om0)!{{{
++ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     LSU MODIFICATION
++c     Old code
++c      subroutine direction2lab_(x0,y0,z0,mu0,om0)!{{{
+ c     -------------------------------------------
+-      real*8,intent(in) :: x0,y0,z0
++c      real*8,intent(in) :: x0,y0,z0
++c      real*8,intent(inout) :: mu0,om0
++c      end subroutine direction2lab_
++c     New code
++      subroutine direction2lab_(vx0,vy0,vz0,mu0,om0)!{{{
++c     -------------------------------------------
++      real*8,intent(in) :: vx0,vy0,vz0
+       real*8,intent(inout) :: mu0,om0
+       end subroutine direction2lab_
++ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+ c
+       pure subroutine advection_(pretrans,ptcl,ptcl2)
+ c     -----------------------------------------------
+@@ -322,44 +332,134 @@
+ c
+ c
+ c
+-      subroutine direction2lab1(x0,y0,z0,mu0,om0)
++ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++c     LSU MODIFICATION
++c      subroutine direction2lab1(x0,y0,z0,mu0,om0)
++c     -------------------------------------------
++c      implicit none
++c      real*8,intent(in) :: x0,y0,z0
++c      real*8,intent(inout) :: mu0,om0
++c      real*8 :: cmffact,mu,dummy
++c
++c      dummy = y0
++c      dummy = z0
++c      dummy = om0
++c
++c      cmffact = 1d0+mu0*x0*cinv
++c      mu = (mu0+x0*cinv)/cmffact
++c      mu = min(mu,1d0)
++c      mu = max(mu,-1d0)
++c      mu0 = mu
++c      end subroutine direction2lab1
++c
++c
++c      subroutine direction2lab2(x0,y0,z0,mu0,om0)
++c     -------------------------------------------
++c      implicit none
++c      real*8,intent(in) :: x0,y0,z0
++c      real*8,intent(inout) :: mu0,om0
++c      real*8 :: cmffact,gm,mu,om,dummy
++c
++c      dummy = z0
++c
++c      cmffact = 1d0+(mu0*y0+sqrt(1d0-mu0**2)*cos(om0)*x0)*cinv
++c      gm = 1d0/sqrt(1d0-(x0**2+y0**2)*cinv**2)
++!-- om
++c      om = atan2(sqrt(1d0-mu0**2)*sin(om0),
++c     &     sqrt(1d0-mu0**2)*cos(om0)+(gm*x0*cinv) *
++c     &     (1d0+gm*(cmffact-1d0)/(gm+1d0)))
++c      if(om<0d0) om=om+pc_pi2
++!-- mu
++c      mu = (mu0+(gm*y0*cinv)*(1d0+gm*(cmffact-1d0)/(1d0+gm))) /
++c     &     (gm*cmffact)
++c      mu = min(mu,1d0)
++c      mu = max(mu,-1d0)
++c      mu0 = mu
++c      om0 = om
++c      end subroutine direction2lab2
++c
++c
++c      subroutine direction2lab3(x0,y0,z0,mu0,om0)
++c     -------------------------------------------
++c      implicit none
++c      real*8,intent(in) :: x0,y0,z0
++c      real*8,intent(inout) :: mu0,om0
++c      real*8 :: cmffact,mu1,mu2,mu,om
++c
++c      mu2 = sqrt(1d0-mu0**2)
++c      mu1 = mu2*cos(om0)
++c      mu2 = mu2*sin(om0)
++c      cmffact = 1d0+(mu0*z0+mu1*x0+mu2*y0)*cinv
++!-- mu
++c      mu = (mu0+z0*cinv)/cmffact
++!-- om
++c      om = atan2(mu2+y0*cinv,mu1+x0*cinv)
++c      if(om<0d0) om = om+pc_pi2
++!-- in bounds
++c      mu = min(mu,1d0)
++c      mu = max(mu,-1d0)
++c      mu0 = mu
++c      om0 = om
++c      end subroutine direction2lab3
++
++      pure subroutine direction2lab11(vx0,mu0)
+ c     -------------------------------------------
+       implicit none
+-      real*8,intent(in) :: x0,y0,z0
+-      real*8,intent(inout) :: mu0,om0
+-      real*8 :: cmffact,mu,dummy
++      real*8,intent(in) :: vx0
++      real*8,intent(inout) :: mu0
++      real*8 :: cmffact,mu
+ c
+-      dummy = y0
+-      dummy = z0
+-      dummy = om0
+-c
+-      cmffact = 1d0+mu0*x0*cinv
+-      mu = (mu0+x0*cinv)/cmffact
++      cmffact = 1d0+(mu0*vx0)*cinv
++      mu = (mu0+vx0*cinv)/cmffact
+       mu = min(mu,1d0)
+       mu = max(mu,-1d0)
+       mu0 = mu
++      end subroutine direction2lab11
++c
++      pure subroutine direction2lab1(vx0,vy0,vz0,mu0,om0)
++c     -------------------------------------------
++      use gridmod
++      implicit none
++      real*8,intent(in) :: vx0,vy0,vz0
++      real*8,intent(inout) :: mu0,om0
++      real*8 :: cmffact,mu,sin0,om
++c
++c
++      if( grd_igeom .eq. 11 ) then
++        call direction2lab11(vx0,mu0)
++        om0 = 0d0
++      else
++        sin0 = sqrt(1d0 - mu0*mu0)
++        cmffact = 1d0+(mu0*vx0+sin0*(cos(om0)*vy0+sin(om0)*vz0))*cinv
++        mu = (mu0+vx0*cinv)/cmffact
++        mu = min(mu,1d0)
++        mu = max(mu,-1d0)
++        om = atan2(sin0*sin(om0)+vz0*cinv,
++     &     sin0*cos(om0)+vy0*cinv)
++        if(om<0d0) om=om+pc_pi2
++        mu0 = mu
++        om0 = om
++      endif
++
+       end subroutine direction2lab1
+ c
+ c
+-      subroutine direction2lab2(x0,y0,z0,mu0,om0)
++      pure subroutine direction2lab2(vx0,vy0,vz0,mu0,om0)
+ c     -------------------------------------------
+       implicit none
+-      real*8,intent(in) :: x0,y0,z0
++      real*8,intent(in) :: vx0,vy0,vz0
+       real*8,intent(inout) :: mu0,om0
+-      real*8 :: cmffact,gm,mu,om,dummy
+-c
+-      dummy = z0
++      real*8 :: cmffact,mu,om
++      real*8 :: sin0
+ c
+-      cmffact = 1d0+(mu0*y0+sqrt(1d0-mu0**2)*cos(om0)*x0)*cinv
+-      gm = 1d0/sqrt(1d0-(x0**2+y0**2)*cinv**2)
+-!-- om
+-      om = atan2(sqrt(1d0-mu0**2)*sin(om0),
+-     &     sqrt(1d0-mu0**2)*cos(om0)+(gm*x0*cinv) *
+-     &     (1d0+gm*(cmffact-1d0)/(gm+1d0)))
++      sin0 = sqrt(1d0-mu0*mu0)
++      cmffact = 1d0+(mu0*vy0+sin0*(cos(om0)*vx0+sin(om0)*vz0))*cinv
++! -- om
++      om = atan2(sin0*sin(om0)+vz0*cinv,
++     &     sin0*cos(om0)+vx0*cinv)
+       if(om<0d0) om=om+pc_pi2
+ !-- mu
+-      mu = (mu0+(gm*y0*cinv)*(1d0+gm*(cmffact-1d0)/(1d0+gm))) /
+-     &     (gm*cmffact)
++      mu = (mu0+vy0*cinv) / cmffact
+       mu = min(mu,1d0)
+       mu = max(mu,-1d0)
+       mu0 = mu
+@@ -367,21 +467,21 @@
+       end subroutine direction2lab2
+ c
+ c
+-      subroutine direction2lab3(x0,y0,z0,mu0,om0)
++      pure subroutine direction2lab3(vx0,vy0,vz0,mu0,om0)
+ c     -------------------------------------------
+       implicit none
+-      real*8,intent(in) :: x0,y0,z0
++      real*8,intent(in) :: vx0,vy0,vz0
+       real*8,intent(inout) :: mu0,om0
+       real*8 :: cmffact,mu1,mu2,mu,om
+ c
+       mu2 = sqrt(1d0-mu0**2)
+       mu1 = mu2*cos(om0)
+       mu2 = mu2*sin(om0)
+-      cmffact = 1d0+(mu0*z0+mu1*x0+mu2*y0)*cinv
++      cmffact = 1d0+(mu0*vz0+mu1*vx0+mu2*vy0)*cinv
+ !-- mu
+-      mu = (mu0+z0*cinv)/cmffact
++      mu = (mu0+vz0*cinv)/cmffact
+ !-- om
+-      om = atan2(mu2+y0*cinv,mu1+x0*cinv)
++      om = atan2(mu2+vy0*cinv,mu1+vx0*cinv)
+       if(om<0d0) om = om+pc_pi2
+ !-- in bounds
+       mu = min(mu,1d0)

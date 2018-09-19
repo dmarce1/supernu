@@ -13,9 +13,10 @@ c     --------------------
 * Initialize the gas grid, the part that is constant with time and
 * temperature. The part that changes is done in gas_grid_update.
 ************************************************************************
-      integer :: l,i
+      integer :: l
+      integer :: i
       real*8 :: mass0fr(-2*gas_nchain:gas_nelem,gas_ncell)
-c
+
 c-- agnostic mass setup
       gas_mass = str_massdd
 c
@@ -48,7 +49,13 @@ c-- temp and ur
 c
 c-- adopt partial masses from input file
       mass0fr = 0d0
-      if(.not.in_noreadstruct) then
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     LSU MODIFICATION
+c     old line
+c     if(.not.in_noreadstruct) then
+c     new line
+      if(.not.in_noreadstruct.or.in_test_problem.ne.0) then
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        if(.not.allocated(str_massfrdd)) stop 'input.str data not avail'
        do l=1,str_nabund
         i = str_iabund(l)
@@ -75,10 +82,6 @@ c-- as calculated in massfr2natomfr
        gas_ye0 = gas_ye
       endif
 c
-      call set_cpp_gas(gas_temp, gas_eraddens, gas_ur, gas_rho,
-     & gas_bcoef, gas_decaygamma, gas_vol, gas_mass, gas_ye, gas_natom,
-     & gas_nelec, gas_natom1fr, gas_matsrc, gas_edep, gas_nelem, 6)
-
       end subroutine gas_setup
 c
 c
@@ -119,6 +122,7 @@ c-- warn if renormalization factor is abnormal
 c
 c-- partial mass
        gas_natom1fr(:,i) = mass0fr(:,i)*gas_mass(i)
+
 c
 c-- take out radioactive part
        gas_natom1fr(28,i) = gas_natom1fr(28,i) -
@@ -205,13 +209,11 @@ c-- add radioactive part to stable again
 c
 c-- total natom
        gas_natom(i) = sum(gas_natom1fr(1:,i))
-c
 c-- convert natoms to natom fractions
        gas_natom1fr(:,i) = gas_natom1fr(:,i)/gas_natom(i)
        gas_natom0fr(:,i,:) = gas_natom0fr(:,i,:)/gas_natom(i)
 c
       enddo !i
-c!}}}
-
+c !}}}
       end subroutine massfr2natomfr
 c vim: fdm=marker

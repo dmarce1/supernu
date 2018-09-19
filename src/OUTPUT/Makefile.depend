@@ -1,4 +1,0 @@
-open_logfiles.o: open_logfiles.f inputparmod.mod 
-output_grid.o: output_grid.f gridmod.mod inputparmod.mod timestepmod.mod timingmod.mod totalsmod.mod 
-output_flux.o: output_flux.f fluxmod.mod timestepmod.mod 
-output_gamflux.o: output_gamflux.f fluxmod.mod timestepmod.mod 

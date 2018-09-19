@@ -13,6 +13,10 @@ module timestepmod
   real*8,allocatable :: tsp_tpreset(:)  !store preset time steps from input.tsp_time
   real*8 :: tsp_tcenter,tsp_tfirst,tsp_tlast
   real*8 :: tsp_dt,tsp_dtinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!     HYDRO LSU
+  logical :: it_gt_0
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
   private read_timestep_preset
 
@@ -40,10 +44,15 @@ module timestepmod
     allocate(tsp_tarr(tsp_nt+1))
     tsp_tarr(1) = tsp_t
 !!}}}
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!     HYDRO LSU
+    it_gt_0 = .false.
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   end subroutine timestepmod_init
 
 
   subroutine timestep_update
+    use gridmod
     implicit none!{{{
 !***********************************************************************
 ! update the timestep variables
@@ -51,26 +60,46 @@ module timestepmod
     real*8 :: help
 !
 !-- preset time step sizes
-    select case(tsp_gridtype)
-    case('read')
-       if(.not.allocated(tsp_tpreset)) stop 'timestep_update: tpreset not allocated'
-       tsp_t = tsp_tpreset(tsp_it)
-       tsp_t1 = tsp_tpreset(tsp_it+1)
-       tsp_dt = tsp_t1 - tsp_t
-    case('lin ')
+!    if( grd_hydro_on .and. tsp_it .gt. 1 ) then
+!      tsp_t = tsp_tarr(tsp_it)
+!      call hydro_update( tsp_t, tsp_t, tsp_dt, .true. )
+!      tsp_dt = tsp_dt * 2d0
+!      select case(tsp_gridtype)
+!      case('read')
+!         stop
+!      case('lin ')
 !-- linear time grid
-       tsp_dt = (tsp_tlast - tsp_tfirst)/tsp_nt
-       tsp_t1 = tsp_tfirst + tsp_it*tsp_dt  !beginning of the time step
-       tsp_t = tsp_tfirst + (tsp_it-1)*tsp_dt  !beginning of the time step
-    case('expo')
+!         tsp_dt = min(tsp_dt,(tsp_tlast - tsp_tfirst)/tsp_nt)
+!      case('expo')
 !-- exponential time grid
-       help = log(tsp_tlast/tsp_tfirst)/tsp_nt
-       tsp_t1 = tsp_tfirst*exp(tsp_it*help)  !beginning of the time step
-       tsp_t = tsp_tfirst*exp((tsp_it-1)*help)  !beginning of the time step
-       tsp_dt = tsp_t1 - tsp_t
-    case default
-       stop 'timestep_update: invalid tsp_gridtype'
-    end select
+!         stop
+!      case default
+!         stop 'timestep_update: invalid tsp_gridtype'
+!      end select
+!      tsp_t1 = tsp_t + tsp_dt
+!    else
+      select case(tsp_gridtype)
+      case('read')
+         if(.not.allocated(tsp_tpreset)) stop 'timestep_update: tpreset not allocated'
+         tsp_t = tsp_tpreset(tsp_it)
+         tsp_t1 = tsp_tpreset(tsp_it+1)
+         tsp_dt = tsp_t1 - tsp_t
+      case('lin ')
+!-- linear time grid
+         tsp_dt = (tsp_tlast - tsp_tfirst)/tsp_nt
+         tsp_t1 = tsp_tfirst + tsp_it*tsp_dt  !beginning of the time step
+         tsp_t = tsp_tfirst + (tsp_it-1)*tsp_dt  !beginning of the time step
+      case('expo')
+!-- exponential time grid
+         help = log(tsp_tlast/tsp_tfirst)/tsp_nt
+         tsp_t1 = tsp_tfirst*exp(tsp_it*help)  !beginning of the time step
+         tsp_t = tsp_tfirst*exp((tsp_it-1)*help)  !beginning of the time step
+         tsp_dt = tsp_t1 - tsp_t
+      case default
+         stop 'timestep_update: invalid tsp_gridtype'
+      end select
+!    endif
+
 
 !-- append in time array
     tsp_tarr(tsp_it+1) = tsp_t1

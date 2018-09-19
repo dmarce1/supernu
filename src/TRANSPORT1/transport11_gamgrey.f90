@@ -1,6 +1,6 @@
 !This file is part of SuperNu.  SuperNu is released under the terms of the GNU GPLv3, see COPYING.
 !Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
-pure subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
+subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
 
   use randommod
   use gridmod
@@ -38,6 +38,14 @@ pure subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
   integer,parameter :: iy=1,iz=1
   real*8,pointer :: x, mu, e, d
 
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+  real*8, pointer :: vx
+  real*8 :: eold
+
+  vx => ptcl2%vx
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
   ix => ptcl2%ix
   ic => ptcl2%ic
   d => ptcl2%dist
@@ -50,15 +58,35 @@ pure subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
 !-- init
   edep = 0d0
 
+  call hydro_velocity_at11(x, vx, ix, tsp_t)
+
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!LSU MODIFICATION
+! Old code
+!  if(grd_isvelocity) then
+!     siglabfact = 1.0d0 - mu*x*cinv
+!     dcollabfact = tsp_t*(1d0-mu*x*cinv)
+!     thelp = tsp_t
+!  else
+!     siglabfact = 1d0
+!     dcollabfact = 1d0
+!     thelp = 1d0
+!  endif
+! New code
   if(grd_isvelocity) then
-     siglabfact = 1.0d0 - mu*x*cinv
-     dcollabfact = tsp_t*(1d0-mu*x*cinv)
      thelp = tsp_t
+  else
+     thelp = 1d0
+  endif
+  if(grd_isvelocity .or. grd_hydro_on) then
+     siglabfact = 1.0d0 - mu*vx*cinv
+     dcollabfact = tsp_t*(1d0-mu*vx*cinv)
   else
      siglabfact = 1d0
      dcollabfact = 1d0
-     thelp = 1d0
   endif
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
   thelpinv = 1d0/thelp
 
 !-- distance longer than distance to census
@@ -116,31 +144,65 @@ pure subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
   endif
 
 !-- transformation factor set
-  if(grd_isvelocity) then
-     elabfact = 1d0 - muold*rold*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!  if(grd_isvelocity) then
+!     elabfact = 1d0 - muold*rold*cinv
+!  else
+!     elabfact = 1d0
+!  endif
+! New code
+  if(grd_isvelocity.or.grd_hydro_on) then
+     elabfact = 1d0 - muold*vx*cinv
   else
      elabfact = 1d0
   endif
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   !calculating energy deposition and density
   !
   if(.not.trn_isimcanlog) then
      edep = e*(1d0-exp( &
           -grd_capgam(ic)*siglabfact*d*thelp))*elabfact
      !--
+     eold = e
      e = e*exp(-grd_capgam(ic)*siglabfact*d*thelp)
+
+!--LSU - depositing momentum
+    grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) + mu*(eold - e)/pc_c
 
   endif
 
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! compute fluid velocity at particle position
+     call hydro_velocity_at11(x, vx, ix, tsp_t)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 !-- transformation factor reset
-  if(grd_isvelocity) then
-     elabfact = 1d0 - mu*x*cinv
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!  if(grd_isvelocity) then
+!     elabfact = 1d0 - muold*rold*cinv
+!  else
+!     elabfact = 1d0
+!  endif
+! New code
+  if(grd_isvelocity.or.grd_hydro_on) then
+     elabfact = 1d0 - muold*vx*cinv
   else
      elabfact = 1d0
   endif
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !
 !-- fictitious scattering with implicit capture
   if (d == dcol) then
+
+! LSU
+     grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) + e * mu / pc_c
+
      !!{{{
      call rnd_r(r1,rndstate)
      if(r1<=1d0.and.trn_isimcanlog) then
@@ -154,18 +216,35 @@ pure subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
         if(abs(mu)<0.0000001d0) then
            mu = 0.0000001d0
         endif
-        if(grd_isvelocity) then
-           mu = (mu+x*cinv)/(1d0+x*mu*cinv)
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+! Old code
+!        if(grd_isvelocity) then
+!           mu = (mu+x*cinv)/(1d0+x*mu*cinv)
 !-- velocity effects accounting
-           help = 1d0/(1d0-mu*x*cinv)
+!           help = 1d0/(1d0-mu*x*cinv)
+!
+!           e = e*elabfact*help
+!
+!       endif
+! New code
+        if(grd_isvelocity.or.grd_hydro_on) then
+           mu = (mu+vx*cinv)/(1d0+vx*mu*cinv)
+!-- velocity effects accounting
+           help = 1d0/(1d0-mu*vx*cinv)
 !
            e = e*elabfact*help
            
         endif
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 !
         call rnd_r(r1,rndstate)
      endif
      !!}}}
+
+! LSU
+     grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) - e * mu / pc_c
 !
 !------boundary crossing ----
   elseif (d == db) then
@@ -187,6 +266,8 @@ pure subroutine transport11_gamgrey(ptcl,ptcl2,rndstate,edep,ierr)
      endif
      ic = grd_icell(ix,iy,iz)!}}}
   endif
+
+  call hydro_velocity_at11(x, vx, ix, tsp_t)
 
 end subroutine transport11_gamgrey
 ! vim: fdm=marker
