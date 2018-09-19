@@ -25,7 +25,6 @@ c-- sanity check energy deposition
 c
 c-- gamma deposition is energy source
       grd_emit = grd_emit + grd_tally(1,:)
-
       if(lmpi0) tot_sdeposgamma = sum(grd_tally(1,:))
 c-- clear eamp in the dummy cell
       if(grd_ivoid>0) grd_eamp(grd_ncell) = 0d0

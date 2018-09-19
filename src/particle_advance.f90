@@ -4,10 +4,6 @@
 subroutine particle_advance
 
 !$ use omp_lib
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!    LSU MODIFICATION
-  use hydromod
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   use randommod
   use transportmod
   use miscmod
@@ -43,12 +39,6 @@ subroutine particle_advance
   integer, pointer :: ig, ic
   integer, pointer :: ix, iy, iz
   real*8, pointer :: x,y,z, mu, e, e0, wl, om
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!    LSU MODIFICATION
-  real*8, pointer :: vx, vy, vz
-  real*8 :: this_dt, help2, xold, yold, zold, eold, muold
-  integer :: ixold, iyold, izold, itypeold, icxp, icxm, icyp, icym, iczp, iczm
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   real*8 :: eta, xi
   real*8 :: t0,t1  !timing
   real*8 :: labfact, mu1, mu2
@@ -148,13 +138,6 @@ subroutine particle_advance
   x => ptcl%x
   y => ptcl%y
   z => ptcl%z
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!    LSU MODIFICATION
-  grd_momdep = 0d0
-  vx => ptcl2%vx
-  vy => ptcl2%vy
-  vz => ptcl2%vz
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   mu => ptcl%mu
   om => ptcl%om
   wl => ptcl%wl
@@ -201,12 +184,6 @@ subroutine particle_advance
      !if(ptcl%t<tsp_t) write(0,*) ptcl%t,tsp_t,(ptcl%t-tsp_t)/(ptcl%t+tsp_t),x
      if(ptcl%t<tsp_t) stop 'particle_advance: ptcl%t < tsp_t'
 
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
-! compute fluid velocity at particle position
-     call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
 !
 !-- determine particle type
      select case(grd_igeom)
@@ -229,39 +206,18 @@ subroutine particle_advance
 
 !
 !-- transform IMC particle into lab frame
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! MODIFIED BY LSU
-! Old code -
-!     if(grd_isvelocity.and.ptcl2%itype==1) then
-!        select case(grd_igeom)
-!        case(1,11)
-!           labfact = 1d0-x*mu/pc_c
-!        case(2)
-!           labfact = 1d0-(mu*y + sqrt(1d0-mu**2) * cos(om)*x)/pc_c
-!        case(3)
-!           help = sqrt(1d0-mu**2)
-!           mu1 = help*cos(om)
-!           mu2 = help*sin(om)
-!           labfact = 1d0-(mu*z + mu1*x + mu2*y)/pc_c
-!        endselect
-! New code -
-     if((grd_isvelocity.or.grd_hydro_on).and.ptcl2%itype==1) then
-        if( grd_igeom .eq. 11 ) then
-          labfact = 1d0 - mu*vx/pc_c
-        else
-           help2 = sqrt(1d0-mu**2)
-           mu1 = help2*cos(om)
-           mu2 = help2*sin(om)
-          select case(grd_igeom)
-          case(1)
-             labfact = 1d0-(mu*vx + mu1*vy + mu2*vz)/pc_c
-          case(2)
-             labfact = 1d0-(mu*vy + mu1*vx + mu2*vz)/pc_c
-          case(3)
-             labfact = 1d0-(mu*vz + mu1*vx + mu2*vy)/pc_c
-          endselect
-        endif
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+     if(grd_isvelocity.and.ptcl2%itype==1) then
+        select case(grd_igeom)
+        case(1,11)
+           labfact = 1d0-x*mu/pc_c
+        case(2)
+           labfact = 1d0-(mu*y + sqrt(1d0-mu**2) * cos(om)*x)/pc_c
+        case(3)
+           help = sqrt(1d0-mu**2)
+           mu1 = help*cos(om)
+           mu2 = help*sin(om)
+           labfact = 1d0-(mu*z + mu1*x + mu2*y)/pc_c
+        endselect
 !-- transform into lab frame
         wl = wl*labfact
         e = e/labfact
@@ -272,7 +228,6 @@ subroutine particle_advance
 !-- First portion of operator split particle velocity position adjustment
      if(grd_isvelocity.and.ptcl2%itype==1) then
         call advection(.true.,ptcl,ptcl2) !procedure pointer to advection[123]
-        call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
      endif
 
 !-- velocity components in cartesian basis
@@ -303,26 +258,6 @@ subroutine particle_advance
 
      do while (ptcl2%stat=='live')
         ptcl2%istep = ptcl2%istep + 1
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
-        if( grd_hydro_on ) then
-          itypeold = ptcl2%itype
-          eold = e
-          muold = mu
-          xold = x
-          yold = y
-          zold = z
-          ixold = ix
-          iyold = iy
-          izold = iz
-          this_dt = ptcl%t
-!          if( ptcl2%itype .eq. 1 ) then
-!            call particle_momentum( ptcl, momb )
-!          else
-!            momb = 0d0
-!          endif
-        endif
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         icold = ic
         if(ptcl2%itype==1 .or. in_puretran) then
            nstepimc = nstepimc + 1
@@ -345,76 +280,6 @@ subroutine particle_advance
         ndist(i) = ndist(i) + 1
 !-- tally rest
         grd_tally(:,icold) = grd_tally(:,icold) + [edep,eraddens]
-
-
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
-!        if( grd_hydro_on ) then
-!          if( itypeold .eq. 2 ) then
-!            this_dt = ptcl%t - this_dt
-
-!            help2 = eraddens * this_dt / 2d0 * dx(ixold) * thelp
-!            if( ixold .gt. 1 ) then
-!              icxm = grd_icell(ixold-1,iyold,izold)
-!              grd_momdep(ixold-1,iyold,izold,1)=grd_momdep(ixold-1,iyold,izold,1) - &
-!                                     help2 * (grd_sig(icxm)+grd_capgrey(icxm)) * grd_opaclump(1,icold)
-!            endif
-!            if( ixold .lt. grd_nx ) then
-!              icxp = grd_icell(ixold+1,iyold,izold)
-!              grd_momdep(ixold+1,iyold,izold,1)=grd_momdep(ixold+1,iyold,izold,1) + &
-!                                     help2 * (grd_sig(icxp)+grd_capgrey(icxp)) * grd_opaclump(2,icold)
-!            endif
-
-!            if( ixold .gt. 1 .or. grd_igeom .eq. 3 ) then
-!              grd_momdep(ixold,iyold,izold,1)=grd_momdep(ixold,iyold,izold,1) - &
-!                                     help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(1,icold)
-!            endif
-
-!            grd_momdep(ixold,iyold,izold,1)=grd_momdep(ixold,iyold,izold,1) + &
-!                                     help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(2,icold)
-
-!            if( grd_igeom .ne. 11 ) then
-
-!             write(*,*) 'geometry not yet supported'
-!             call abort
-
-!              help2 = eraddens * this_dt / 2d0 * dy(iyold)
-!              if( iyold .gt. 1 ) then
-!                icym = grd_icell(ixold,iyold-1,izold)
-!                grd_momdep(ixold,iyold-1,izold,2)=grd_momdep(ixold,iyold-1,izold,2) - &
-!                                       help2 * (grd_sig(icym)+grd_capgrey(icym)) * grd_opaclump(3,icold)
-!              endif
-!              if( iyold .lt. grd_ny ) then
-!                icyp = grd_icell(ixold,iyold+1,izold)
-!                grd_momdep(ixold,iyold+1,izold,2)=grd_momdep(ixold,iyold+1,izold,2) + &
-!                                       help2 * (grd_sig(icyp)+grd_capgrey(icyp)) * grd_opaclump(4,icold)
-!              endif
-!              grd_momdep(ixold,iyold,izold,2)=grd_momdep(ixold,iyold,izold,2) - &
-!                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(3,icold)
-!              grd_momdep(ixold,iyold,izold,2)=grd_momdep(ixold,iyold,izold,2) + &
-!                                      help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(4,icold)
-
-!              help2 = eraddens * this_dt / 2d0 * dz(izold)
-!              if( izold .gt. 1 ) then
-!                iczm = grd_icell(ixold,iyold,izold-1)
-!                grd_momdep(ixold,iyold,izold-1,3)=grd_momdep(ixold,iyold,izold-1,3) - &
-!                                       help2 * (grd_sig(iczm)+grd_capgrey(iczm)) * grd_opaclump(5,icold)
-!              endif
-!              if( izold .lt. grd_nz ) then
-!                iczp = grd_icell(ixold,iyold,izold+1)
-!                grd_momdep(ixold,iyold,izold+1,3)=grd_momdep(ixold,iyold,izold+1,3) + &
-!                                       help2 * (grd_sig(iczp)+grd_capgrey(iczp)) * grd_opaclump(6,icold)
-!              endif
-!              grd_momdep(ixold,iyold,izold,3)=grd_momdep(ixold,iyold,izold,  3) - &
-!                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(5,icold)
-!              grd_momdep(ixold,iyold,izold,3)=grd_momdep(ixold,iyold,izold,  3) + &
-!                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(6,icold)
-!            endif
-!          endif
-!         endif
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
-
 !
 !-- Russian roulette for termination of exhausted particles
         if(e<1d-6*e0 .and. ptcl2%stat=='live' .and. &
@@ -423,36 +288,16 @@ subroutine particle_advance
            if(.not.grd_isvelocity .or. ptcl2%itype==2) then
               labfact = 1d0
            else
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! MODIFIED BY LSU
-! Old code -
-!              select case(grd_igeom)
-!              case(1,11)
-!                 labfact = 1d0 - mu*x/pc_c
-!              case(2)
-!                 labfact = 1d0-(mu*y+sqrt(1d0-mu**2) * &
-!                    cos(om)*x)/pc_c
-!              case(3)
-!                 labfact = 1d0-(mu*z+sqrt(1d0-mu**2) * &
-!                    (cos(om)*x+sin(om)*y))/pc_c
-!              endselect
-! New code -
-             if( grd_igeom .eq. 11 ) then
-               labfact = 1d0 - mu*vx/pc_c
-             else
-               help2 = sqrt(1d0-mu**2)
-               mu1 = help2*cos(om)
-               mu2 = help2*sin(om)
-               select case(grd_igeom)
-                 case(1)
-                   labfact = 1d0-(mu*vx + mu1*vy + mu2*vz)/pc_c
-                 case(2)
-                   labfact = 1d0-(mu*vy + mu1*vx + mu2*vz)/pc_c
-                 case(3)
-                   labfact = 1d0-(mu*vz + mu1*vx + mu2*vy)/pc_c
-               endselect
-             endif
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+              select case(grd_igeom)
+              case(1,11)
+                 labfact = 1d0 - mu*x/pc_c
+              case(2)
+                 labfact = 1d0-(mu*y+sqrt(1d0-mu**2) * &
+                    cos(om)*x)/pc_c
+              case(3)
+                 labfact = 1d0-(mu*z+sqrt(1d0-mu**2) * &
+                    (cos(om)*x+sin(om)*y))/pc_c
+              endselect
            endif
 !
            call rnd_r(r1,rndstate)
@@ -492,17 +337,17 @@ subroutine particle_advance
 
 !-- check exit status
         if(ierr/=0 .or. ptcl2%istep>1000) then  !istep checker may cause issues in high-res simulations
+           write(0,*) 'pa: ierr,ipart,istep,idist:',ierr,ptcl2%ipart,ptcl2%istep,ptcl2%idist
+           write(0,*) 'dist:',ptcl2%dist
+           write(0,*) 't,taus,tauc:',ptcl%t,grd_sig(ic)*help,grd_cap(ig,ic)*help
+           write(0,*) 'ix,iy,iz,ic,ig:',ptcl2%ix,ptcl2%iy,ptcl2%iz,ptcl2%ic,ptcl2%ig
+           write(0,*) 'x,y,z:',ptcl%x,ptcl%y,ptcl%z
+           write(0,*) 'mu,om:',ptcl%mu,ptcl%om
+           write(0,*) 'mux,muy,muz:',ptcl2%mux,ptcl2%muy,ptcl2%muz
+           write(0,*)
            if(ierr>0) then
-              write(0,*) 'pa: ierr,ipart,istep,idist:',ierr,ptcl2%ipart,ptcl2%istep,ptcl2%idist
-              write(0,*) 'dist:',ptcl2%dist
-              write(0,*) 't,taus,tauc:',ptcl%t,grd_sig(ic)*help,grd_cap(ig,ic)*help
-              write(0,*) 'ix,iy,iz,ic,ig:',ptcl2%ix,ptcl2%iy,ptcl2%iz,ptcl2%ic,ptcl2%ig
-              write(0,*) 'x,y,z:',ptcl%x,ptcl%y,ptcl%z
-              write(0,*) 'mu,om:',ptcl%mu,ptcl%om
-              write(0,*) 'mux,muy,muz:',ptcl2%mux,ptcl2%muy,ptcl2%muz
-              write(0,*)
               if(trn_errorfatal) stop 'particle_advance: fatal transport error'
-                 ptcl2%stat = 'dead'
+              ptcl2%stat = 'dead'
               exit
            endif
         endif
@@ -547,43 +392,19 @@ subroutine particle_advance
 !
 !-- exact particle time
         help = abs(ptcl%t-tsp_t1)/(ptcl%t+tsp_t1)
-        if(help>1e-15) then
-           write(*,*) ptcl%t, tsp_t1, ptcl2%itype
-           call abort
-        endif !stop 'particle_advance: census time inaccurate'
+        if(help>1e-15) stop 'particle_advance: census time inaccurate'
         ptcl%t = tsp_t1
 
 !
 !-- Redshifting DDMC particle energy weights and wavelengths
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
-! Old code
-!        if(ptcl2%itype==2 .and. grd_isvelocity) then
+        if(ptcl2%itype==2 .and. grd_isvelocity) then
 !-- r   edshifting energy weight!{{{
-!           tot_evelo = tot_evelo + e*(1d0-exp(-tsp_dt/tsp_t))
-!           e = e*exp(-tsp_dt/tsp_t)
-!           e0 = e0*exp(-tsp_dt/tsp_t)
-! New code
-        if(ptcl2%itype==2 .and. (grd_isvelocity.or.grd_hydro_on)) then
-!-- r   edshifting energy weight!{{{
-           if( grd_hydro_on ) then
-              select case(grd_igeom)
-                case(11)
-                  help = (1d0/3d0)*(grd_dvdx(ix,iy,iz,1,1) + grd_v(ix,iy,iz,1)*4d0/(grd_xarr(ix+1)+grd_xarr(ix)))
-                case default
-                  stop 'particle_advance.f90: coord sys not implemented'
-               end select
-           else
-             help = 1d0
-           endif
-           help = help / tsp_t
-           tot_evelo = tot_evelo + e*(1d0-exp(-tsp_dt*help))
-           e = e*exp(-tsp_dt*help)
-           e0 = e0*exp(-tsp_dt*help)
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+           tot_evelo = tot_evelo + e*(1d0-exp(-tsp_dt/tsp_t))
+           e = e*exp(-tsp_dt/tsp_t)
+           e0 = e0*exp(-tsp_dt/tsp_t)
+           !
 !
-!
-!-- find group
+!-- f   ind group
            ig = binsrch(wl,grp_wl,grp_ng+1,.false.)
 !
            call rnd_r(r1,rndstate)
@@ -599,7 +420,6 @@ subroutine particle_advance
 
         if(grd_isvelocity.and.ptcl2%itype==1) then
            call advection(.false.,ptcl,ptcl2) !procedure pointer to advection[123]
-           call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
         endif
 
 !-- renergy at census
@@ -647,54 +467,25 @@ subroutine particle_advance
            call rnd_r(r1,rndstate)
            om = pc_pi2*r1
 !
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! MODIFIED BY LSU
-! Old code -
-!           if(grd_isvelocity) call direction2lab(x,y,z,mu,om)
-! New code -
-            if(grd_isvelocity.or.grd_hydro_on) then
-              call hydro_velocity_at(x, y, z, vx, vy, vz, ix, iy, iz, tsp_t)
-              call direction2lab(vx,vy,vz,mu,om)
-            endif
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+           if(grd_isvelocity) call direction2lab(x,y,z,mu,om)
         endif
 
 !
 !-- transform IMC particle energy to comoving frame for storage
         if(grd_isvelocity.and.ptcl2%itype==1) then
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! MODIFIED BY LSU
-! Old code -
-!           select case(grd_igeom)
+           select case(grd_igeom)
 !-- [123]D spherical
-!           case(1,11)
-!              labfact = 1d0-x*mu/pc_c
+           case(1,11)
+              labfact = 1d0-x*mu/pc_c
 !-- 2D
-!           case(2)
-!              labfact = 1d0-(mu*y+sqrt(1d0-mu**2) * cos(om)*x)/pc_c
+           case(2)
+              labfact = 1d0-(mu*y+sqrt(1d0-mu**2) * cos(om)*x)/pc_c
 !-- 3D
-!           case(3)
-!              mu1 = sqrt(1d0-mu**2)*cos(om)
-!              mu2 = sqrt(1d0-mu**2)*sin(om)
-!              labfact = 1d0-(mu*z+mu1*x+mu2*y)/pc_c
-!           endselect
-! New code -
-           if( grd_igeom .eq. 11 ) then
-             labfact = 1d0 - mu*vx/pc_c
-           else
-             help = sqrt(1d0-mu**2)
-             mu1 = help*cos(om)
-             mu2 = help*sin(om)
-             select case(grd_igeom)
-               case(1)
-                 labfact = 1d0-(mu*vx + mu1*vy + mu2*vz)/pc_c
-               case(2)
-                 labfact = 1d0-(mu*vy + mu1*vx + mu2*vz)/pc_c
-               case(3)
-                 labfact = 1d0-(mu*vz + mu1*vx + mu2*vy)/pc_c
-             endselect
-           endif
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+           case(3)
+              mu1 = sqrt(1d0-mu**2)*cos(om)
+              mu2 = sqrt(1d0-mu**2)*sin(om)
+              labfact = 1d0-(mu*z+mu1*x+mu2*y)/pc_c
+           endselect
 
 !-- apply inverse labfact for symmetry (since gamma factor is missing)
            wl = wl/labfact

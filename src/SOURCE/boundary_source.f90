@@ -36,7 +36,6 @@ subroutine boundary_source
   dyac(l) = grd_yacos(l) - grd_yacos(l+1)
   ym(l) = sqrt(1d0-0.25*(grd_yarr(l+1)+grd_yarr(l))**2)
 
-  if( src_nsurftot .gt. 0 ) then
   esurfpart = tot_esurf/dble(src_nsurftot)
 
   if(grd_isvelocity) then
@@ -352,7 +351,6 @@ subroutine boundary_source
 
   enddo
 
-  endif
 
 end subroutine boundary_source
 ! vim: fdm=marker
