@@ -340,17 +340,11 @@ c     Main loop - loop until desired time is reached
 
 c         pre-recon
           do f = 1, nf
-            if( f .ne. tau_i ) then
-              if((f.ne.rho_i).and.(f.ne.natom_i))then
-                if( f .eq. nelec_i .or. f .ge. frac_i ) then
-                  l = natom_i
-                else
-                  l = rho_i
-                endif
-                V(:,:,:,f) = U(:,:,:,f) / U(:,:,:,l)
-              else
-                V(:,:,:,f) = U(:,:,:,f)
-              endif
+            if((f.ne.rho_i).and.(f.ne.natom_i).and.(f.ne.tau_i)) then
+              l = natom_i
+              V(:,:,:,f) = U(:,:,:,f) / U(:,:,:,l)
+            else
+              V(:,:,:,f) = U(:,:,:,f)
             endif
           enddo
           V(:,:,:,egas_i) = V(:,:,:,egas_i) - 0.5*V(:,:,:,px_i)**2
@@ -360,7 +354,7 @@ c         pre-recon
           endif
           do i = 0, 2
             if( veldim(i+1) ) then
-               V(:,:,:,px_i+i) = V(:,:,:,px_i+i) - X(:,:,:,i+1) / t
+c               V(:,:,:,px_i+i) = V(:,:,:,px_i+i) - X(:,:,:,i+1) / t
             endif
           end do
 
@@ -466,10 +460,10 @@ c     Piecwise linear
 c         post-recon
               do i = 0, 2
                 if( veldim(i+1) ) then
-                   VR(:,:,:,px_i+i) = VR(:,:,:,px_i+i) +
-     &                                          Xf(1:nx,1:ny,1:nz,i+1)/t
-                   VL(:,:,:,px_i+i) = VL(:,:,:,px_i+i) +
-     &                                          Xf(1:nx,1:ny,1:nz,i+1)/t
+c                   VR(:,:,:,px_i+i) = VR(:,:,:,px_i+i) +
+c     &                                          Xf(1:nx,1:ny,1:nz,i+1)/t
+c                   VL(:,:,:,px_i+i) = VL(:,:,:,px_i+i) +
+c     &                                          Xf(1:nx,1:ny,1:nz,i+1)/t
                 endif
               enddo
               VR(:,:,:,egas_i) = VR(:,:,:,egas_i)+0.5*VR(:,:,:,px_i)**2
@@ -481,12 +475,8 @@ c         post-recon
                VL(:,:,:,egas_i) = VL(:,:,:,egas_i)+0.5*VL(:,:,:,pz_i)**2
               endif
               do f = 1, nf
-                if((f.ne.rho_i).and.(f.ne.natom_i))then
-                  if( f .eq. nelec_i .or. f .ge. frac_i ) then
-                    l = natom_i
-                  else
-                    l = rho_i
-                  endif
+                if((f.ne.rho_i).and.(f.ne.natom_i).and.(f.ne.tau_i))then
+                  l = natom_i
                   UR(:,:,:,f) = VR(:,:,:,f) * VR(:,:,:,l)
                   UL(:,:,:,f) = VL(:,:,:,f) * VL(:,:,:,l)
                 else
@@ -681,11 +671,11 @@ c     If grid is moving, volume increases
             j0 = j - hydro_bw
             k0 = k - hydro_bw
             tmp8 = volinv(i,j,k) / product(dX(i,j,k,:)) / (t1-t0)
-            dU(i,j,k,px_i) = dU(i,j,k,px_i)+grd_momdep(i0,j0,k0,1)*tmp8
-            if( grd_igeom .ne. 11 ) then
-              dU(i,j,k,py_i)=dU(i,j,k,py_i)+grd_momdep(i0,j0,k0,2)*tmp8
-              dU(i,j,k,pz_i)=dU(i,j,k,pz_i)+grd_momdep(i0,j0,k0,3)*tmp8
-            endif
+c            dU(i,j,k,px_i) = dU(i,j,k,px_i)+grd_momdep(i0,j0,k0,1)*tmp8
+c            if( grd_igeom .ne. 11 ) then
+c              dU(i,j,k,py_i)=dU(i,j,k,py_i)+grd_momdep(i0,j0,k0,2)*tmp8
+c              dU(i,j,k,pz_i)=dU(i,j,k,pz_i)+grd_momdep(i0,j0,k0,3)*tmp8
+cc            endif
           enddo
           enddo
           enddo

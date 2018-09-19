@@ -87,11 +87,13 @@ c      HYDRO LSU
       do i = 1, grd_nx
       do j = 1, grd_ny
       do k = 1, grd_nz
+
+
         l = grd_icell(i,j,k)
-c        grd_vx(l) = grd_vx(l)+grd_momdep(i,j,k,1)/gas_mass(l)
+        grd_vx(l) = grd_vx(l)+grd_momdep(i,j,k,1)/gas_mass(l)
         if( grd_igeom .ne. 11 ) then
-c          grd_vy(l) = grd_vy(l)+grd_momdep(i,j,k,2)/gas_mass(l)
-c          grd_vz(l) = grd_vz(l)+grd_momdep(i,j,k,3)/gas_mass(l)
+          grd_vy(l) = grd_vy(l)+grd_momdep(i,j,k,2)/gas_mass(l)
+          grd_vz(l) = grd_vz(l)+grd_momdep(i,j,k,3)/gas_mass(l)
         endif
       enddo
       enddo

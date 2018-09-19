@@ -46,7 +46,7 @@ subroutine particle_advance
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !    LSU MODIFICATION
   real*8, pointer :: vx, vy, vz
-  real*8 :: momb(3), this_dt, help2, xold, yold, zold, eold, muold
+  real*8 :: this_dt, help2, xold, yold, zold, eold, muold
   integer :: ixold, iyold, izold, itypeold, icxp, icxm, icyp, icym, iczp, iczm
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   real*8 :: eta, xi
@@ -316,11 +316,11 @@ subroutine particle_advance
           iyold = iy
           izold = iz
           this_dt = ptcl%t
-          if( ptcl2%itype .eq. 1 ) then
-            call particle_momentum( ptcl, momb )
-          else
-            momb = 0d0
-          endif
+!          if( ptcl2%itype .eq. 1 ) then
+!            call particle_momentum( ptcl, momb )
+!          else
+!            momb = 0d0
+!          endif
         endif
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         icold = ic
@@ -349,69 +349,69 @@ subroutine particle_advance
 
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ! LSU MODIFICATION
-        if( grd_hydro_on ) then
-          if( itypeold .eq. 2 ) then
-            this_dt = ptcl%t - this_dt
+!        if( grd_hydro_on ) then
+!          if( itypeold .eq. 2 ) then
+!            this_dt = ptcl%t - this_dt
 
-            help2 = eraddens * this_dt / 2d0 * dx(ixold) * thelp
-            if( ixold .gt. 1 ) then
-              icxm = grd_icell(ixold-1,iyold,izold)
-              grd_momdep(ixold-1,iyold,izold,1)=grd_momdep(ixold-1,iyold,izold,1) - &
-                                     help2 * (grd_sig(icxm)+grd_capgrey(icxm)) * grd_opaclump(1,icold)
-            endif
-            if( ixold .lt. grd_nx ) then
-              icxp = grd_icell(ixold+1,iyold,izold)
-              grd_momdep(ixold+1,iyold,izold,1)=grd_momdep(ixold+1,iyold,izold,1) + &
-                                     help2 * (grd_sig(icxp)+grd_capgrey(icxp)) * grd_opaclump(2,icold)
-            endif
+!            help2 = eraddens * this_dt / 2d0 * dx(ixold) * thelp
+!            if( ixold .gt. 1 ) then
+!              icxm = grd_icell(ixold-1,iyold,izold)
+!              grd_momdep(ixold-1,iyold,izold,1)=grd_momdep(ixold-1,iyold,izold,1) - &
+!                                     help2 * (grd_sig(icxm)+grd_capgrey(icxm)) * grd_opaclump(1,icold)
+!            endif
+!            if( ixold .lt. grd_nx ) then
+!              icxp = grd_icell(ixold+1,iyold,izold)
+!              grd_momdep(ixold+1,iyold,izold,1)=grd_momdep(ixold+1,iyold,izold,1) + &
+!                                     help2 * (grd_sig(icxp)+grd_capgrey(icxp)) * grd_opaclump(2,icold)
+!            endif
 
-            if( ixold .gt. 1 .or. grd_igeom .eq. 3 ) then
-              grd_momdep(ixold,iyold,izold,1)=grd_momdep(ixold,iyold,izold,1) - &
-                                     help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(1,icold)
-            endif
+!            if( ixold .gt. 1 .or. grd_igeom .eq. 3 ) then
+!              grd_momdep(ixold,iyold,izold,1)=grd_momdep(ixold,iyold,izold,1) - &
+!                                     help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(1,icold)
+!            endif
 
-            grd_momdep(ixold,iyold,izold,1)=grd_momdep(ixold,iyold,izold,1) + &
-                                     help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(2,icold)
+!            grd_momdep(ixold,iyold,izold,1)=grd_momdep(ixold,iyold,izold,1) + &
+!                                     help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(2,icold)
 
-            if( grd_igeom .ne. 11 ) then
+!            if( grd_igeom .ne. 11 ) then
 
-             write(*,*) 'geometry not yet supported'
-             call abort
+!             write(*,*) 'geometry not yet supported'
+!             call abort
 
-              help2 = eraddens * this_dt / 2d0 * dy(iyold)
-              if( iyold .gt. 1 ) then
-                icym = grd_icell(ixold,iyold-1,izold)
-                grd_momdep(ixold,iyold-1,izold,2)=grd_momdep(ixold,iyold-1,izold,2) - &
-                                       help2 * (grd_sig(icym)+grd_capgrey(icym)) * grd_opaclump(3,icold)
-              endif
-              if( iyold .lt. grd_ny ) then
-                icyp = grd_icell(ixold,iyold+1,izold)
-                grd_momdep(ixold,iyold+1,izold,2)=grd_momdep(ixold,iyold+1,izold,2) + &
-                                       help2 * (grd_sig(icyp)+grd_capgrey(icyp)) * grd_opaclump(4,icold)
-              endif
-              grd_momdep(ixold,iyold,izold,2)=grd_momdep(ixold,iyold,izold,2) - &
-                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(3,icold)
-              grd_momdep(ixold,iyold,izold,2)=grd_momdep(ixold,iyold,izold,2) + &
-                                      help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(4,icold)
+!              help2 = eraddens * this_dt / 2d0 * dy(iyold)
+!              if( iyold .gt. 1 ) then
+!                icym = grd_icell(ixold,iyold-1,izold)
+!                grd_momdep(ixold,iyold-1,izold,2)=grd_momdep(ixold,iyold-1,izold,2) - &
+!                                       help2 * (grd_sig(icym)+grd_capgrey(icym)) * grd_opaclump(3,icold)
+!              endif
+!              if( iyold .lt. grd_ny ) then
+!                icyp = grd_icell(ixold,iyold+1,izold)
+!                grd_momdep(ixold,iyold+1,izold,2)=grd_momdep(ixold,iyold+1,izold,2) + &
+!                                       help2 * (grd_sig(icyp)+grd_capgrey(icyp)) * grd_opaclump(4,icold)
+!              endif
+!              grd_momdep(ixold,iyold,izold,2)=grd_momdep(ixold,iyold,izold,2) - &
+!                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(3,icold)
+!              grd_momdep(ixold,iyold,izold,2)=grd_momdep(ixold,iyold,izold,2) + &
+!                                      help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(4,icold)
 
-              help2 = eraddens * this_dt / 2d0 * dz(izold)
-              if( izold .gt. 1 ) then
-                iczm = grd_icell(ixold,iyold,izold-1)
-                grd_momdep(ixold,iyold,izold-1,3)=grd_momdep(ixold,iyold,izold-1,3) - &
-                                       help2 * (grd_sig(iczm)+grd_capgrey(iczm)) * grd_opaclump(5,icold)
-              endif
-              if( izold .lt. grd_nz ) then
-                iczp = grd_icell(ixold,iyold,izold+1)
-                grd_momdep(ixold,iyold,izold+1,3)=grd_momdep(ixold,iyold,izold+1,3) + &
-                                       help2 * (grd_sig(iczp)+grd_capgrey(iczp)) * grd_opaclump(6,icold)
-              endif
-              grd_momdep(ixold,iyold,izold,3)=grd_momdep(ixold,iyold,izold,  3) - &
-                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(5,icold)
-              grd_momdep(ixold,iyold,izold,3)=grd_momdep(ixold,iyold,izold,  3) + &
-                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(6,icold)
-            endif
-          endif
-         endif
+!              help2 = eraddens * this_dt / 2d0 * dz(izold)
+!              if( izold .gt. 1 ) then
+!                iczm = grd_icell(ixold,iyold,izold-1)
+!                grd_momdep(ixold,iyold,izold-1,3)=grd_momdep(ixold,iyold,izold-1,3) - &
+!                                       help2 * (grd_sig(iczm)+grd_capgrey(iczm)) * grd_opaclump(5,icold)
+!              endif
+!              if( izold .lt. grd_nz ) then
+!                iczp = grd_icell(ixold,iyold,izold+1)
+!                grd_momdep(ixold,iyold,izold+1,3)=grd_momdep(ixold,iyold,izold+1,3) + &
+!                                       help2 * (grd_sig(iczp)+grd_capgrey(iczp)) * grd_opaclump(6,icold)
+!              endif
+!              grd_momdep(ixold,iyold,izold,3)=grd_momdep(ixold,iyold,izold,  3) - &
+!                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(5,icold)
+!              grd_momdep(ixold,iyold,izold,3)=grd_momdep(ixold,iyold,izold,  3) + &
+!                                       help2 * (grd_sig(icold)+grd_capgrey(icold)) * grd_opaclump(6,icold)
+!            endif
+!          endif
+!         endif
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 

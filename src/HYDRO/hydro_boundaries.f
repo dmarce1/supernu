@@ -32,6 +32,11 @@ c     Boundaries
 c       pre-bound
 c          if(.not.allow_inflow) then
             do dm = 1, 3
+
+            exit
+
+
+
               if( veldim(dm) ) then
                 U(xb:xe,yb:ye,zb:ze,egas_i)
      &            = U(xb:xe,yb:ye,zb:ze,egas_i)-
@@ -137,6 +142,9 @@ c     All dims are outflow
 c       post-bound
 c          if(.not.allow_inflow) then
             do dm = 1, 3
+
+             exit
+
               if( veldim(dm) ) then
                 U(:,:,:,egas_i) = U(:,:,:,egas_i) -
      &                   U(:,:,:,px_i+dm-1)**2 * 0.5d0 / U(:,:,:,rho_i)
