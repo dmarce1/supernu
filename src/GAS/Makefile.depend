@@ -1,0 +1,8 @@
+eos_update.o: eos_update.f gasmod.mod ionsmod.mod timestepmod.mod timingmod.mod 
+gas_setup.o: gas_setup.f elemdatamod.mod gasmod.mod inputparmod.mod inputstrmod.mod manufacmod.mod miscmod.mod physconstmod.mod 
+gas_update.o: gas_update.f gasmod.mod gridmod.mod inputparmod.mod ionsmod.mod miscmod.mod nucdatamod.mod physconstmod.mod timestepmod.mod timingmod.mod totalsmod.mod 
+temperature_update.o: temperature_update.f90 gasmod.mod gridmod.mod manufacmod.mod physconstmod.mod timestepmod.mod totalsmod.mod 
+analytic_opacity.o: analytic_opacity.f90 gasmod.mod gridmod.mod groupmod.mod inputparmod.mod miscmod.mod physconstmod.mod 
+physical_opacity.o: physical_opacity.f bbxsmod.mod bfxsmod.mod ffxsmod.mod gasmod.mod groupmod.mod inputparmod.mod ionsmod.mod miscmod.mod physconstmod.mod timingmod.mod 
+fleck_factor.o: fleck_factor.f90 gasmod.mod inputparmod.mod physconstmod.mod timestepmod.mod 
+opacity_planckmean.o: opacity_planckmean.f gasmod.mod groupmod.mod inputparmod.mod miscmod.mod physconstmod.mod 

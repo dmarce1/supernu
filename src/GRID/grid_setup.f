@@ -13,12 +13,6 @@ c     ---------------------
       logical :: lexist
       integer :: i,j,k,l,idcell
       real*8 :: help
-c-- statment functions
-      integer :: ll
-      real*8 :: xm,ym,zm
-      xm(ll) = max(abs(grd_xarr(ll)),abs(grd_xarr(ll+1)))
-      ym(ll) = max(abs(grd_yarr(ll)),abs(grd_yarr(ll+1)))
-      zm(ll) = max(abs(grd_zarr(ll)),abs(grd_zarr(ll+1)))
 c
 c-- agnostic grid setup
       grd_xarr = str_xleft
@@ -36,6 +30,7 @@ c-- pointers into compressed grid
       loop_k: do k=1,grd_nz
        do j=1,grd_ny
        do i=1,grd_nx
+        write(*,*) grd_xarr(i)
         idcell = idcell + 1
         if(idcell == str_idcell(l)) then
          grd_icell(i,j,k) = l
@@ -80,7 +75,7 @@ c-- sphere
         do j=1,grd_ny
         do i=1,grd_nx
          if(grd_icell(i,j,k)==grd_ivoid) cycle !void
-         help = grd_xarr(i+1)**2 + ym(j)**2
+         help = grd_xarr(i+1)**2 + grd_yarr(j+1)**2
          grd_rout = max(grd_rout,help)
         enddo
         enddo
@@ -103,7 +98,7 @@ c-- sphere
         do j=1,grd_ny
         do i=1,grd_nx
          if(grd_icell(i,j,k)==grd_ivoid) cycle !void
-         help = xm(i)**2 + ym(j)**2 + zm(k)**2
+         help = grd_xarr(i+1)**2 + grd_yarr(j+1)**2 + grd_zarr(k+1)**2
          grd_rout = max(grd_rout,help)
         enddo
         enddo
@@ -132,6 +127,11 @@ c
 c-- read preset temperature profiles
       inquire(file='input.temp',exist=lexist)
       if(lexist) call read_temp_preset
+
+
+      call set_cpp_grid(grd_icell,grd_xarr, grd_yarr, grd_zarr, grd_nx,
+     & grd_ny, grd_nz, grd_ncell)
+
 c
       end subroutine grid_setup
 c vim: fdm=marker

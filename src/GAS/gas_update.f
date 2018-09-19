@@ -116,6 +116,10 @@ c========================================
        i = i+1
        gas_vol(i) = grd_vol(l)
       enddo !l
+
+
+      call update_gas_cpp(tsp_dt)
+
 c
 c
 c-- update density, start temperature derivative

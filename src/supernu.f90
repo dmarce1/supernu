@@ -34,6 +34,8 @@ program supernu
   integer :: iitflux,itflux=0
   real*8 :: t0, t1 !timing
   character(15) :: msg
+
+
 !
 !-- mpi initialization
   call mpi_init(ierr) !MPI

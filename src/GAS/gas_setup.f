@@ -75,6 +75,10 @@ c-- as calculated in massfr2natomfr
        gas_ye0 = gas_ye
       endif
 c
+      call set_cpp_gas(gas_temp, gas_eraddens, gas_ur, gas_rho,
+     & gas_bcoef, gas_decaygamma, gas_vol, gas_mass, gas_ye, gas_natom,
+     & gas_nelec, gas_natom1fr, gas_matsrc, gas_edep, gas_nelem, 6)
+
       end subroutine gas_setup
 c
 c
@@ -208,5 +212,6 @@ c-- convert natoms to natom fractions
 c
       enddo !i
 c!}}}
+
       end subroutine massfr2natomfr
 c vim: fdm=marker

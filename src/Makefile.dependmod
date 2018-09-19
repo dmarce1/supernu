@@ -2,6 +2,7 @@ elemdatamod.o elemdatamod.mod: elemdatamod.f
 nucdatamod.o nucdatamod.mod: nucdatamod.f physconstmod.o 
 physconstmod.o physconstmod.mod: physconstmod.f  
 randommod.o randommod.mod: randommod.f  
+mpimod.o mpimod.mod: mpimod.f bbxsmod.o bfxsmod.o ffxsmod.o fluxmod.o gasmod.o gridmod.o groupmod.o inputparmod.o inputstrmod.o ionsmod.o particlemod.o sourcemod.o timingmod.o totalsmod.o transportmod.o 
 miscmod.o miscmod.mod: miscmod.f  
 ionsmod.o ionsmod.mod: ionsmod.f miscmod.o physconstmod.o 
 ffxsmod.o ffxsmod.mod: ffxsmod.f  
