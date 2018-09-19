@@ -13,7 +13,7 @@ c
        integer :: ic=0
        integer :: nlump !number of groups in the lump
        real*8 :: capgreyinv
-       real*8 :: speclump,emitlump,caplump
+       real*8 :: speclump,emitlump,caplump,doplump
        real*8,pointer :: specarr(:) !(grp_ng)
        integer :: istat
        integer*2,pointer :: glumps(:) !(grp_ng)
@@ -134,11 +134,35 @@ c
       dx = x*abs(grp_wlinv(ig+1) - grp_wlinv(ig))
       x = x*.5d0*(grp_wlinv(ig+1) + grp_wlinv(ig))
 c
-      specint0 = ftpi4 * dx * x**3/(exp(x) - 1d0)
+      if( x .lt. 200d0 ) then
+        specint0 = ftpi4 * dx * x**3/(exp(x) - 1d0)
+      else
+        specint0 = 0d0
+      endif
 c!}}}
       end function specint0
 c
 c
+
+      elemental function dopspeccalc(tempinv,ig)
+      use physconstmod
+      implicit none
+      real*8 :: dopspeccalc
+      real*8,intent(in) :: tempinv
+      integer,intent(in) :: ig
+c************************************************************************
+* Calculate x**3/(exp(x) - 1), where x = h*c/(wl*k*T)
+************************************************************************
+      real*8,parameter :: ftpi4=15d0/pc_pi**4
+      real*8,parameter :: hck=pc_h*pc_c/pc_kb
+      real*8 :: x
+      x = hck*tempinv
+      x = x*grp_wlinv(ig+1)
+c
+      dopspeccalc = ftpi4 * x**4/(exp(x) - 1d0)
+
+      end function dopspeccalc
+
       pure subroutine specintv(tempinv,n,ss,offset,mode,mask,maskval)
 c     -----------------------------------------------!{{{
       use physconstmod
@@ -258,7 +282,11 @@ c
 c
       elemental real*8 function f(x)
       real*8,intent(in) :: x
-      f = x**3/(exp(x) - 1d0)
+      if( x .gt. 200d0 ) then
+         f = 0d0
+      else
+        f = x**3/(exp(x) - 1d0)
+      endif
       end function
 c!}}}
       end subroutine specintv

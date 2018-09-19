@@ -58,5 +58,6 @@ subroutine sourceenergy
      tot_sdecaybeta = 0d0
   endif
 
+
 end subroutine sourceenergy
 ! vim: fdm=marker

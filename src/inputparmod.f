@@ -23,6 +23,16 @@ c-- grid geometry and dimensions
       integer :: in_grd_igeom = 0 !geometry: 1=sph, 2=cyl, 3=car, 11=1Dsph
       integer :: in_ndim(3) = [1, 1, 1]  !number of x-direction cells
       logical :: in_isvelocity = .true.  !switch underlying grid between spatial+static to velocity+expanding
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     HYDRO LSU
+      logical :: in_hydro_on = .true.
+      logical :: in_radiation_on = .true.
+      integer :: in_test_problem = 0
+c                0 - no test, read from file or input params
+c                1 - Blast wave
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 c
 c
 c-- read input structure file instead of specifying the stucture with input parameters
@@ -196,7 +206,12 @@ c-- runtime parameter namelist
 !io
      & in_io_grabstdout,
      & in_io_nogriddump,in_io_dogrdtally,
-     & in_io_opacdump,in_io_pdensdump
+     & in_io_opacdump,in_io_pdensdump,
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     HYDRO LSU
+     & in_hydro_on, in_radiation_on, in_test_problem
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
 c
 c-- pointers
 c
@@ -540,6 +555,10 @@ c
        stop 'in_grd_igeom invalid'
       endselect
 c
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     LSU MOD
+      if( in_test_problem .eq. 0 ) then
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       if(in_isvelocity) then
        if(in_str_lx>0d0) stop 'vel grid: use str_velout, not in_str_lx'
        if(in_str_ly>0d0) stop 'vel grid: use str_velout, not in_str_ly'
@@ -564,6 +583,10 @@ c
        if(in_str_dentype/='none') stop
      &   '!noreadstruct & str_dentype/=none'
       endif
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     LSU MOD
+      endif
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c-- special grid
       if(.not.in_noreadstruct) then
@@ -717,6 +740,10 @@ c     -------------------------------------!{{{
       use groupmod
       use gasmod
       use gridmod
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     MODIFICATION BY LSU
+      use hydromod
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       implicit none
       integer,intent(in) :: nmpi
 ************************************************************************
@@ -785,6 +812,11 @@ c
       grd_ny    = in_ndim(2)
       grd_nz    = in_ndim(3)
       grd_isvelocity = in_isvelocity
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     MODIFICATION BY LSU
+      grd_hydro_on = in_hydro_on
+      grd_radiation_on = in_radiation_on
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c!}}}
       end subroutine provide_inputpars
 c

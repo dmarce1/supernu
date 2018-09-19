@@ -1,6 +1,6 @@
 diff -r d244a10db46e GAS/fleck_factor.f90
 --- a/GAS/fleck_factor.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/GAS/fleck_factor.f90	Thu Aug 30 10:06:44 2018 -0500
++++ b/GAS/fleck_factor.f90	Wed Sep 19 15:36:45 2018 -0500
 @@ -43,7 +43,24 @@
       gas_fcoef(i) = 1.0/(1.0+in_alpha*beta*pc_c*tsp_dt*gas_capgrey(i))
  !-- sanity check
@@ -29,7 +29,7 @@ diff -r d244a10db46e GAS/fleck_factor.f90
  end subroutine fleck_factor
 diff -r d244a10db46e GAS/gas_setup.f
 --- a/GAS/gas_setup.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/GAS/gas_setup.f	Thu Aug 30 10:06:44 2018 -0500
++++ b/GAS/gas_setup.f	Wed Sep 19 15:36:45 2018 -0500
 @@ -13,9 +13,10 @@
  * Initialize the gas grid, the part that is constant with time and
  * temperature. The part that changes is done in gas_grid_update.
@@ -82,7 +82,7 @@ diff -r d244a10db46e GAS/gas_setup.f
  c vim: fdm=marker
 diff -r d244a10db46e GAS/gas_update.f
 --- a/GAS/gas_update.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/GAS/gas_update.f	Thu Aug 30 10:06:44 2018 -0500
++++ b/GAS/gas_update.f	Wed Sep 19 15:36:45 2018 -0500
 @@ -12,6 +12,11 @@
        use gasmod
        use inputparmod
@@ -449,7 +449,7 @@ diff -r d244a10db46e GAS/gas_update.f
  c-- calculate Ye
 diff -r d244a10db46e GRID/grid_setup.f
 --- a/GRID/grid_setup.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/GRID/grid_setup.f	Thu Aug 30 10:06:44 2018 -0500
++++ b/GRID/grid_setup.f	Wed Sep 19 15:36:45 2018 -0500
 @@ -6,6 +6,10 @@
        use inputparmod
        use inputstrmod
@@ -538,7 +538,7 @@ diff -r d244a10db46e GRID/grid_setup.f
        inquire(file='input.temp',exist=lexist)
 diff -r d244a10db46e GRID/grid_volume.f
 --- a/GRID/grid_volume.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/GRID/grid_volume.f	Thu Aug 30 10:06:44 2018 -0500
++++ b/GRID/grid_volume.f	Wed Sep 19 15:36:45 2018 -0500
 @@ -23,6 +23,7 @@
         t = 1d0
        endif
@@ -555,9 +555,62 @@ diff -r d244a10db46e GRID/grid_volume.f
        enddo
        enddo
        enddo
+diff -r d244a10db46e GRID/leakage_opacity11.f90
+--- a/GRID/leakage_opacity11.f90	Mon Feb 20 16:32:09 2017 -0700
++++ b/GRID/leakage_opacity11.f90	Wed Sep 19 15:36:45 2018 -0500
+@@ -1,5 +1,3 @@
+-!This file is part of SuperNu.  SuperNu is released under the terms of the GNU GPLv3, see COPYING.
+-!Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
+ subroutine leakage_opacity11
+ 
+   use miscmod
+@@ -16,7 +14,7 @@
+   logical :: lhelp
+   integer :: i,j,k, ig,igemitmax
+   real*8 :: thelp, dist, help, emitmax
+-  real*8 :: speclump, caplump, specval
++  real*8 :: speclump, caplump, doplump, specval
+   real*8 :: specarr(grp_ng)
+   real*8 :: ppl, ppr
+   integer :: icnb(2) !neighbor cell pointers
+@@ -78,8 +76,21 @@
+            igemitmax = ig
+         endif
+      enddo
++!-- doplump
++     doplump = 0d0
++     if(grd_isvelocity) then
++        do ig=1,grp_ng-1
++           if(grd_cap(ig,l)*dist < trn_taulump) cycle
++           if(grd_cap(ig+1,l)*dist >= trn_taulump) cycle
++           if((grd_sig(l) + grd_cap(ig,l))*dist < trn_tauddmc) cycle
++           help = dopspeccalc(grd_tempinv(l),ig) / (pc_c*tsp_t)
++           doplump = doplump + help
++        enddo
++     endif
++!-- store regrouped data
+      grd_opaclump(8,l) = caplump
+      grd_opaclump(9,l) = igemitmax
++     grd_opaclump(10,l) = doplump
+ !
+ !-- lumping opacity
+      do ig=1,grp_ng
+@@ -141,7 +152,11 @@
+   enddo !i
+   enddo !j
+   enddo !k
+-  
++
+ 
+ end subroutine leakage_opacity11
+ ! vim: fdm=marker
++
++
++
++
 diff -r d244a10db46e Makefile
 --- a/Makefile	Mon Feb 20 16:32:09 2017 -0700
-+++ b/Makefile	Thu Aug 30 10:06:44 2018 -0500
++++ b/Makefile	Wed Sep 19 15:36:45 2018 -0500
 @@ -26,14 +26,14 @@
    miscmod.o ionsmod.o ffxsmod.o bfxsmod.o bbxsmod.o \
    inputparmod.o timestepmod.o groupmod.o gridmod.o gasmod.o inputstrmod.o \
@@ -578,7 +631,7 @@ diff -r d244a10db46e Makefile
  
 diff -r d244a10db46e SOURCE/boundary_source.f90
 --- a/SOURCE/boundary_source.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/SOURCE/boundary_source.f90	Thu Aug 30 10:06:44 2018 -0500
++++ b/SOURCE/boundary_source.f90	Wed Sep 19 15:36:45 2018 -0500
 @@ -36,6 +36,7 @@
    dyac(l) = grd_yacos(l) - grd_yacos(l+1)
    ym(l) = sqrt(1d0-0.25*(grd_yarr(l+1)+grd_yarr(l))**2)
@@ -597,7 +650,7 @@ diff -r d244a10db46e SOURCE/boundary_source.f90
  ! vim: fdm=marker
 diff -r d244a10db46e SOURCE/initial_particles.f90
 --- a/SOURCE/initial_particles.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/SOURCE/initial_particles.f90	Thu Aug 30 10:06:44 2018 -0500
++++ b/SOURCE/initial_particles.f90	Wed Sep 19 15:36:45 2018 -0500
 @@ -27,6 +27,7 @@
    real*8 :: r1
    real*8 :: tradinv
@@ -620,7 +673,7 @@ diff -r d244a10db46e SOURCE/initial_particles.f90
  !
 diff -r d244a10db46e SOURCE/sourceenergy.f90
 --- a/SOURCE/sourceenergy.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/SOURCE/sourceenergy.f90	Thu Aug 30 10:06:44 2018 -0500
++++ b/SOURCE/sourceenergy.f90	Wed Sep 19 15:36:45 2018 -0500
 @@ -58,5 +58,6 @@
       tot_sdecaybeta = 0d0
    endif
@@ -630,7 +683,7 @@ diff -r d244a10db46e SOURCE/sourceenergy.f90
  ! vim: fdm=marker
 diff -r d244a10db46e SOURCE/sourceenergy_misc.f
 --- a/SOURCE/sourceenergy_misc.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/SOURCE/sourceenergy_misc.f	Thu Aug 30 10:06:44 2018 -0500
++++ b/SOURCE/sourceenergy_misc.f	Wed Sep 19 15:36:45 2018 -0500
 @@ -25,6 +25,7 @@
  c
  c-- gamma deposition is energy source
@@ -641,7 +694,7 @@ diff -r d244a10db46e SOURCE/sourceenergy_misc.f
        if(grd_ivoid>0) grd_eamp(grd_ncell) = 0d0
 diff -r d244a10db46e SOURCE/sourcenumbers.f90
 --- a/SOURCE/sourcenumbers.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/SOURCE/sourcenumbers.f90	Thu Aug 30 10:06:44 2018 -0500
++++ b/SOURCE/sourcenumbers.f90	Wed Sep 19 15:36:45 2018 -0500
 @@ -130,6 +130,7 @@
       src_nnonth = src_nnonth + nvolex
    enddo
@@ -652,7 +705,7 @@ diff -r d244a10db46e SOURCE/sourcenumbers.f90
  
 diff -r d244a10db46e TRANSPORT1/diffusion11.f90
 --- a/TRANSPORT1/diffusion11.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/TRANSPORT1/diffusion11.f90	Thu Aug 30 10:06:44 2018 -0500
++++ b/TRANSPORT1/diffusion11.f90	Wed Sep 19 15:36:45 2018 -0500
 @@ -1,6 +1,6 @@
  !This file is part of SuperNu.  SuperNu is released under the terms of the GNU GPLv3, see COPYING.
  !Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
@@ -661,10 +714,12 @@ diff -r d244a10db46e TRANSPORT1/diffusion11.f90
  
    use randommod
    use miscmod
-@@ -34,6 +34,12 @@
+@@ -33,15 +33,21 @@
+   logical :: lhelp
    real*8 :: r1, r2, thelp
    real*8 :: denom, denom2, denom3
-   real*8 :: ddmct, tau, tcensus, pa
+-  real*8 :: ddmct, tau, tcensus, pa
++  real*8 :: ddmct, tau, tcensus, pa, pdop
 +!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 +! LSU MODIFICATION
 +  real*8 :: v0
@@ -673,7 +728,17 @@ diff -r d244a10db46e TRANSPORT1/diffusion11.f90
 +!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
  !-- lumped quantities -----------------------------------------
  
-   real*8 :: emitlump, caplump
+-  real*8 :: emitlump, caplump
++  real*8 :: emitlump, caplump, doplump
+   real*8 :: specig
+   real*8 :: mfphelp, ppl, ppr
+   real*8 :: opacleak(2)
+   real*8 :: probleak(2)
+-  real*8 :: resopacleak
++  real*8 :: resopacleak,resdopleak
+   integer :: glump, gunlump
+   integer*2,pointer :: glumps(:)
+   logical*2,pointer :: llumps(:)
 @@ -55,8 +61,14 @@
  !-- statement function
    integer :: l
@@ -711,7 +776,44 @@ diff -r d244a10db46e TRANSPORT1/diffusion11.f90
  
  !
  !-- lump testing ---------------------------------------------
-@@ -165,7 +183,7 @@
+@@ -123,17 +141,20 @@
+      if(glump==grp_ng) then
+         emitlump = 1d0
+         caplump = grd_capgrey(ic)
++	doplump = 0d0
+      else
+ !-- Planck x-section lump
+         caplump = grd_opaclump(8,ic)*speclump
+         emitlump = grd_opaclump(8,ic)*capgreyinv
+         emitlump = min(emitlump,1d0)
++        doplump = grd_opaclump(10,ic)*speclump
+      endif
+ !
+ !-- save
+      cache%nlump = glump
+      cache%emitlump = emitlump
+      cache%caplump = caplump
++     cache%doplump = doplump
+ !}}}
+   endif !cache%ic /= ic
+ 
+@@ -155,17 +176,23 @@
+   if(glump>0) then
+      emitlump = cache%emitlump
+      caplump = cache%caplump
++     doplump = cache%doplump
+   else
+ !-- outside the lump
+      emitlump = specint0(grd_tempinv(ic),ig)*capgreyinv*grd_cap(ig,ic)
+      caplump = grd_cap(ig,ic)
++     if(grd_isvelocity) then
++         doplump = dopspeccalc(grd_tempinv(ic),ig)/(cache%specarr(ig)*pc_c*tsp_t)
++      else
++         doplump = 0d0
++      endif
+   endif
+ !
+ !-- calculate lumped values
    if(glump>0) then
  !-- leakage opacities
       opacleak = grd_opaclump(1:2,ic)
@@ -720,7 +822,7 @@ diff -r d244a10db46e TRANSPORT1/diffusion11.f90
    else
  !{{{
  !-- inward
-@@ -186,6 +204,9 @@
+@@ -186,6 +213,9 @@
          opacleak(1)=2.0d0*(thelp*grd_xarr(ix))**2/ &
               (mfphelp*thelp**3*dx3(ix))
       endif
@@ -730,7 +832,7 @@ diff -r d244a10db46e TRANSPORT1/diffusion11.f90
  !
  !-- outward
       if(ix==grd_nx) then
-@@ -210,6 +231,77 @@
+@@ -210,13 +240,85 @@
               (mfphelp*thelp**3*dx3(ix))
       endif!}}}
    endif
@@ -808,7 +910,16 @@ diff -r d244a10db46e TRANSPORT1/diffusion11.f90
  !
  !-------------------------------------------------------------
  !
-@@ -247,6 +339,22 @@
+ 
+ !-- calculate time to census or event
+   denom = sum(opacleak) + &
+-       (1d0-emitlump)*(1d0-grd_fcoef(ic))*caplump
++       (1d0-emitlump)*(1d0-grd_fcoef(ic))*caplump+&
++          doplump
+   if(trn_isddmcanlog) then
+      denom = denom+grd_fcoef(ic)*caplump
+   endif
+@@ -247,6 +349,22 @@
    endif
  
  
@@ -831,7 +942,88 @@ diff -r d244a10db46e TRANSPORT1/diffusion11.f90
  !-- updating particle time
    ptcl%t = ptcl%t+ddmct
  
-@@ -311,7 +419,14 @@
+@@ -256,9 +374,6 @@
+ !
+ !-- check for census
+   if (tcensus < tau) then
+-!-- sample wavelength
+-     call rnd_r(r1,rndstate)
+-     wl = 1d0/(r1*grp_wlinv(ig+1) + (1d0-r1)*grp_wlinv(ig))
+      ptcl2%stat = 'cens'
+      return
+   endif
+@@ -277,6 +392,14 @@
+      pa = 0d0
+   endif
+ 
++!-- redshift
++
++  if(grd_isvelocity) then
++     pdop = doplump*denom
++  else
++     pdop = 0d0
++  endif
++
+ !-- update specarr cache only when necessary. this is slow
+   if(r1>=pa .and. r1<pa+sum(probleak) .and. speclump>0d0 .and. &
+         iand(cache%istat,2)==0) then
+@@ -290,9 +413,54 @@
+      ptcl2%idist = -1
+      ptcl2%stat = 'dead'
+      edep = e
++!-- doppler shift
++  elseif (r1>=pa .and. r1<pa+pdop) then
+ 
++     if(glump==0) then
++        iiig = ig
++     else
++!-- sample group
++        call rnd_r(r1,rndstate)
++        denom2 = 0d0
++        help = 1d0/doplump
++        do iig=1,glump
++           iiig = glumps(iig)
++           if(iiig == grp_ng) cycle
++           if(grd_cap(iiig+1,ic)*dist >= trn_taulump) cycle
++           specig = cache%specarr(iiig)
++           resdopleak = dopspeccalc(grd_tempinv(ic),iiig)/(pc_c*tsp_t)
++           denom2 = denom2+resdopleak*speclump*help
++           if(denom2>r1) exit
++        enddo
++     endif
++
++!-- reshift particle in this group
++     ig = iiig+1
++     wl = grp_wl(ig)
++     ig = min(ig,grp_ng)
++
++!-- method changes to IMC
++     if((grd_sig(ic)+grd_cap(ig,ic))*dist < trn_tauddmc) then
++        ptcl2%itype = 1
++!-- direction sampled isotropically
++        call rnd_r(r1,rndstate)
++        mu = 1d0-2d0*r1
++!-- position sampled uniformly
++        call rnd_r(r1,rndstate)
++        x = (r1*grd_xarr(ix+1)**3 + (1.0-r1)*grd_xarr(ix)**3)**(1.0/3.0)
++!-- must be inside cell
++        x = min(x,grd_xarr(ix+1))
++        x = max(x,grd_xarr(ix))
++!-- velocity effects accounting
++        mu = (mu+x*cinv)/(1.0+x*mu*cinv)
++        wl = wl*(1.0-x*mu*cinv)
++        help = 1d0/(1.0-x*mu*cinv)
++        totevelo = totevelo+e*(1d0 - help)
++        e = e*help
++        e0 = e0*help
++     endif
+ !-- left leakage sample
+-  elseif (r1>=pa .and. r1<pa+probleak(1)) then
++  elseif (r1>=pa .and. r1<pa+pdop+probleak(1)) then
+      ptcl2%idist = -3
+ !{{{
+ !-- checking if at inner bound
+@@ -311,7 +479,14 @@
  !-- sample group
             call rnd_r(r1,rndstate)
             denom2 = 0d0
@@ -847,7 +1039,7 @@ diff -r d244a10db46e TRANSPORT1/diffusion11.f90
             do iig=1,glump
                iiig = glumps(iig)
                specig = cache%specarr(iiig)
-@@ -349,23 +464,38 @@
+@@ -349,28 +524,43 @@
             call rnd_r(r2,rndstate)
             mu = -max(r1,r2)
  !-- doppler and aberration corrections
@@ -892,7 +1084,13 @@ diff -r d244a10db46e TRANSPORT1/diffusion11.f90
       endif!}}}
  
  
-@@ -385,7 +515,15 @@
+ !-- right leakage sample
+-  elseif (r1>=pa+probleak(1) .and. r1<pa+sum(probleak)) then
++  elseif (r1>=pa+pdop+probleak(1) .and. r1<pa+sum(probleak)) then
+      ptcl2%idist = -4
+ !!{{{
+ !-- checking if at outer bound
+@@ -385,7 +575,15 @@
  !-- sample group
             call rnd_r(r1,rndstate)
             denom2 = 0d0
@@ -909,7 +1107,7 @@ diff -r d244a10db46e TRANSPORT1/diffusion11.f90
             do iig=1,glump
                iiig=glumps(iig)
                specig = cache%specarr(iiig)
-@@ -406,17 +544,34 @@
+@@ -406,17 +604,35 @@
  !-- position
          x=grd_xarr(grd_nx+1)
  !-- changing from comoving frame to observer frame
@@ -930,14 +1128,15 @@ diff -r d244a10db46e TRANSPORT1/diffusion11.f90
 +! New code
 +        if(grd_isvelocity.or.grd_hydro_on) then
 +           call hydro_velocity_at11(x, vx, ix, tsp_t)
-+           help = 1d0+mu*vx*cinv
++           mu = (mu+vx*cinv)/(1d0+vx*mu*cinv)
++           mu = min(mu,1d0)
++           help = 1d0/(1d0-mu*vx*cinv)
  !-- velocity effects accounting
             totevelo = totevelo+e*(1d0 - help)
             wl = wl/help
             e = e*help
             e0 = e0*help
 -           mu = (mu+x*cinv)/(1d0+x*mu*cinv)
-+           mu = (mu+vx*cinv)/(1d0+vx*mu*cinv)
          endif
 +!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
  !-- observer time correction
@@ -947,7 +1146,7 @@ diff -r d244a10db46e TRANSPORT1/diffusion11.f90
          return
  !
  !!}}}
-@@ -430,7 +585,13 @@
+@@ -430,7 +646,13 @@
  !-- sample group
             call rnd_r(r1,rndstate)
             denom2 = 0d0
@@ -962,7 +1161,7 @@ diff -r d244a10db46e TRANSPORT1/diffusion11.f90
             do iig=1,glump
                iiig = glumps(iig)
                specig = cache%specarr(iiig)
-@@ -470,16 +631,32 @@
+@@ -470,16 +692,32 @@
             mu = max(r1,r2)
  !
  !-- doppler and aberration corrections
@@ -999,7 +1198,7 @@ diff -r d244a10db46e TRANSPORT1/diffusion11.f90
          endif
  !
  !-- update particle
-@@ -508,7 +685,7 @@
+@@ -508,7 +746,7 @@
  !-- don't sample, it will end up in the lump anyway
          else
  !-- always put this in the single most likely group
@@ -1008,7 +1207,7 @@ diff -r d244a10db46e TRANSPORT1/diffusion11.f90
             return
          endif
       else
-@@ -546,19 +723,43 @@
+@@ -546,19 +784,43 @@
          x = min(x,grd_xarr(ix+1))
          x = max(x,grd_xarr(ix))
  !-- doppler and aberration corrections
@@ -1058,7 +1257,7 @@ diff -r d244a10db46e TRANSPORT1/diffusion11.f90
  ! vim: fdm=marker
 diff -r d244a10db46e TRANSPORT1/transport11.f90
 --- a/TRANSPORT1/transport11.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/TRANSPORT1/transport11.f90	Thu Aug 30 10:06:44 2018 -0500
++++ b/TRANSPORT1/transport11.f90	Wed Sep 19 15:36:45 2018 -0500
 @@ -1,6 +1,6 @@
  !This file is part of SuperNu.  SuperNu is released under the terms of the GNU GPLv3, see COPYING.
  !Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
@@ -1218,11 +1417,12 @@ diff -r d244a10db46e TRANSPORT1/transport11.f90
 +
       call rnd_r(r1,rndstate)
       mu = 1d0-2d0*r1
-      if(abs(mu)<0.0000001d0) then
-         mu = 0.0000001d0
-      endif
- !-- checking velocity dependence
--     if(grd_isvelocity) mu=(mu+x*cinv)/(1d0+x*mu*cinv)
+-     if(abs(mu)<0.0000001d0) then
+-        mu = 0.0000001d0
++ !    if(abs(mu)<0.0000001d0) then
++ !       mu = 0.0000001d0
++ !    endif
++!-- checking velocity dependence
 +!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 +! LSU MODIFICATION
 +! Old code
@@ -1230,7 +1430,9 @@ diff -r d244a10db46e TRANSPORT1/transport11.f90
 +! New code
 +     if(grd_isvelocity.or.grd_hydro_on) then
 +       mu=(mu+vx*cinv)/(1d0+vx*mu*cinv)
-+     endif
+      endif
+-!-- checking velocity dependence
+-     if(grd_isvelocity) mu=(mu+x*cinv)/(1d0+x*mu*cinv)
 +!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
    elseif(d==db) then
       lout = mu>=0d0.and.ix==grd_nx
@@ -1332,8 +1534,9 @@ diff -r d244a10db46e TRANSPORT1/transport11.f90
 +              e = e*(1d0-vx*mu*cinv)
 +              e0 = e0*(1d0-vx*mu*cinv)
             endif
+-           wl = 0d0 !workaround ifort 13.1.3 bug
 +!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-            wl = 0d0 !workaround ifort 13.1.3 bug
++!           wl = 0d0 !workaround ifort 13.1.3 bug
          else
  !-- uniformly in new group
             call rnd_r(r1,rndstate)
@@ -1530,7 +1733,7 @@ diff -r d244a10db46e TRANSPORT1/transport11.f90
  ! vim: fdm=marker
 diff -r d244a10db46e TRANSPORT1/transport11_gamgrey.f90
 --- a/TRANSPORT1/transport11_gamgrey.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/TRANSPORT1/transport11_gamgrey.f90	Thu Aug 30 10:06:44 2018 -0500
++++ b/TRANSPORT1/transport11_gamgrey.f90	Wed Sep 19 15:36:45 2018 -0500
 @@ -1,6 +1,6 @@
  !This file is part of SuperNu.  SuperNu is released under the terms of the GNU GPLv3, see COPYING.
  !Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
@@ -1712,7 +1915,7 @@ diff -r d244a10db46e TRANSPORT1/transport11_gamgrey.f90
  ! vim: fdm=marker
 diff -r d244a10db46e dealloc_all.f
 --- a/dealloc_all.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/dealloc_all.f	Thu Aug 30 10:06:44 2018 -0500
++++ b/dealloc_all.f	Wed Sep 19 15:36:45 2018 -0500
 @@ -13,6 +13,10 @@
        use sourcemod
        use randommod
@@ -1737,7 +1940,7 @@ diff -r d244a10db46e dealloc_all.f
        call grid_dealloc
 diff -r d244a10db46e gridmod.f
 --- a/gridmod.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/gridmod.f	Thu Aug 30 10:06:44 2018 -0500
++++ b/gridmod.f	Wed Sep 19 15:36:45 2018 -0500
 @@ -21,6 +21,16 @@
        real*8,allocatable :: grd_xarr(:)  !(nx+1), left cell edge values
        real*8,allocatable :: grd_yarr(:)  !(ny+1), left cell edge values
@@ -1755,6 +1958,15 @@ diff -r d244a10db46e gridmod.f
  c
  c-- maximum radial grid velocity
        real*8 :: grd_rout=0d0   !particle flux edge radius
+@@ -46,7 +56,7 @@
+       real*4,allocatable :: grd_cap(:,:) !(ng,ncell)
+ 
+ c-- leakage opacities
+-      real*8,allocatable :: grd_opaclump(:,:) !(9,ncell) leak(6),speclump,caplump,igemitmax
++      real*8,allocatable :: grd_opaclump(:,:) !(10,ncell) leak(6),speclump,caplump,igemitmax,doplump
+       real*8,allocatable :: grd_tempinv(:) !(ncell)
+ c-- scattering coefficient
+       real*8,allocatable :: grd_sig(:) !(ncell) !grey scattering opacity
 @@ -56,7 +66,10 @@
        real*8,allocatable :: grd_fcoef(:)  !(ncell)
  
@@ -1784,6 +1996,15 @@ diff -r d244a10db46e gridmod.f
  c-- polar
        if(grd_igeom==1) allocate(grd_yacos(grd_ny+1))
  c
+@@ -168,7 +191,7 @@
+       allocate(grd_numcensddmc(grd_ncell))
+ c
+ c-- ndim=4 alloc
+-      allocate(grd_opaclump(9,grd_ncell))
++      allocate(grd_opaclump(10,grd_ncell))
+       allocate(grd_emitprob(grd_nep,grd_ncell))
+ c-- ndim=4 alloc
+       allocate(grd_cap(ng,grd_ncell))
 @@ -208,7 +231,103 @@
        deallocate(grd_emitprob)
  c-- ndim=4 alloc
@@ -1890,8 +2111,17 @@ diff -r d244a10db46e gridmod.f
  c vim: fdm=marker
 diff -r d244a10db46e groupmod.f
 --- a/groupmod.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/groupmod.f	Thu Aug 30 10:06:44 2018 -0500
-@@ -134,7 +134,11 @@
++++ b/groupmod.f	Wed Sep 19 15:36:45 2018 -0500
+@@ -13,7 +13,7 @@
+        integer :: ic=0
+        integer :: nlump !number of groups in the lump
+        real*8 :: capgreyinv
+-       real*8 :: speclump,emitlump,caplump
++       real*8 :: speclump,emitlump,caplump,doplump
+        real*8,pointer :: specarr(:) !(grp_ng)
+        integer :: istat
+        integer*2,pointer :: glumps(:) !(grp_ng)
+@@ -134,11 +134,35 @@
        dx = x*abs(grp_wlinv(ig+1) - grp_wlinv(ig))
        x = x*.5d0*(grp_wlinv(ig+1) + grp_wlinv(ig))
  c
@@ -1904,7 +2134,31 @@ diff -r d244a10db46e groupmod.f
  c!}}}
        end function specint0
  c
-@@ -258,7 +262,11 @@
+ c
++
++      elemental function dopspeccalc(tempinv,ig)
++      use physconstmod
++      implicit none
++      real*8 :: dopspeccalc
++      real*8,intent(in) :: tempinv
++      integer,intent(in) :: ig
++c************************************************************************
++* Calculate x**3/(exp(x) - 1), where x = h*c/(wl*k*T)
++************************************************************************
++      real*8,parameter :: ftpi4=15d0/pc_pi**4
++      real*8,parameter :: hck=pc_h*pc_c/pc_kb
++      real*8 :: x
++      x = hck*tempinv
++      x = x*grp_wlinv(ig+1)
++c
++      dopspeccalc = ftpi4 * x**4/(exp(x) - 1d0)
++
++      end function dopspeccalc
++
+       pure subroutine specintv(tempinv,n,ss,offset,mode,mask,maskval)
+ c     -----------------------------------------------!{{{
+       use physconstmod
+@@ -258,7 +282,11 @@
  c
        elemental real*8 function f(x)
        real*8,intent(in) :: x
@@ -1919,7 +2173,7 @@ diff -r d244a10db46e groupmod.f
        end subroutine specintv
 diff -r d244a10db46e inputparmod.f
 --- a/inputparmod.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/inputparmod.f	Thu Aug 30 10:06:44 2018 -0500
++++ b/inputparmod.f	Wed Sep 19 15:36:45 2018 -0500
 @@ -23,6 +23,16 @@
        integer :: in_grd_igeom = 0 !geometry: 1=sph, 2=cyl, 3=car, 11=1Dsph
        integer :: in_ndim(3) = [1, 1, 1]  !number of x-direction cells
@@ -1998,7 +2252,7 @@ diff -r d244a10db46e inputparmod.f
  c
 diff -r d244a10db46e inputstrmod.f
 --- a/inputstrmod.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/inputstrmod.f	Thu Aug 30 10:06:44 2018 -0500
++++ b/inputstrmod.f	Wed Sep 19 15:36:45 2018 -0500
 @@ -20,6 +20,12 @@
        real*8,allocatable :: str_temp(:,:,:) !(nx,ny,nz)
        real*8,allocatable :: str_ye(:,:,:) !(nx,ny,nz)
@@ -2224,7 +2478,7 @@ diff -r d244a10db46e inputstrmod.f
        enddo!}}}
 diff -r d244a10db46e ionsmod.f
 --- a/ionsmod.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/ionsmod.f	Thu Aug 30 10:06:44 2018 -0500
++++ b/ionsmod.f	Wed Sep 19 15:36:45 2018 -0500
 @@ -144,12 +144,31 @@
        end subroutine ions_dealloc
  c
@@ -2453,7 +2707,7 @@ diff -r d244a10db46e ionsmod.f
           ion_el(iz)%i(ii)%glev(ilc) = gsum
 diff -r d244a10db46e mpimod_ser.f
 --- a/mpimod_ser.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/mpimod_ser.f	Thu Aug 30 10:06:44 2018 -0500
++++ b/mpimod_ser.f	Wed Sep 19 15:36:45 2018 -0500
 @@ -71,7 +71,223 @@
        subroutine allreduce_gammaenergy
        end subroutine allreduce_gammaenergy
@@ -2689,7 +2943,7 @@ diff -r d244a10db46e mpimod_ser.f
  c
 diff -r d244a10db46e particle_advance.f90
 --- a/particle_advance.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/particle_advance.f90	Thu Aug 30 10:06:44 2018 -0500
++++ b/particle_advance.f90	Wed Sep 19 15:36:45 2018 -0500
 @@ -4,6 +4,10 @@
  subroutine particle_advance
  
@@ -2952,10 +3206,11 @@ diff -r d244a10db46e particle_advance.f90
             endif
  !
             call rnd_r(r1,rndstate)
-@@ -337,17 +492,17 @@
+@@ -336,18 +491,18 @@
+         endif
  
  !-- check exit status
-         if(ierr/=0 .or. ptcl2%istep>1000) then  !istep checker may cause issues in high-res simulations
+-        if(ierr/=0 .or. ptcl2%istep>1000) then  !istep checker may cause issues in high-res simulations
 -           write(0,*) 'pa: ierr,ipart,istep,idist:',ierr,ptcl2%ipart,ptcl2%istep,ptcl2%idist
 -           write(0,*) 'dist:',ptcl2%dist
 -           write(0,*) 't,taus,tauc:',ptcl%t,grd_sig(ic)*help,grd_cap(ig,ic)*help
@@ -2964,6 +3219,7 @@ diff -r d244a10db46e particle_advance.f90
 -           write(0,*) 'mu,om:',ptcl%mu,ptcl%om
 -           write(0,*) 'mux,muy,muz:',ptcl2%mux,ptcl2%muy,ptcl2%muz
 -           write(0,*)
++        if(ierr/=0) then ! .or. ptcl2%istep>1000) then  !istep checker may cause issues in high-res simulations
             if(ierr>0) then
 +              write(0,*) 'pa: ierr,ipart,istep,idist:',ierr,ptcl2%ipart,ptcl2%istep,ptcl2%idist
 +              write(0,*) 'dist:',ptcl2%dist
@@ -2979,7 +3235,7 @@ diff -r d244a10db46e particle_advance.f90
                exit
             endif
          endif
-@@ -392,19 +547,43 @@
+@@ -392,34 +547,47 @@
  !
  !-- exact particle time
          help = abs(ptcl%t-tsp_t1)/(ptcl%t+tsp_t1)
@@ -3008,6 +3264,9 @@ diff -r d244a10db46e particle_advance.f90
 -           e = e*exp(-tsp_dt/tsp_t)
 -           e0 = e0*exp(-tsp_dt/tsp_t)
 -           !
+-!
+-!-- f   ind group
+-           ig = binsrch(wl,grp_wl,grp_ng+1,.false.)
 +           if( grd_hydro_on ) then
 +              select case(grd_igeom)
 +                case(11)
@@ -3024,13 +3283,17 @@ diff -r d244a10db46e particle_advance.f90
 +           e0 = e0*exp(-tsp_dt*help)
 +!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
  !
--!-- f   ind group
+-           call rnd_r(r1,rndstate)
+-           x1 = grd_cap(ig,ic)
+-           x2 = grp_wl(ig)/(pc_c*tsp_t*(grp_wl(ig+1)-grp_wl(ig)))
+-           if(r1<x2/(x1+x2)) then
+-              call rnd_r(r1,rndstate)
+-              wl = 1d0/(r1*grp_wlinv(ig+1)+(1d0-r1)*grp_wlinv(ig))
+-              wl = wl*exp(tsp_dt/tsp_t)
+-           endif
+-           !!}}}
 +!
-+!-- find group
-            ig = binsrch(wl,grp_wl,grp_ng+1,.false.)
- !
-            call rnd_r(r1,rndstate)
-@@ -420,6 +599,7 @@
+         endif
  
          if(grd_isvelocity.and.ptcl2%itype==1) then
             call advection(.false.,ptcl,ptcl2) !procedure pointer to advection[123]
@@ -3038,7 +3301,7 @@ diff -r d244a10db46e particle_advance.f90
          endif
  
  !-- renergy at census
-@@ -467,25 +647,54 @@
+@@ -467,25 +635,54 @@
             call rnd_r(r1,rndstate)
             om = pc_pi2*r1
  !
@@ -3106,7 +3369,7 @@ diff -r d244a10db46e particle_advance.f90
             wl = wl/labfact
 diff -r d244a10db46e particle_advance_gamgrey.f90
 --- a/particle_advance_gamgrey.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/particle_advance_gamgrey.f90	Thu Aug 30 10:06:44 2018 -0500
++++ b/particle_advance_gamgrey.f90	Wed Sep 19 15:36:45 2018 -0500
 @@ -36,9 +36,13 @@
    real*8,pointer :: x,y,z,mu,om,e,e0
    real*8 :: eta, xi
@@ -3384,7 +3647,7 @@ diff -r d244a10db46e particle_advance_gamgrey.f90
  !-- tally outbound luminosity        
 diff -r d244a10db46e particlemod.f90
 --- a/particlemod.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/particlemod.f90	Thu Aug 30 10:06:44 2018 -0500
++++ b/particlemod.f90	Wed Sep 19 15:36:45 2018 -0500
 @@ -16,6 +16,10 @@
       real*8 :: dist          !particle travel distance
       character(4) :: stat    !particle status: live, cens, flux, dead
@@ -3398,7 +3661,7 @@ diff -r d244a10db46e particlemod.f90
       integer :: ipart, istep !particle number and transport step number
 diff -r d244a10db46e supernu.f90
 --- a/supernu.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/supernu.f90	Thu Aug 30 10:06:44 2018 -0500
++++ b/supernu.f90	Wed Sep 19 15:36:45 2018 -0500
 @@ -24,7 +24,10 @@
    use ffxsmod, only:ffxs_read_data
    use timingmod
@@ -3496,7 +3759,7 @@ diff -r d244a10db46e supernu.f90
       call counters_cycle(impi,it<=0)
 diff -r d244a10db46e timestepmod.f90
 --- a/timestepmod.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/timestepmod.f90	Thu Aug 30 10:06:44 2018 -0500
++++ b/timestepmod.f90	Wed Sep 19 15:36:45 2018 -0500
 @@ -13,6 +13,10 @@
    real*8,allocatable :: tsp_tpreset(:)  !store preset time steps from input.tsp_time
    real*8 :: tsp_tcenter,tsp_tfirst,tsp_tlast
@@ -3591,7 +3854,7 @@ diff -r d244a10db46e timestepmod.f90
      tsp_tarr(tsp_it+1) = tsp_t1
 diff -r d244a10db46e totalsmod.f
 --- a/totalsmod.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/totalsmod.f	Thu Aug 30 10:06:44 2018 -0500
++++ b/totalsmod.f	Wed Sep 19 15:36:45 2018 -0500
 @@ -63,8 +63,12 @@
  * Check that all particle energy (weight) is accounted for from
  * conservation in comoving quantities.
@@ -3609,7 +3872,7 @@ diff -r d244a10db46e totalsmod.f
  c
 diff -r d244a10db46e transportmod.f
 --- a/transportmod.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/transportmod.f	Thu Aug 30 10:06:44 2018 -0500
++++ b/transportmod.f	Wed Sep 19 15:36:45 2018 -0500
 @@ -202,11 +202,21 @@
  c
  c-- abstract interfaces

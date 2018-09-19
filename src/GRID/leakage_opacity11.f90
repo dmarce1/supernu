@@ -1,5 +1,3 @@
-!This file is part of SuperNu.  SuperNu is released under the terms of the GNU GPLv3, see COPYING.
-!Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
 subroutine leakage_opacity11
 
   use miscmod
@@ -16,7 +14,7 @@ subroutine leakage_opacity11
   logical :: lhelp
   integer :: i,j,k, ig,igemitmax
   real*8 :: thelp, dist, help, emitmax
-  real*8 :: speclump, caplump, specval
+  real*8 :: speclump, caplump, doplump, specval
   real*8 :: specarr(grp_ng)
   real*8 :: ppl, ppr
   integer :: icnb(2) !neighbor cell pointers
@@ -78,8 +76,21 @@ subroutine leakage_opacity11
            igemitmax = ig
         endif
      enddo
+!-- doplump
+     doplump = 0d0
+     if(grd_isvelocity) then
+        do ig=1,grp_ng-1
+           if(grd_cap(ig,l)*dist < trn_taulump) cycle
+           if(grd_cap(ig+1,l)*dist >= trn_taulump) cycle
+           if((grd_sig(l) + grd_cap(ig,l))*dist < trn_tauddmc) cycle
+           help = dopspeccalc(grd_tempinv(l),ig) / (pc_c*tsp_t)
+           doplump = doplump + help
+        enddo
+     endif
+!-- store regrouped data
      grd_opaclump(8,l) = caplump
      grd_opaclump(9,l) = igemitmax
+     grd_opaclump(10,l) = doplump
 !
 !-- lumping opacity
      do ig=1,grp_ng
@@ -141,7 +152,11 @@ subroutine leakage_opacity11
   enddo !i
   enddo !j
   enddo !k
-  
+
 
 end subroutine leakage_opacity11
 ! vim: fdm=marker
+
+
+
+
