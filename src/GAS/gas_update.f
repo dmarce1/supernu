@@ -12,11 +12,6 @@ c     -------------------------
       use gasmod
       use inputparmod
       use timingmod
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c     HYDRO LSU
-      use mpimod
-      use hydromod
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       implicit none
       integer,intent(in) :: it
 ************************************************************************
@@ -41,6 +36,7 @@ c-- previous values
 !     real*8 :: hlparr(grd_nx),hlparrdd(gas_ncell)
 c-- timing
       real*8 :: t0,t1
+c
 c-- begin
       t0 = t_time()
 c
@@ -70,25 +66,15 @@ c
 c-- current time step
       if(grd_isvelocity.and.in_srctype=='none') then
 c-- beginning of time step
-       if( grd_hydro_on .and. tsp_it .ne. 1) then
-         call update_natomfr(0d0)
-       else
-         call update_natomfr(tsp_t)
-       endif
+       call update_natomfr(tsp_t)
        natom1fr = gas_natom1fr
 c-- end of time step
-       if( grd_hydro_on .and. tsp_it .ne. 1 ) then
-         call update_natomfr(tsp_dt)
-       else
-         call update_natomfr(tsp_t+tsp_dt)
-       endif
+       call update_natomfr(tsp_t + tsp_dt)
        natom2fr = gas_natom1fr
 c
 c-- update the abundances for the center time
        !call update_natomfr(tsp_tcenter)
-       if( .not. grd_hydro_on ) then
-         call update_natomfr(tsp_t)
-       endif
+       call update_natomfr(tsp_t)
 c-- sanity check
        if(any(gas_natom1fr<0d0)) stop 'gas_update: natom1fr<0'
 !c-- print change in electron fraction
@@ -99,15 +85,11 @@ c-- sanity check
 c
 c-- energy deposition
 c-- gamma decay
-
-
        gas_decaygamma =  !per average atom (mix of stable and unstable)
      &   (natom1fr(gas_ini56,:) - natom2fr(gas_ini56,:)) *
      &     (nuc_qhl_ni56 + nuc_qhl_co56) +!ni56 that decays adds to co56
      &   (natom1fr(gas_ico56,:) - natom2fr(gas_ico56,:)) *
      &     nuc_qhl_co56
-
-
        gas_decaygamma = gas_decaygamma * gas_natom !total, units=ergs
 c-- beta decay (off for backwards compatibility)
 c      gas_decaybeta = (natom2fr(26,:) - natom1fr(26,:))*nuc_q_poskin
@@ -127,8 +109,6 @@ c-- converge more quickly.
 !}}}
 c
 c
-
-
 c-- update volume
 c========================================
       i = 0
@@ -137,78 +117,46 @@ c========================================
        gas_vol(i) = grd_vol(l)
       enddo !l
 c
-
+c
 c-- update density, start temperature derivative
 c===============================================
-
-        gas_rho = gas_mass/gas_vol
-
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c     HYDRO LSU
-      if( grd_hydro_on .and. it_gt_0 ) then
-        gas_rho = gas_mass/gas_vol
-        if( lfirst ) then
-          call eos_update(.false.)
-       endif
-      endif
-
-
-      call gather_hydro
-      if( grd_hydro_on .and. it_gt_0 ) then
-        if( lfirst ) then
-          call hydro_output(0d0)
-        endif
-        call hydro_update(tsp_t, tsp_t + tsp_dt, help, .false.)
-      endif
-      call eos_update(.false.)
-
-      call hydro_output(tsp_t + tsp_dt)
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
+      gas_rho = gas_mass/gas_vol
 c-- temperature
       gas_ur = pc_acoef*gas_temp**4
 c
 c-- sanity check temperatures
-
       if(any(gas_temp/=gas_temp)) stop 'gas_temp NaN'
       if(any(gas_temp<=0d0)) stop 'gas_temp<=0'
-
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c     HYDRO LSU
-      if( in_radiation_on ) then
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
 c
 c
 c
 c-- compute the starting tempurature derivative in the fleck factor
-        if(lfirst .or. in_opacanaltype/='none') then
+      if(lfirst .or. in_opacanaltype/='none') then
 c-- temporarily change!{{{
-         gas_temp = dtempfrac*gas_temp
-         if(in_opacanaltype=='none') then
-          if(.not.in_noeos) call eos_update(.false.)
-         endif
+       gas_temp = dtempfrac*gas_temp
+       if(in_opacanaltype=='none') then
+        if(.not.in_noeos) call eos_update(.false.)
+       endif
 c
-         if(in_opacanaltype/='none') then
-          call analytic_opacity
-         else
-          call physical_opacity
-         endif
-         call opacity_planckmean
+       if(in_opacanaltype/='none') then
+        call analytic_opacity
+       else
+        call physical_opacity
+       endif
+       call opacity_planckmean
 c
 c-- save
-         if(.not.allocated(tempalt)) then
-          allocate(tempalt(gas_ncell))
-          allocate(capgreyalt(gas_ncell))
-         endif
-         tempalt = gas_temp
-         capgreyalt = gas_capgrey/gas_rho !per gram
+       if(.not.allocated(tempalt)) then
+        allocate(tempalt(gas_ncell))
+        allocate(capgreyalt(gas_ncell))
+       endif
+       tempalt = gas_temp
+       capgreyalt = gas_capgrey/gas_rho !per gram
 c
 c-- change back
-         gas_temp = gas_temp/dtempfrac
+       gas_temp = gas_temp/dtempfrac
 !}}}
-        endif
-
+      endif
 c
 c
 c
@@ -217,11 +165,6 @@ c===============================
       do_output = (in_io_pdensdump=='each' .or.
      &  (in_io_pdensdump=='one' .and. tsp_it==1))
       if(.not.in_noeos) call eos_update(do_output)
-
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c     HYDRO LSU
-      endif
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
       if(in_gas_cvcoef>0d0) then
 c-- calculate power law heat capacity
@@ -242,95 +185,81 @@ c-- add initial thermal input to dd_eext
        tot_emat = sum(gas_bcoef*gas_temp*gas_vol)
        tot_eext = tot_eext + tot_emat  !was initialized either in totalsmod or in totals_startup
       endif      
-
-
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c     HYDRO LSU
-      if( in_radiation_on ) then
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
 c
 c
 c
 c-- calculate opacities
 c======================
 c-- gamma opacity
-        gas_capgam = in_opcapgam*gas_ye*gas_rho
+      gas_capgam = in_opcapgam*gas_ye*gas_rho
 c
 c
 c-- simple analytical group/grey opacities: Planck and Rosseland 
-        if(in_opacanaltype/='none') then
-         call analytic_opacity
-        else
+      if(in_opacanaltype/='none') then
+       call analytic_opacity
+      else
 c-- calculate physical opacities
 c-- test existence of input.opac file
-         inquire(file='input.opac',exist=lexist)
-         if(.not.lexist) then
+       inquire(file='input.opac',exist=lexist)
+       if(.not.lexist) then
 c-- calculate opacities
-          call physical_opacity
-         else
+        call physical_opacity
+       else
 c-- read in opacities
-          open(4,file='input.opac',status='old',iostat=istat)!{{{
-          if(istat/=0) stop 'read_opac: no file: input.opac'
+        open(4,file='input.opac',status='old',iostat=istat)!{{{
+        if(istat/=0) stop 'read_opac: no file: input.opac'
 c-- read header
-          read(4,*,iostat=istat)
-          if(istat/=0) stop 'read_opac: file empty: input.opac'
+        read(4,*,iostat=istat)
+        if(istat/=0) stop 'read_opac: file empty: input.opac'
 c-- read each cell individually
-          do j=1,tsp_it
+        do j=1,tsp_it
 c-- skip delimiter
          read(4,*,iostat=istat)
-           if(istat/=0) stop 'read_opac: delimiter error: input.opac'
+         if(istat/=0) stop 'read_opac: delimiter error: input.opac'
 c-- read data
-           do i=1,gas_ncell
-            read(4,*,iostat=istat) help,gas_sig(i),gas_cap(:,i)
-            if(istat/=0) stop 'read_opac: body error: input.opac'
-           enddo !i
-          enddo !j
-          close(4)
-          write(6,*) 'read_opac: read successfully'
+         do i=1,gas_ncell
+          read(4,*,iostat=istat) help,gas_sig(i),gas_cap(:,i)
+          if(istat/=0) stop 'read_opac: body error: input.opac'
+         enddo !i
+        enddo !j
+        close(4)
+        write(6,*) 'read_opac: read successfully'
 !}}}
-         endif
-        endif
-        call opacity_planckmean
+       endif
+      endif
+      call opacity_planckmean
 c
 c
 c-- write out opacities
 c----------------------
-        if(trim(in_io_opacdump)=='off') then !{{{
-c-- don othing
-       else
-         open(4,file='output.opac',status='unknown',position='append')
-        endif !off
+      if(trim(in_io_opacdump)=='off') then !{{{
+c-- donothing
+      else
+       open(4,file='output.opac',status='unknown',position='append')
+      endif !off
 c
 c-- write opacity grid
-        inquire(4,opened=do_output)
-        if(do_output) then
+      inquire(4,opened=do_output)
+      if(do_output) then
 c-- header
-         if(tsp_it==1) write(4,'("#",3i8)') gas_ncell,tsp_nt
-         write(4,'("#",3i8)') tsp_it
+       if(tsp_it==1) write(4,'("#",3i8)') gas_ncell,tsp_nt
+       write(4,'("#",3i8)') tsp_it
 c-- body
-         do i=1,gas_ncell
-          write(4,'(1p,9999e12.4)') gas_temp(i),gas_sig(i),gas_cap(:,i)
-         enddo
+       do i=1,gas_ncell
+        write(4,'(1p,9999e12.4)') gas_temp(i),gas_sig(i),gas_cap(:,i)
+       enddo
 c-- close file
-        close(4)
-        endif !do_output !}}}
+       close(4)
+      endif !do_output !}}}
 c
 c
 c-- Calculating Fleck factor, leakage opacities
-        call fleck_factor(tempalt,capgreyalt)
+      call fleck_factor(tempalt,capgreyalt)
 c
 c
 c-- save previous values for gentile-fleck factor calculation in next iter
-        tempalt = gas_temp
-        capgreyalt = gas_capgrey/gas_rho
-
-
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c     HYDRO LSU
-      endif
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
+      tempalt = gas_temp
+      capgreyalt = gas_capgrey/gas_rho
 c
       lfirst = .false.
 c
@@ -350,8 +279,6 @@ c
 c     ----------------------------!{{{
       use nucdatamod
       use gasmod
-      use gridmod
-      use timestepmod
       implicit none
       real*8,intent(in) :: t
 ************************************************************************
@@ -364,7 +291,7 @@ c     ----------------------------!{{{
       real*8 :: dye(gas_ncell) !delta natom*ye
 c
 c-- save norm for conservation check
-      natom = sum(gas_natom1fr(1:,:),dim=1)
+      natom = sum(gas_natom1fr(22:28,:),dim=1)
 c
 c-- zero
       gas_natom1fr(22:28,:) = 0d0
@@ -400,7 +327,6 @@ c-- subtract original ye*natom
       dye = dye - x(:,1)*(25d0/52)
 c-- update
       call nucdecay3(gas_ncell,t,nuc_thl_fe52,nuc_thl_mn52,x)
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c-- current radioactive natom
       gas_natom1fr(gas_ife52,:) = x(:,2)
       gas_natom1fr(gas_imn52,:) = x(:,1)
@@ -441,11 +367,9 @@ c-- add stable fraction to total natom
 c
 c-- natom conservation check
       do i=1,gas_ncell
-       help = sum(gas_natom1fr(1:,i))
-       if(abs(help-natom(i))>1d-14*natom(i)) then
-       write(*,*) help, natom(i),i
-       stop 'update_natomfr: natom not conserved'
-       endif
+       help = sum(gas_natom1fr(22:28,i))
+       if(abs(help-natom(i))>1d-14*natom(i)) stop
+     &   'update_natomfr: natom not conserved'
       enddo
 c
 c-- calculate Ye

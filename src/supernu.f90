@@ -24,10 +24,7 @@ program supernu
   use ffxsmod, only:ffxs_read_data
   use timingmod
   use countersmod
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!     MODIFICATION BY LSU
-  use hydromod
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
   implicit none
 !***********************************************************************
 ! TODO and wishlist:
@@ -73,7 +70,7 @@ program supernu
        call generate_inputstr(in_grd_igeom)
      endif
 !-- compressed domain, serialize non-void cells
-    call inputstr_compress
+     call inputstr_compress
 
 !-- READ DATA
 !-- read ion and level data
@@ -97,7 +94,6 @@ program supernu
 !--
 !-- setup remaining modules
 !==========================
-
   call timestepmod_init
 
 !-- wlgrid (before grid setup)
@@ -107,15 +103,6 @@ program supernu
 !-- setup spatial grid
   call gridmod_init(lmpi0,grp_ng,str_nc,str_lvoid,icell1,ncell)
   call grid_setup
-
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!     MODIFICATION BY LSU
-  call hydromod_init
-  call hydro_setup
-  call grid_volume(grd_igeom,grd_isvelocity,tsp_t)
-
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
 !-- setup gas
   call gasmod_init(lmpi0,icell1,ncell,grp_ng)
   call gas_setup
@@ -160,17 +147,9 @@ program supernu
      write(6,'(1x,a5,a9,1x,a5,a10,4(a7,1x),a7)') 'it','t[day]','itflx','e_err','nsrc','ncens','nflux','nflxbuf','usage'
   endif
 !
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!     HYDRO LSU
-!  tsp_itrestart = max(1,tsp_itrestart)
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   do it=tsp_itrestart,tsp_nt
      t_timelin(1) = t_time() !timeline
 !-- allow negative and zero it for temperature initialization purposes
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!     HYDRO LSU
-     it_gt_0 = it .gt. 0
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      tsp_it = max(it,1)
 
 !-- Update tsp_t etc
@@ -183,11 +162,6 @@ program supernu
 !-- update all non-permanent variables
      call grid_update(tsp_t)
      call gas_update(it)
-
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!     MODIFICATION BY LSU
-     if( in_radiation_on ) then
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !-- source energy: gamma and material
      call sourceenergy
@@ -263,7 +237,6 @@ program supernu
      call temperature_update
      call reduce_gastemp !MPI  !for output
 
-
 !-- output
      if(lmpi0) then
 !-- total energy startup values and energy conservation
@@ -287,11 +260,6 @@ program supernu
               ct_nnonvacant(2)/dble(prt_npartmax)
         endif
      endif !impi
-
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!     MODIFICATION BY LSU
-     endif !( in_radiation_on ) then
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 !-- write timestep timing to file
      call timing_cycle(impi,it<=0)

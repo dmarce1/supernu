@@ -1,0 +1,471 @@
+# HG changeset patch
+# User Ryan Wollaeger <wollaeger@wisc.edu>
+# Date 1535849759 21600
+#      Sat Sep 01 18:55:59 2018 -0600
+# Node ID 7da78beb1ff751fc504076c13dd6275bb3aa5f25
+# Parent  d39eb4a107b0d2f7fe250fec88407e6a7c342a61
+Lump Doppler shift correction in DDMC and remove heuristic DDMC redshift algorithm.  WARNING: this commit breaks multi-d - a future commit will fix multi-d.
+
+diff --git a/GRID/leakage_opacity11.f90 b/GRID/leakage_opacity11.f90
+--- a/GRID/leakage_opacity11.f90
++++ b/GRID/leakage_opacity11.f90
+@@ -16,7 +16,7 @@
+   logical :: lhelp
+   integer :: i,j,k, ig,igemitmax
+   real*8 :: thelp, dist, help, emitmax
+-  real*8 :: speclump, caplump, specval
++  real*8 :: speclump, caplump, doplump, specval
+   real*8 :: specarr(grp_ng)
+   real*8 :: ppl, ppr
+   integer :: icnb(2) !neighbor cell pointers
+@@ -78,8 +78,21 @@
+            igemitmax = ig
+         endif
+      enddo
++!-- doplump
++     doplump = 0d0
++     if(grd_isvelocity) then
++        do ig=1,grp_ng-1
++           if(grd_cap(ig,l)*dist < trn_taulump) cycle
++           if(grd_cap(ig+1,l)*dist >= trn_taulump) cycle
++           if((grd_sig(l) + grd_cap(ig,l))*dist < trn_tauddmc) cycle
++           help = dopspeccalc(grd_tempinv(l),ig) / (pc_c*tsp_t)
++           doplump = doplump + help
++        enddo
++     endif
++!-- store regrouped data
+      grd_opaclump(8,l) = caplump
+      grd_opaclump(9,l) = igemitmax
++     grd_opaclump(10,l) = doplump
+ !
+ !-- lumping opacity
+      do ig=1,grp_ng
+@@ -141,7 +154,7 @@
+   enddo !i
+   enddo !j
+   enddo !k
+-  
++
+ 
+ end subroutine leakage_opacity11
+ ! vim: fdm=marker
+diff --git a/TRANSPORT1/diffusion11.f90 b/TRANSPORT1/diffusion11.f90
+--- a/TRANSPORT1/diffusion11.f90
++++ b/TRANSPORT1/diffusion11.f90
+@@ -33,15 +33,15 @@
+   logical :: lhelp
+   real*8 :: r1, r2, thelp
+   real*8 :: denom, denom2, denom3
+-  real*8 :: ddmct, tau, tcensus, pa
++  real*8 :: ddmct, tau, tcensus, pa, pdop
+ !-- lumped quantities -----------------------------------------
+ 
+-  real*8 :: emitlump, caplump
++  real*8 :: emitlump, caplump, doplump
+   real*8 :: specig
+   real*8 :: mfphelp, ppl, ppr
+   real*8 :: opacleak(2)
+   real*8 :: probleak(2)
+-  real*8 :: resopacleak
++  real*8 :: resopacleak, resdopleak
+   integer :: glump, gunlump
+   integer*2,pointer :: glumps(:)
+   logical*2,pointer :: llumps(:)
+@@ -123,17 +123,20 @@
+      if(glump==grp_ng) then
+         emitlump = 1d0
+         caplump = grd_capgrey(ic)
++        doplump = 0d0
+      else
+ !-- Planck x-section lump
+         caplump = grd_opaclump(8,ic)*speclump
+         emitlump = grd_opaclump(8,ic)*capgreyinv
+         emitlump = min(emitlump,1d0)
++        doplump = grd_opaclump(10,ic)*speclump
+      endif
+ !
+ !-- save
+      cache%nlump = glump
+      cache%emitlump = emitlump
+      cache%caplump = caplump
++     cache%doplump = doplump
+ !}}}
+   endif !cache%ic /= ic
+ 
+@@ -155,10 +158,16 @@
+   if(glump>0) then
+      emitlump = cache%emitlump
+      caplump = cache%caplump
++     doplump = cache%doplump
+   else
+ !-- outside the lump
+      emitlump = specint0(grd_tempinv(ic),ig)*capgreyinv*grd_cap(ig,ic)
+      caplump = grd_cap(ig,ic)
++     if(grd_isvelocity) then
++        doplump = dopspeccalc(grd_tempinv(ic),ig)/(cache%specarr(ig)*pc_c*tsp_t)
++     else
++        doplump = 0d0
++     endif
+   endif
+ !
+ !-- calculate lumped values
+@@ -216,7 +225,8 @@
+ 
+ !-- calculate time to census or event
+   denom = sum(opacleak) + &
+-       (1d0-emitlump)*(1d0-grd_fcoef(ic))*caplump
++       (1d0-emitlump)*(1d0-grd_fcoef(ic))*caplump + &
++       doplump
+   if(trn_isddmcanlog) then
+      denom = denom+grd_fcoef(ic)*caplump
+   endif
+@@ -256,9 +266,6 @@
+ !
+ !-- check for census
+   if (tcensus < tau) then
+-!-- sample wavelength
+-     call rnd_r(r1,rndstate)
+-     wl = 1d0/(r1*grp_wlinv(ig+1) + (1d0-r1)*grp_wlinv(ig))
+      ptcl2%stat = 'cens'
+      return
+   endif
+@@ -277,6 +284,13 @@
+      pa = 0d0
+   endif
+ 
++!-- redshift
++  if(grd_isvelocity) then
++     pdop = doplump*denom
++  else
++     pdop = 0d0
++  endif
++
+ !-- update specarr cache only when necessary. this is slow
+   if(r1>=pa .and. r1<pa+sum(probleak) .and. speclump>0d0 .and. &
+         iand(cache%istat,2)==0) then
+@@ -291,8 +305,55 @@
+      ptcl2%stat = 'dead'
+      edep = e
+ 
++!-- doppler shift
++  elseif (r1>=pa .and. r1<pa+pdop) then
++
++     if(glump==0) then
++        iiig = ig
++     else
++!-- sample group
++        call rnd_r(r1,rndstate)
++        denom2 = 0d0
++        help = 1d0/doplump
++        do iig=1,glump
++           iiig = glumps(iig)
++           if(iiig == grp_ng) cycle
++           if(grd_cap(iiig+1,ic)*dist >= trn_taulump) cycle
++           specig = cache%specarr(iiig)
++           resdopleak = dopspeccalc(grd_tempinv(ic),iiig)/(pc_c*tsp_t)
++           denom2 = denom2+resdopleak*speclump*help
++           if(denom2>r1) exit
++        enddo
++     endif
++
++!-- reshift particle in this group
++     ig = iiig+1
++     wl = grp_wl(ig)
++     ig = min(ig,grp_ng)
++
++!-- method changes to IMC
++     if((grd_sig(ic)+grd_cap(ig,ic))*dist < trn_tauddmc) then
++        ptcl2%itype = 1
++!-- direction sampled isotropically
++        call rnd_r(r1,rndstate)
++        mu = 1d0-2d0*r1
++!-- position sampled uniformly
++        call rnd_r(r1,rndstate)
++        x = (r1*grd_xarr(ix+1)**3 + (1.0-r1)*grd_xarr(ix)**3)**(1.0/3.0)
++!-- must be inside cell
++        x = min(x,grd_xarr(ix+1))
++        x = max(x,grd_xarr(ix))
++!-- velocity effects accounting
++        mu = (mu+x*cinv)/(1.0+x*mu*cinv)
++        wl = wl*(1.0-x*mu*cinv)
++        help = 1d0/(1.0-x*mu*cinv)
++        totevelo = totevelo+e*(1d0 - help)
++        e = e*help
++        e0 = e0*help
++     endif
++
+ !-- left leakage sample
+-  elseif (r1>=pa .and. r1<pa+probleak(1)) then
++  elseif (r1>=pa+pdop .and. r1<pa+pdop+probleak(1)) then
+      ptcl2%idist = -3
+ !{{{
+ !-- checking if at inner bound
+@@ -370,7 +431,7 @@
+ 
+ 
+ !-- right leakage sample
+-  elseif (r1>=pa+probleak(1) .and. r1<pa+sum(probleak)) then
++  elseif (r1>=pa+pdop+probleak(1) .and. r1<pa+pdop+sum(probleak)) then
+      ptcl2%idist = -4
+ !!{{{
+ !-- checking if at outer bound
+@@ -407,13 +468,14 @@
+         x=grd_xarr(grd_nx+1)
+ !-- changing from comoving frame to observer frame
+         if(grd_isvelocity) then
+-           help = 1d0+mu*x*cinv
++           mu = (mu+x*cinv)/(1d0+x*mu*cinv)
++           mu = min(mu,1d0)
++           help = 1d0/(1d0-mu*x*cinv)
+ !-- velocity effects accounting
+            totevelo = totevelo+e*(1d0 - help)
+            wl = wl/help
+            e = e*help
+            e0 = e0*help
+-           mu = (mu+x*cinv)/(1d0+x*mu*cinv)
+         endif
+ !-- observer time correction
+         ptcl%t=ptcl%t-mu*x*thelp*cinv
+diff --git a/TRANSPORT1/transport11.f90 b/TRANSPORT1/transport11.f90
+--- a/TRANSPORT1/transport11.f90
++++ b/TRANSPORT1/transport11.f90
+@@ -65,7 +65,7 @@
+   eraddens = 0d0
+   eamp = 0d0
+ !
+-!-- setting vel-grid helper variables  
++!-- setting vel-grid helper variables
+   if(grd_isvelocity) then
+ !-- calculating initial transformation factors
+      elabfact = 1d0 - mu*x*cinv
+@@ -107,7 +107,7 @@
+      dthm = -log(r1)*thelpinv/(elabfact*grd_sig(ic))
+   else
+      dthm = far
+-  endif  
++  endif
+ !
+ !-- effective collision distance
+   if(grd_cap(ig,ic)<=0d0) then
+@@ -147,7 +147,7 @@
+      return
+   endif
+ 
+-!-- updating position, angle  
++!-- updating position, angle
+   xold = x
+   x = sqrt(x**2 + d**2 + 2d0*d*x*mu)
+   muold = mu
+@@ -168,7 +168,7 @@
+           d*thelp*cinv*tsp_dtinv
+   else
+ !-- nonanalog energy density
+-     if(grd_fcoef(ic)*grd_cap(ig,ic)*dx(ix)*thelp>1d-6) then     
++     if(grd_fcoef(ic)*grd_cap(ig,ic)*dx(ix)*thelp>1d-6) then
+         eraddens = e* &
+              (1d0-exp(-grd_fcoef(ic)*elabfact * &
+              grd_cap(ig,ic)*d*thelp)) * &
+@@ -205,9 +205,6 @@
+   if(d==dthm.or.d==dcol) then
+      call rnd_r(r1,rndstate)
+      mu = 1d0-2d0*r1
+-     if(abs(mu)<0.0000001d0) then
+-        mu = 0.0000001d0
+-     endif
+ !-- checking velocity dependence
+      if(grd_isvelocity) mu=(mu+x*cinv)/(1d0+x*mu*cinv)
+   elseif(d==db) then
+@@ -227,7 +224,7 @@
+ !-- checking velocity dependence
+      if(grd_isvelocity) then
+ !-- lab wavelength
+-        wl = wl*(1d0-mu*x*cinv)/elabfact        
++        wl = wl*(1d0-mu*x*cinv)/elabfact
+         help = elabfact/(1d0-mu*x*cinv)
+ !-- velocity effects accounting
+         totevelo=totevelo+e*(1d0-help)
+@@ -286,7 +283,7 @@
+               e = e*(1d0-x*mu*cinv)
+               e0 = e0*(1d0-x*mu*cinv)
+            endif
+-           wl = 0d0 !workaround ifort 13.1.3 bug
++           !wl = 0d0 !workaround ifort 13.1.3 bug
+         else
+ !-- uniformly in new group
+            call rnd_r(r1,rndstate)
+@@ -295,7 +292,7 @@
+            if(grd_isvelocity) wl = wl*(1d0-x*mu*cinv)
+         endif
+      endif
+-     
++
+ !
+ !-- outer radial bound
+   elseif(d==db .and. ixnext>ix) then
+@@ -307,7 +304,7 @@
+ !-- IMC in adjacent cell
+         x = grd_xarr(ix+1)
+         ix = ix+1
+-        ic = grd_icell(ix,iy,iz)    
++        ic = grd_icell(ix,iy,iz)
+      else
+ !-- DDMC in adjacent cell
+         if(grd_isvelocity) then
+@@ -435,7 +432,7 @@
+   else
+ !    stop 'transport11: invalid distance'
+      ierr = 17
+-     return     
++     return
+   endif
+ 
+ end subroutine transport11
+diff --git a/gridmod.f b/gridmod.f
+--- a/gridmod.f
++++ b/gridmod.f
+@@ -46,7 +46,7 @@
+       real*4,allocatable :: grd_cap(:,:) !(ng,ncell)
+ 
+ c-- leakage opacities
+-      real*8,allocatable :: grd_opaclump(:,:) !(9,ncell) leak(6),speclump,caplump,igemitmax
++      real*8,allocatable :: grd_opaclump(:,:) !(10,ncell) leak(6),speclump,caplump,igemitmax,doplump
+       real*8,allocatable :: grd_tempinv(:) !(ncell)
+ c-- scattering coefficient
+       real*8,allocatable :: grd_sig(:) !(ncell) !grey scattering opacity
+@@ -77,7 +77,7 @@
+ c
+       integer,allocatable :: grd_nvol(:) !(ncell) number of thermal source particles generated per cell
+       integer,allocatable :: grd_nvolinit(:) !(ncell) number of initial (t=tfirst) particles per cell
+-c      
++c
+       real*8,allocatable :: grd_emit(:) !(ncell) amount of fictitious thermal energy emitted per cell in a time step
+       real*8,allocatable :: grd_emitex(:) !(ncell) amount of external energy emitted per cell in a time step
+       real*8,allocatable :: grd_evolinit(:) !(ncell) amount of initial energy per cell per group
+@@ -168,7 +168,7 @@
+       allocate(grd_numcensddmc(grd_ncell))
+ c
+ c-- ndim=4 alloc
+-      allocate(grd_opaclump(9,grd_ncell))
++      allocate(grd_opaclump(10,grd_ncell))
+       allocate(grd_emitprob(grd_nep,grd_ncell))
+ c-- ndim=4 alloc
+       allocate(grd_cap(ng,grd_ncell))
+diff --git a/groupmod.f b/groupmod.f
+--- a/groupmod.f
++++ b/groupmod.f
+@@ -13,7 +13,7 @@
+        integer :: ic=0
+        integer :: nlump !number of groups in the lump
+        real*8 :: capgreyinv
+-       real*8 :: speclump,emitlump,caplump
++       real*8 :: speclump,emitlump,caplump,doplump
+        real*8,pointer :: specarr(:) !(grp_ng)
+        integer :: istat
+        integer*2,pointer :: glumps(:) !(grp_ng)
+@@ -68,7 +68,7 @@
+ * 10 5
+ *  1 1 1e-5 32e-5
+ *  2 5 1e-5 2e-5 4e-5 8e-5 16e-5 32e-5
+-* 
++*
+ ************************************************************************
+       real*8 :: help
+       real*8,allocatable :: wlstore(:)
+@@ -139,6 +139,28 @@
+       end function specint0
+ c
+ c
++      elemental function dopspeccalc(tempinv,ig)
++c     ---------------------------------------!{{{
++      use physconstmod
++      implicit none
++      real*8 :: dopspeccalc
++      real*8,intent(in) :: tempinv
++      integer,intent(in) :: ig
++************************************************************************
++* Calculate x**3/(exp(x) - 1), where x = h*c/(wl*k*T)
++************************************************************************
++      real*8,parameter :: ftpi4=15d0/pc_pi**4
++      real*8,parameter :: hck=pc_h*pc_c/pc_kb
++      real*8 :: x
++c
++      x = hck*tempinv
++      x = x*grp_wlinv(ig+1)
++c
++      dopspeccalc = ftpi4 * x**4/(exp(x) - 1d0)
++c!}}}
++      end function dopspeccalc
++c
++c
+       pure subroutine specintv(tempinv,n,ss,offset,mode,mask,maskval)
+ c     -----------------------------------------------!{{{
+       use physconstmod
+diff --git a/mpimod_mpi.f b/mpimod_mpi.f
+--- a/mpimod_mpi.f
++++ b/mpimod_mpi.f
+@@ -458,8 +458,8 @@
+ c
+       allocate(snd(9,grd_ndd))
+       snd = grd_opaclump(:,grd_idd1:grd_idd1+grd_ndd-1)
+-      call mpi_allgatherv(snd,9*grd_ndd,MPI_REAL8,
+-     &  grd_opaclump,9*counts,9*displs,MPI_REAL8,
++      call mpi_allgatherv(snd,10*grd_ndd,MPI_REAL8,
++     &  grd_opaclump,10*counts,10*displs,MPI_REAL8,
+      &  MPI_COMM_WORLD,ierr)
+       deallocate(snd)
+ c
+diff --git a/particle_advance.f90 b/particle_advance.f90
+--- a/particle_advance.f90
++++ b/particle_advance.f90
+@@ -121,7 +121,7 @@
+ !$omp    nstepddmc,nstepimc,nmethodswap,ncensimc,ncensddmc,ndist) &
+ !$omp reduction(max:nstepmax)
+ 
+-!-- thread id                                                               
++!-- thread id
+ !$ iomp = omp_get_thread_num()
+ 
+ !-- each thread uses its own rnd stream
+@@ -190,7 +190,7 @@
+      case(11)
+         help = thelp*dx(ix)
+      case(1)
+-        help = thelp*min(dx(ix),xm(ix)*dyac(iy),xm(ix)*ym(iy)*dz(iz)) 
++        help = thelp*min(dx(ix),xm(ix)*dyac(iy),xm(ix)*ym(iy)*dz(iz))
+      case(2)
+         help = thelp*min(dx(ix),dy(iy),xm(ix)*dz(iz))
+      case(3)
+@@ -336,7 +336,7 @@
+         endif
+ 
+ !-- check exit status
+-        if(ierr/=0 .or. ptcl2%istep>1000) then  !istep checker may cause issues in high-res simulations
++        if(ierr/=0) then !.or. ptcl2%istep>1000) then  !istep checker may cause issues in high-res simulations
+            write(0,*) 'pa: ierr,ipart,istep,idist:',ierr,ptcl2%ipart,ptcl2%istep,ptcl2%idist
+            write(0,*) 'dist:',ptcl2%dist
+            write(0,*) 't,taus,tauc:',ptcl%t,grd_sig(ic)*help,grd_cap(ig,ic)*help
+@@ -398,24 +398,9 @@
+ !
+ !-- Redshifting DDMC particle energy weights and wavelengths
+         if(ptcl2%itype==2 .and. grd_isvelocity) then
+-!-- r   edshifting energy weight!{{{
+            tot_evelo = tot_evelo + e*(1d0-exp(-tsp_dt/tsp_t))
+            e = e*exp(-tsp_dt/tsp_t)
+            e0 = e0*exp(-tsp_dt/tsp_t)
+-           !
+-!
+-!-- f   ind group
+-           ig = binsrch(wl,grp_wl,grp_ng+1,.false.)
+-!
+-           call rnd_r(r1,rndstate)
+-           x1 = grd_cap(ig,ic)
+-           x2 = grp_wl(ig)/(pc_c*tsp_t*(grp_wl(ig+1)-grp_wl(ig)))
+-           if(r1<x2/(x1+x2)) then
+-              call rnd_r(r1,rndstate)
+-              wl = 1d0/(r1*grp_wlinv(ig+1)+(1d0-r1)*grp_wlinv(ig))
+-              wl = wl*exp(tsp_dt/tsp_t)
+-           endif
+-           !!}}}
+         endif
+ 
+         if(grd_isvelocity.and.ptcl2%itype==1) then

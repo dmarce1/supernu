@@ -1,6 +1,6 @@
 !This file is part of SuperNu.  SuperNu is released under the terms of the GNU GPLv3, see COPYING.
 !Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
-subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
+pure subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
 
   use randommod
   use miscmod
@@ -34,12 +34,6 @@ subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
   real*8 :: r1, r2, thelp
   real*8 :: denom, denom2, denom3
   real*8 :: ddmct, tau, tcensus, pa
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
-  real*8 :: v0
-  real*8 :: velopacleak(2), flxopacleak(2), help2
-  integer :: icxp, icxm
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !-- lumped quantities -----------------------------------------
 
   real*8 :: emitlump, caplump
@@ -61,14 +55,8 @@ subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
 !-- statement function
   integer :: l
   real*8 :: dx,dx3
-
   dx(l) = grd_xarr(l+1) - grd_xarr(l)
   dx3(l) = grd_xarr(l+1)**3 - grd_xarr(l)**3
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
-  real*8,pointer :: vx
-  vx => ptcl2%vx
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
   ix => ptcl2%ix
   ic => ptcl2%ic
@@ -78,8 +66,6 @@ subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
   e => ptcl%e
   e0 => ptcl%e0
   wl => ptcl%wl
-
-  call hydro_velocity_at11(x, vx, ix, tsp_t)
 
   capgreyinv => cache%capgreyinv
   speclump => cache%speclump
@@ -106,11 +92,7 @@ subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
   if(ic/=cache%ic) then
      cache%ic = ic!{{{
      cache%istat = 0 !specarr is not cached yet
-     if( grd_capgrey(ic) .eq. 0d0 ) then
-       capgreyinv = 0d0
-     else
-       capgreyinv = 1d0/grd_capgrey(ic)
-     endif
+     capgreyinv = max(1d0/grd_capgrey(ic),0d0) !catch nans
 
 !
 !-- lump testing ---------------------------------------------
@@ -183,7 +165,7 @@ subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
   if(glump>0) then
 !-- leakage opacities
      opacleak = grd_opaclump(1:2,ic)
-!!-- calculating unlumped values
+!-- calculating unlumped values
   else
 !{{{
 !-- inward
@@ -204,9 +186,6 @@ subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
         opacleak(1)=2.0d0*(thelp*grd_xarr(ix))**2/ &
              (mfphelp*thelp**3*dx3(ix))
      endif
-
-
-
 !
 !-- outward
      if(ix==grd_nx) then
@@ -231,77 +210,6 @@ subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
              (mfphelp*thelp**3*dx3(ix))
      endif!}}}
   endif
-
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
-  if(glump>0) then
-!-- inward
-     if(ix/=1) l = grd_icell(ix-1,iy,iz)
-     if(ix==1) then
-        opacleak(1) = 0d0
-     elseif((grd_cap(ig,l)+ &
-          grd_sig(l))*dx(ix-1)*thelp<trn_tauddmc) then
-!-- DDMC interface
-        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dx(ix)*thelp
-        ppl = 4d0/(3d0*mfphelp+6d0*pc_dext)
-        flxopacleak(1)= 1.5d0*ppl/(thelp*dx(ix))
-     else
-!-- DDMC interior
-        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dx(ix)+&
-             (grd_sig(l)+grd_cap(ig,l))*dx(ix-1))*thelp
-        flxopacleak(1)=2.0d0/(mfphelp*thelp*dx(ix))
-     endif
-!
-!-- outward
-     if(ix==grd_nx) then
-        lhelp = .true.
-     else
-        l = grd_icell(ix+1,iy,iz)
-        lhelp = (grd_cap(ig,l)+ &
-           grd_sig(l))*dx(ix+1)*thelp<trn_tauddmc
-     endif
-!
-     if(lhelp) then
-!-- DDMC interface
-        mfphelp = (grd_cap(ig,ic)+grd_sig(ic))*dx(ix)*thelp
-        ppr = 4d0/(3d0*mfphelp+6d0*pc_dext)
-        flxopacleak(2)=1.5d0*ppr/(thelp*dx(ix))
-     else
-!-- DDMC interior
-        mfphelp = ((grd_sig(ic)+grd_cap(ig,ic))*dx(ix)+&
-             (grd_sig(l)+grd_cap(ig,l))*dx(ix+1))*thelp
-        flxopacleak(2)=2.0d0/(mfphelp*thelp*dx(ix))
-     endif!}}}
-  else
-     if( grd_xarr(ix) .ne. 0d0) then
-       flxopacleak(1) = opacleak(1) * (dx3(ix)) / (dx(ix) * grd_xarr(ix)**2)
-     else
-       flxopacleak(1) = 0d0
-     endif
-     if( grd_xarr(ix+1) .ne. 0d0) then
-       flxopacleak(2) = opacleak(2) * (dx3(ix)) / (dx(ix) * grd_xarr(ix+1)**2)
-     else
-       flxopacleak(2) = 0d0
-     endif
-  endif
-  flxopacleak = flxopacleak * (1d0/3d0)
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
-  if( grd_hydro_on ) then
-    v0 = grd_v(ix,iy,iz,1)
-    if( grd_isvelocity ) then
-      v0 = v0 - (grd_xarr(ix+1)+grd_xarr(ix)) / (2d0)
-    endif
-    v0 = v0 / pc_c
-    velopacleak(2) = max(v0,0d0)*(grd_xarr(ix+1))**2/ &
-             (thelp*dx3(ix))
-    velopacleak(1) = min(v0,0d0)*(grd_xarr(ix))**2/ &
-             (thelp*dx3(ix))
-    opacleak = opacleak + velopacleak
-  endif
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !
 !-------------------------------------------------------------
 !
@@ -338,22 +246,6 @@ subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
 !!}}}
   endif
 
-
-  help2 = eraddens * ddmct / 2d0 * dx(ix) * thelp
-  if( ix .gt. 1 ) then
-    icxm = grd_icell(ix-1,iy,iz)
-    grd_momdep(ix-1,iy,iz,1)=grd_momdep(ix-1,iy,iz,1) - &
-                                     help2 * (grd_sig(icxm)+grd_cap(ig,icxm)) * flxopacleak(1)
-     grd_momdep(ix,iy,iz,1)=grd_momdep(ix,iy,iz,1) - &
-       help2 * (grd_sig(ic)+grd_cap(ig,ic)) * flxopacleak(1)
-   endif
-   if( ix .lt. grd_nx ) then
-     icxp = grd_icell(ix+1,iy,iz)
-     grd_momdep(ix+1,iy,iz,1)=grd_momdep(ix+1,iy,iz,1) + &
-                                     help2 * (grd_sig(icxp)+grd_cap(ig,icxp)) * flxopacleak(2)
-   endif
-   grd_momdep(ix,iy,iz,1)=grd_momdep(ix,iy,iz,1) + &
-                                     help2 * (grd_sig(ic)+grd_cap(ig,ic)) * flxopacleak(2)
 
 !-- updating particle time
   ptcl%t = ptcl%t+ddmct
@@ -419,14 +311,7 @@ subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
 !-- sample group
            call rnd_r(r1,rndstate)
            denom2 = 0d0
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MOD
-!  Old code
-!          help = 1d0/opacleak(1)
-!  New code
-           help = 1d0/(opacleak(1) - velopacleak(1))
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
+           help = 1d0/opacleak(1)
            do iig=1,glump
               iiig = glumps(iig)
               specig = cache%specarr(iiig)
@@ -464,38 +349,23 @@ subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
            call rnd_r(r2,rndstate)
            mu = -max(r1,r2)
 !-- doppler and aberration corrections
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
-! Old code
-!           if(grd_isvelocity) then
-!              mu = (mu+x*cinv)/(1.0+x*mu*cinv)
+           if(grd_isvelocity) then
+              mu = (mu+x*cinv)/(1.0+x*mu*cinv)
 !-- velocity effects accounting
-!              help = 1d0/(1.0-x*mu*cinv)
-!              totevelo = totevelo+e*(1d0 - help)
-!
-!              e = e*help
-!              e0 = e0*help
-!              wl = wl*(1.0-x*mu*cinv)
-!           endif
-! New code
-           if(grd_isvelocity.or.grd_hydro_on) then
-              call hydro_velocity_at11(x, vx, ix, tsp_t)
-              mu = (mu+vx*cinv)/(1.0+vx*mu*cinv)
-!-- velocity effects accounting
-              help = 1d0/(1.0-vx*mu*cinv)
+              help = 1d0/(1.0-x*mu*cinv)
               totevelo = totevelo+e*(1d0 - help)
 !
               e = e*help
               e0 = e0*help
-              wl = wl*(1.0-vx*mu*cinv)
+              wl = wl*(1.0-x*mu*cinv)
            endif
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
         endif
+!
 !-- update particle
         ix = ix-1
         ic = grd_icell(ix,iy,iz)
         ig = iiig
+
      endif!}}}
 
 
@@ -515,15 +385,7 @@ subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
 !-- sample group
            call rnd_r(r1,rndstate)
            denom2 = 0d0
-
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MOD
-!  Old code
-!           help = 1d0/opacleak(2)
-!  New code
-           help = 1d0/(opacleak(2)-velopacleak(2))
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
+           help = 1d0/opacleak(2)
            do iig=1,glump
               iiig=glumps(iig)
               specig = cache%specarr(iiig)
@@ -544,34 +406,17 @@ subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
 !-- position
         x=grd_xarr(grd_nx+1)
 !-- changing from comoving frame to observer frame
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
-! Old code
-!        if(grd_isvelocity) then
-!           help = 1d0+mu*x*cinv
-!-- velocity effects accounting
-!           totevelo = totevelo+e*(1d0 - help)
-!           wl = wl/help
-!           e = e*help
-!           e0 = e0*help
-!           mu = (mu+x*cinv)/(1d0+x*mu*cinv)
-!        endif
-! New code
-        if(grd_isvelocity.or.grd_hydro_on) then
-           call hydro_velocity_at11(x, vx, ix, tsp_t)
-           help = 1d0+mu*vx*cinv
+        if(grd_isvelocity) then
+           help = 1d0+mu*x*cinv
 !-- velocity effects accounting
            totevelo = totevelo+e*(1d0 - help)
            wl = wl/help
            e = e*help
            e0 = e0*help
-           mu = (mu+vx*cinv)/(1d0+vx*mu*cinv)
+           mu = (mu+x*cinv)/(1d0+x*mu*cinv)
         endif
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !-- observer time correction
         ptcl%t=ptcl%t-mu*x*thelp*cinv
-!-- LSU - subtract momentum
-        grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) - e * mu / pc_c
         return
 !
 !!}}}
@@ -585,13 +430,7 @@ subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
 !-- sample group
            call rnd_r(r1,rndstate)
            denom2 = 0d0
-           !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MOD
-!  Old code
-!           help = 1d0/opacleak(2)
-!  New code
-           help = 1d0/(opacleak(2)-velopacleak(2))
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+           help = 1d0/opacleak(2)
            do iig=1,glump
               iiig = glumps(iig)
               specig = cache%specarr(iiig)
@@ -631,32 +470,16 @@ subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
            mu = max(r1,r2)
 !
 !-- doppler and aberration corrections
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
-! Old code
-!           if(grd_isvelocity) then
-!              mu = (mu+x*cinv)/(1.0+x*mu*cinv)
+           if(grd_isvelocity) then
+              mu = (mu+x*cinv)/(1.0+x*mu*cinv)
 !-- velocity effects accounting
-!              help = 1d0/(1.0-x*mu*cinv)
-!              totevelo = totevelo+e*(1d0 - help)
-!
-!              e = e*help
-!              e0 = e0*help
-!              wl = wl*(1.0-x*mu*cinv)
-!           endif
-! New code
-           if(grd_isvelocity.or.grd_hydro_on) then
-              call hydro_velocity_at11(x, vx, ix, tsp_t)
-              mu = (mu+vx*cinv)/(1.0+vx*mu*cinv)
-!-- velocity effects accounting
-              help = 1d0/(1.0-vx*mu*cinv)
+              help = 1d0/(1.0-x*mu*cinv)
               totevelo = totevelo+e*(1d0 - help)
 !
               e = e*help
               e0 = e0*help
-              wl = wl*(1.0-vx*mu*cinv)
+              wl = wl*(1.0-x*mu*cinv)
            endif
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         endif
 !
 !-- update particle
@@ -685,7 +508,7 @@ subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
 !-- don't sample, it will end up in the lump anyway
         else
 !-- always put this in the single most likely group
-           iiig = max(1,nint(grd_opaclump(9,ic)))
+           ig = nint(grd_opaclump(9,ic))
            return
         endif
      else
@@ -723,42 +546,18 @@ subroutine diffusion11(ptcl,ptcl2,cache,rndstate,edep,eraddens,totevelo,ierr)
         x = min(x,grd_xarr(ix+1))
         x = max(x,grd_xarr(ix))
 !-- doppler and aberration corrections
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-! LSU MODIFICATION
-! Old code
-!        if(grd_isvelocity) then
-!           mu = (mu+x*cinv)/(1.0+x*mu*cinv)
+        if(grd_isvelocity) then
+           mu = (mu+x*cinv)/(1.0+x*mu*cinv)
 !-- velocity effects accounting
-!           help = 1d0/(1d0-x*mu*cinv)
-!           totevelo = totevelo+e*(1d0 - help)
-!
-!           e = e*help
-!           e0 = e0*help
-!           wl = wl*(1.0-x*mu*cinv)
-!        endif
-! New code
-        if(grd_isvelocity.or.grd_hydro_on) then
-           call hydro_velocity_at11(x, vx, ix, tsp_t)
-           mu = (mu+vx*cinv)/(1.0+vx*mu*cinv)
-!-- velocity effects accounting
-           help = 1d0/(1d0-vx*mu*cinv)
+           help = 1d0/(1d0-x*mu*cinv)
            totevelo = totevelo+e*(1d0 - help)
 !
            e = e*help
            e0 = e0*help
-           wl = wl*(1.0-vx*mu*cinv)
+           wl = wl*(1.0-x*mu*cinv)
         endif
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      endif
 !}}}
-  endif
-
-  call hydro_velocity_at11(x, vx, ix, tsp_t)
-
-
-!-- LSU - subtract momentum
-  if( ptcl2%itype .eq. 1 ) then
-    grd_momdep(ix,iy,iz,:) = grd_momdep(ix,iy,iz,:) - e * mu / pc_c
   endif
 
 end subroutine diffusion11

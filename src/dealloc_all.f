@@ -13,10 +13,6 @@ c     ----------------------
       use sourcemod
       use randommod
       use timestepmod
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c     MODIFICATION BY LSU
-      use hydromod
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       implicit none
 ************************************************************************
 * deallocate all that was used till the end of the program. Any
@@ -24,10 +20,6 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 * with earlier.  This helps to catch memory leaks! (drr)
 ************************************************************************
 c-- ionsmod
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c     MODIFICATION BY LSU
-      call hydromod_dealloc
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       call ions_dealloc
       call gas_dealloc
       call grid_dealloc

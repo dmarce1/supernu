@@ -144,31 +144,12 @@ c
       end subroutine ions_dealloc
 c
 c
-
+c
       subroutine ions_solve_eos(natomfr,temp,ndens,nelec,iconv)
 c     --------------------------------------------------------!{{{
       use physconstmod
       use miscmod, only:warn
       implicit none
-      real*8 :: pot
-      real*8,intent(in) :: natomfr(nelem)
-      real*8,intent(in) :: temp,ndens
-      real*8,intent(inout) :: nelec
-      integer,intent(out) :: iconv
-
-      call ions_solve_eos_energy(natomfr,temp,ndens,nelec,iconv,pot)
-
-      end subroutine
-
-c
-      subroutine ions_solve_eos_energy
-     &          (natomfr,temp,ndens,nelec,iconv,pot_i)
-c     --------------------------------------------------------!{{{
-      use physconstmod
-      use gasmod
-      use miscmod, only:warn
-      implicit none
-      real*8,intent(out) :: pot_i
       real*8,intent(in) :: natomfr(nelem)
       real*8,intent(in) :: temp,ndens
       real*8,intent(inout) :: nelec
@@ -186,9 +167,9 @@ c     --------------------------------------------------------!{{{
 * - nelec: number of electrons relative to the total number of atoms,
 *          where sum(natomfr)==1
 ************************************************************************
-      integer,parameter :: nconv=400 !max number of convergence iterations
+      integer,parameter :: nconv=40 !max number of convergence iterations
       real*8,parameter :: acc=1d-8 !accuracy requirment for convergence
-      integer :: ii,iz,iprev,ihelp,jj
+      integer :: ii,iz,iprev,ihelp
       real*8 :: kti,sahac,sahac2 !constants
       real*8 :: help
 c
@@ -198,16 +179,6 @@ c
       end type nelec_conv
       type(nelec_conv) :: nec
       real*8 :: nelec_new,err,dxdy,ynew
-
-      nelec = max(nelec,1d-3)
-
-c      if( temp .lt. 1d3 ) then
-c        nelec = 0d0
-c        pot_ex = 0d0
-c        pot_i = 0d0
-c        return
-c      endif
-
 c
 c-- constant
       kti = 1d0/(pc_kb*temp)
@@ -218,29 +189,12 @@ c-- default values
 c
 c-- sanity check
       if(nelem==0) stop 'ions_solve_eos: nelem error'
-
-      help = kti*ion_el(1)%i(1)%e
-      pot_i = 0d0
-
-c      if( help .gt. 50.0d0 ) then
-c         nelec = 0d0
-c         do iz=1,nelem
-c           ion_el(iz)%i(1)%n = 1d0
-c           do ii=2,ion_el(iz)%ni
-c             ion_el(iz)%i(ii)%n = 0d0
-c           enddo !ii
-c         enddo
-c         return
-c      endif
-
-
 c
 c
 c-- evaluate partition functions: Q = Sum_i(g_i exp(e_i/kt)
 c--
       do iz=1,nelem
        do ii=1,ion_el(iz)%ni-1
-c        ion_el(iz)%i(ii)%q = ion_el(iz)%i(ii)%glev(1)
         ion_el(iz)%i(ii)%q = sum(ion_el(iz)%i(ii)%glev(:)*
      &    exp(-kti*ion_el(iz)%i(ii)%elev(:))) !elev is h*c*chi, with [chi]=1/cm
        enddo !ii
@@ -256,7 +210,6 @@ c        ion_el(iz)%i(ii)%q = ion_el(iz)%i(ii)%glev(1)
 !      enddo
 !     endif
       enddo !iz
-
 c
 c
 c-- repeat saha solver until convergence in nelec is achieved
@@ -265,13 +218,7 @@ c--
       do iconv=1,nconv !max number of convergence iterations
        sahac2 = 2d0/(nelec*ndens)*sahac !constant for saha_nelec
 c-- solve saha equations for each element
-c       write(*,*) iconv, nelec
        call saha_nelec(nelec_new)
-       if( nelec_new .le. 1d-10 ) then
-          nelec = 1d-10
-c          write(*,*) 'nele = zero'
-          exit
-       endif
        err = nelec/nelec_new - 1d0
 !      write(6,*) iconv,nelec,nelec_new,err,iprev !useful debug output
 c
@@ -284,7 +231,6 @@ c
 c-- save results: replace the value on the same side of zero
        ihelp = maxloc(err*nec%err(:),dim=1) !equal signs yield positive number
        nec%nel(ihelp) = nelec
-c       write(*,*) '!!!!!11', nelec
        nec%err(ihelp) = err
 c
 c-- check bracket
@@ -324,36 +270,14 @@ c       nelec = min(1d5*nelec_new,nelec)  !limit
 c       nelec = max(1d-5*nelec_new,nelec) !limit
        endif
       enddo !iconv
-      if(iconv.gt.nconv) then
-        write(*,*) acc, nelec, nelec_new, temp
-        call warn('ions_solve_eos',
+      if(iconv.gt.nconv) call warn('ions_solve_eos',
      &  'accuracy in nelec not reached')
-      endif
-
-
-
-c      pot_ex = 0d0
-      do iz=1,nelem
-       do ii=1,ion_el(iz)%ni
-c        pot_ex = pot_ex+sum(ion_el(iz)%i(ii)%n*ion_el(iz)%i(ii)%elev(:)*
-c     &                  ion_el(iz)%i(ii)%glev(:)*
-c     &                  exp(-kti*ion_el(iz)%i(ii)%elev(:))) /
-c     &                  ion_el(iz)%i(ii)%q * natomfr(iz)
-        if( ii .gt. 1 ) then
-          pot_i = pot_i + ion_el(iz)%i(ii)%n *
-     &    sum(ion_el(iz)%i(1:ii-1)%e) * natomfr(iz)
-        endif
-       enddo !ii
-      enddo !iz
-      pot_i = pot_i * ndens
-c      pot_ex = pot_ex * ndens
-c      pot = 0d0
 c
 c-- print ionization balance
-c      do iz=1,nelem
+c     do iz=1,nelem
 c      ihelp = ion_el(iz)%ni
-c      write(*,'(i3,1p,31e12.4)') iz,(ion_el(iz)%i(ii)%n,ii=1,ihelp)
-c      enddo
+c      write(7,'(i3,1p,31e12.4)') iz,(ion_el(iz)%i(ii)%n,ii=1,ihelp)
+c     enddo
 c
       contains
 c
@@ -375,32 +299,18 @@ c-- recursively compute n_(i+1)
        do istart=1,nion-1
         ion_el(iz)%i(istart)%n = 1d0 !use arbitrary start value for n_1
         do ii=istart+1,nion
-c        write(*,*)  sahac2,exp(-kti*ion_el(iz)%i(ii-1)%e),
-c     &     ion_el(iz)%i(ii-1)%n,ion_el(iz)%i(ii)%q,ion_el(iz)%i(ii-1)%q
          help = sahac2*exp(-kti*ion_el(iz)%i(ii-1)%e)*
      &     ion_el(iz)%i(ii-1)%n*ion_el(iz)%i(ii)%q/ion_el(iz)%i(ii-1)%q
-         if( help/=help .or. help >huge(nsum)) then
-           ion_el(iz)%i(ii)%n = 1d0
-           exit
-         else
-           ion_el(iz)%i(ii)%n = help
-         endif
+         ion_el(iz)%i(ii)%n = help
         enddo !ii
-        if(help<huge(nsum)) then
-          exit
-        endif
+        if(help<huge(nsum)) exit  !no overflow, we're done
        enddo !istart
-c       if( ion_el(iz)%i(nion)%n /= ion_el(iz)%i(nion)%n ) then
-c          write(*,*) 'yes'
-c          ion_el(iz)%i(nion)%n = ndens
-c          ion_el(iz)%i(1:nion-1)%n = 0d0
-c       endif
 c
 c-- normalize n_i
        nsum = sum(ion_el(iz)%i(:nion)%n)
        if(nsum/=nsum .or. nsum>huge(nsum) .or. nsum<tiny(nsum)) then !verify nsum
         write(6,*) 'nsum,iz,nion,iconv=',nsum,iz,nion,iconv
-        write(*,*) 'sahac,sahac2,kti,temp',sahac,sahac2,kti,temp
+        write(6,*) 'sahac,sahac2,kti',sahac,sahac2,kti
         write(6,*) 'nelec,ndens',nelec,ndens
         write(6,*) 'n'
         write(6,*) (ion_el(iz)%i(ii)%n,ii=1,nion)
@@ -408,8 +318,6 @@ c-- normalize n_i
         write(6,*) (ion_el(iz)%i(ii)%e,ii=1,nion)
         write(6,*) 'q'
         write(6,*) (ion_el(iz)%i(ii)%q,ii=1,nion)
-        write(6,*) ion_el(iz)%i(:)%n
-        call abort();
         stop 'saha_nelec: nsum invalid'
        endif
        nsum = 1d0/nsum
@@ -431,7 +339,7 @@ c-- compute new electron density
 c
       end subroutine saha_nelec
 c!}}}
-      end subroutine ions_solve_eos_energy
+      end subroutine ions_solve_eos
 c
 c
 c
@@ -535,7 +443,7 @@ c-- store compressed data
        ilast = 0
        ilc = 0
        do l=1,nlevel
-         if(l==nlevel) then
+        if(l==nlevel) then
          ilc = ilc + 1
          ion_el(iz)%i(ii)%elev(ilc) = pc_h*pc_c*chisum/(l - ilast) !convert [cm^-1] to [erg]
          ion_el(iz)%i(ii)%glev(ilc) = gsum

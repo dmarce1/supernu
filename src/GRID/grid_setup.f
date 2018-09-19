@@ -6,10 +6,6 @@ c     ---------------------
       use inputparmod
       use inputstrmod
       use physconstmod
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c     HYDRO LSU
-      use hydromod
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       implicit none
 ************************************************************************
 * Setup the grid on the computational domain
@@ -17,6 +13,12 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       logical :: lexist
       integer :: i,j,k,l,idcell
       real*8 :: help
+c-- statment functions
+      integer :: ll
+      real*8 :: xm,ym,zm
+      xm(ll) = max(abs(grd_xarr(ll)),abs(grd_xarr(ll+1)))
+      ym(ll) = max(abs(grd_yarr(ll)),abs(grd_yarr(ll+1)))
+      zm(ll) = max(abs(grd_zarr(ll)),abs(grd_zarr(ll+1)))
 c
 c-- agnostic grid setup
       grd_xarr = str_xleft
@@ -64,7 +66,6 @@ c
 c-- maximum grid velocity
       select case(grd_igeom)
       case(1,11)
-       write(*,*) grd_nx
        grd_rout = grd_xarr(grd_nx+1)
 c-- cylindrical
       case(2)
@@ -79,7 +80,7 @@ c-- sphere
         do j=1,grd_ny
         do i=1,grd_nx
          if(grd_icell(i,j,k)==grd_ivoid) cycle !void
-         help = grd_xarr(i+1)**2 + grd_yarr(j+1)**2
+         help = grd_xarr(i+1)**2 + ym(j)**2
          grd_rout = max(grd_rout,help)
         enddo
         enddo
@@ -102,7 +103,7 @@ c-- sphere
         do j=1,grd_ny
         do i=1,grd_nx
          if(grd_icell(i,j,k)==grd_ivoid) cycle !void
-         help = grd_xarr(i+1)**2 + grd_yarr(j+1)**2 + grd_zarr(k+1)**2
+         help = xm(i)**2 + ym(j)**2 + zm(k)**2
          grd_rout = max(grd_rout,help)
         enddo
         enddo
@@ -127,66 +128,6 @@ c-- sanity check
 c
 c-- zero amplification-factor energy to begin with
       grd_eamp = 0d0
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c       HYDRO LSU
-          if( grd_isvelocity ) then
-            if(in_test_problem .eq. 0) then
-                do i = 1, grd_nx
-                do j = 1, grd_ny
-                do k = 1, grd_nz
-                  l = grd_icell(i,j,k)
-                  grd_vx(l) = (grd_xarr(i+1) + grd_xarr(i))*0.5d0
-                  grd_v(i,j,k,:) = 0d0
-                  grd_dvdx(i,j,k,:,:) = 0d0
-                  grd_v(i,j,k,1) = grd_vx(l)
-                  grd_dvdx(i,j,k,1,1) = 1d0
-                  if( (grd_igeom .eq. 1) .or. (grd_igeom .eq. 11) ) then
-                    grd_vy(l) = 0d0
-                  else
-                    grd_vy(l) = (grd_yarr(j+1) + grd_yarr(j))*0.5d0
-                    grd_v(i,j,k,2) = grd_vy(l)
-                    grd_dvdx(i,j,k,2,2) = 1d0
-                  endif
-                  if( grd_igeom .eq. 3 ) then
-                    grd_vz(l) = (grd_zarr(k+1) + grd_zarr(k))*0.5d0
-                    grd_v(i,j,k,3) = grd_vz(l)
-                    grd_dvdx(i,j,k,3,3) = 1d0
-                  else
-                    grd_vz(l) = 0d0
-                  endif
-                enddo
-                enddo
-                enddo
-            else
-                do i = 1, grd_nx
-                do j = 1, grd_ny
-                do k = 1, grd_nz
-                  l = grd_icell(i,j,k)
-                  grd_vx(l) = str_vx(i,j,k)
-                  grd_vy(l) = str_vy(i,j,k)
-                  grd_vz(l) = str_vz(i,j,k)
-                enddo
-                enddo
-                enddo
-            end if
-          else
-            grd_vx = 0.0d0
-            grd_vy = 0.0d0
-            grd_vz = 0.0d0
-          endif
-                do i = 1, grd_nx
-                do j = 1, grd_ny
-                do k = 1, grd_nz
-                  l = grd_icell(i,j,k)
-                  grd_vx(l) = str_vx(i,j,k)
-                  grd_vy(l) = str_vy(i,j,k)
-                  grd_vz(l) = str_vz(i,j,k)
-                enddo
-                enddo
-                enddo
-
-
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c-- read preset temperature profiles
       inquire(file='input.temp',exist=lexist)

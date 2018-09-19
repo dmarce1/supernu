@@ -20,12 +20,6 @@ c
       real*8,allocatable :: str_temp(:,:,:) !(nx,ny,nz)
       real*8,allocatable :: str_ye(:,:,:) !(nx,ny,nz)
       real*8,allocatable :: str_massfr(:,:,:,:) !(nabund,nx,ny,nz)
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c     LSU MODIFICATION
-      real*8,allocatable :: str_vx(:,:,:)
-      real*8,allocatable :: str_vy(:,:,:)
-      real*8,allocatable :: str_vz(:,:,:)
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c-- domain compression
       logical :: str_lvoid=.false.  !flag existence of void cells
@@ -76,7 +70,6 @@ c
 c     --------------------------------------------------------!{{{
       use physconstmod
       use miscmod
-      use inputparmod!{{{
       implicit none
       integer,intent(in) :: igeomin,nmpi
       integer,intent(in) :: ndim(3)
@@ -85,7 +78,7 @@ c     --------------------------------------------------------!{{{
 * Read the input structure file
 ************************************************************************
       integer :: i,j,k,l,ierr,nx_r,ny_r,nz_r,ini56,nvar,ncol
-      integer :: jmass,jxleft,jye,jtemp,jvelx,jvely,jvelz
+      integer :: jmass,jxleft,jye,jtemp
       integer :: ncorner,nvoid,ncell,ncpr
       character(2) :: dmy
       character(8),allocatable :: labl(:)
@@ -127,27 +120,15 @@ c-- read labels
       if(ierr/=0) stop 'read_inputstr: input.str fmt err: col labels'
 c
 c-- var pointers
-      jvelx = 0
-      jvely = 0
-      jvelz = 0
       jxleft = 0
       jmass = 0
       jye = 0
       jtemp = 0
       do i=1,nvar
-       if(lcase(trim(labl(i)))=='x_left') then
-          write(*,*) 'Found x_left column'
-          jxleft = i
-       endif
+       if(lcase(trim(labl(i)))=='x_left') jxleft = i
        if(lcase(trim(labl(i)))=='mass') jmass = i
        if(lcase(trim(labl(i)))=='ye') jye = i
        if(lcase(trim(labl(i)))=='temp') jtemp = i
-       if(lcase(trim(labl(i)))=='velx') then
-            write(*,*) 'Found x velocity column'
-            jvelx = i
-       endif
-       if(lcase(trim(labl(i)))=='vely') jvely = i
-       if(lcase(trim(labl(i)))=='velz') jvelz = i
       enddo
       if(jmass==0) stop 'read_inputstr: mass label not found'
       if(jtemp>0) str_ltemp = .true.
@@ -162,16 +143,6 @@ c-- allocate data arrays
       if(str_ltemp) allocate(str_temp(nx,ny,nz))
       if(str_lye) allocate(str_ye(nx,ny,nz))
       allocate(raw(ncol,nx*ny*nz))
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c     LSU MODIFICATION
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      allocate(str_vx(nx,ny,nz))
-      allocate(str_vy(nx,ny,nz))
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c     LSU MODIFICATION
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      allocate(str_vz(nx,ny,nz))
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c-- read body
       read(4,*,iostat=ierr) raw
@@ -243,11 +214,8 @@ c
 c-- check grid monotonicity
       help = str_xleft(1)
       do i=2,nx+1
-       if(str_xleft(i)<=help) then
-          write(*,*) str_xleft(i), help, i
-          stop
+       if(str_xleft(i)<=help) stop
      &   'read_inputstr: x grid not increasing'
-       endif
        help = str_xleft(i)
       enddo
 c
@@ -275,33 +243,6 @@ c-- vars
        str_mass(i,j,k) = raw(jmass,l)
        if(str_ltemp) str_temp(i,j,k)=raw(jtemp,l)
        if(str_lye) str_ye(i,j,k)=raw(jye,l)
-       if(jvelx.ne.0) then
-          str_vx(i,j,k)=raw(jvelx,l)
-       else
-          if( in_isvelocity ) then
-             str_vx(i,j,k) = (str_xleft(i) + str_xleft(i+1))/2d0
-          else
-             str_vx(i,j,k) = 0d0
-          endif
-       endif
-       if(jvely.ne.0) then
-          str_vy(i,j,k)=raw(jvely,l)
-       else
-          if( in_isvelocity .and. (igeom.eq.2.or.igeom.eq.3)) then
-             str_vy(i,j,k) = (str_yleft(j) + str_yleft(j+1))/2d0
-          else
-             str_vy(i,j,k) = 0d0
-          endif
-       endif
-       if(jvelz.ne.0) then
-          str_vz(i,j,k)=raw(jvelz,l)
-       else
-          if( in_isvelocity .and. igeom.eq.3) then
-             str_vz(i,j,k) = (str_zleft(k) + str_zleft(k+1))/2d0
-          else
-             str_vz(i,j,k) = 0d0
-          endif
-       endif
       enddo
       enddo
       enddo
@@ -399,7 +340,6 @@ c     ----------------------------!{{{
 * put valid (non-void) cells in sequence, link the other (void) cells
 * to the dummy cell at the end of the sequence.
 ************************************************************************
-
       integer :: i,j,k,l
       integer :: idcell
 c
@@ -460,50 +400,11 @@ c
 c
       subroutine generate_inputstr(igeomin)
 c     ---------------------------------------------!{{{
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c     LSU MODIFICATION
-      use inputparmod
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc      implicit none
+      implicit none
       integer,intent(in) :: igeomin
-      integer :: ini56
 ************************************************************************
 * wrapper around routines for different geometries
-**********************************
-
-
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c     LSU MODIFICATION
-      if( in_test_problem .ne. 0 ) then
-         nx = in_ndim(1)
-         ny = in_ndim(2)
-         nz = in_ndim(3)
-         str_nabund = 1
-         allocate(str_abundlabl(1))
-         str_abundlabl(1) = 'h'
-         str_ltemp=.true.
-         allocate(str_mass(nx,ny,nz))
-         allocate(str_massfr(str_nabund,nx,ny,nz))
-         allocate(str_temp(nx,ny,nz))
-         allocate(str_xleft(nx+1))
-         allocate(str_yleft(nx+1))
-         allocate(str_zleft(nx+1))
-         allocate(str_ye(nx,ny,nz))
-         allocate(str_vx(nx,ny,nz))
-         allocate(str_vy(nx,ny,nz))
-         allocate(str_vz(nx,ny,nz))
-         call elnam2elcode(ini56)
-        select case(in_test_problem)
-          case(1)
-            write(*,*) 'Setting up Sedov-Taylor blast wave'
-            call sedov_setup
-        end select
-
-
-      else
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
-
-**************************************
+************************************************************************
       igeom = igeomin
       select case(igeom)
       case(1,11)
@@ -520,11 +421,6 @@ c-- allocate remaining arrays
       if(.not.allocated(str_yleft)) allocate(str_yleft(2))
       if(.not.allocated(str_zleft)) allocate(str_zleft(2))
 c!}}}
-
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-c     LSU MODIFICATION
-      endif
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       end subroutine generate_inputstr
 c
 c
@@ -634,8 +530,6 @@ c-- allocate arrays
       allocate(str_zleft(nz+1))
       allocate(str_mass(nx,ny,nz))
 c
-
-
 c-- create unit cylinder radii xout
       dx = 1d0/nx
       forall(i=1:nx+1) xout(i) = (i-1)*dx
@@ -713,9 +607,6 @@ c-- adjusting mass to correct total
 c-- deallocating helper arrays
       deallocate(xout,yout)
 c!}}}
-
-
-
       end subroutine generate_inputstr2
 c
 c
@@ -891,6 +782,7 @@ c-- verify hit
         iabund = j
        endselect
        !write(6,*) 'el found: ',elname,iabund
+c
 c-- store element code (pointer to mass0fr)
        str_iabund(l) = iabund
       enddo!}}}
