@@ -16,6 +16,10 @@ module particlemod
      real*8 :: dist          !particle travel distance
      character(4) :: stat    !particle status: live, cens, flux, dead
      integer :: ix, iy, iz   !positional cell indices
+!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+! LSU MODIFICATION
+     real*8 :: vx, vy, vz   !fluid velocities
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
      integer :: ic, ig       !index into compressed domain arrays, group index
      integer :: itype        !IMC or DDMC type
      integer :: ipart, istep !particle number and transport step number

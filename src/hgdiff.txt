@@ -1,6 +1,6 @@
 diff -r d244a10db46e GAS/fleck_factor.f90
 --- a/GAS/fleck_factor.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/GAS/fleck_factor.f90	Wed Sep 19 14:07:40 2018 -0500
++++ b/GAS/fleck_factor.f90	Thu Aug 30 10:06:44 2018 -0500
 @@ -43,7 +43,24 @@
       gas_fcoef(i) = 1.0/(1.0+in_alpha*beta*pc_c*tsp_dt*gas_capgrey(i))
  !-- sanity check
@@ -29,7 +29,7 @@ diff -r d244a10db46e GAS/fleck_factor.f90
  end subroutine fleck_factor
 diff -r d244a10db46e GAS/gas_setup.f
 --- a/GAS/gas_setup.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/GAS/gas_setup.f	Wed Sep 19 14:07:40 2018 -0500
++++ b/GAS/gas_setup.f	Thu Aug 30 10:06:44 2018 -0500
 @@ -13,9 +13,10 @@
  * Initialize the gas grid, the part that is constant with time and
  * temperature. The part that changes is done in gas_grid_update.
@@ -82,7 +82,7 @@ diff -r d244a10db46e GAS/gas_setup.f
  c vim: fdm=marker
 diff -r d244a10db46e GAS/gas_update.f
 --- a/GAS/gas_update.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/GAS/gas_update.f	Wed Sep 19 14:07:40 2018 -0500
++++ b/GAS/gas_update.f	Thu Aug 30 10:06:44 2018 -0500
 @@ -12,6 +12,11 @@
        use gasmod
        use inputparmod
@@ -449,7 +449,7 @@ diff -r d244a10db46e GAS/gas_update.f
  c-- calculate Ye
 diff -r d244a10db46e GRID/grid_setup.f
 --- a/GRID/grid_setup.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/GRID/grid_setup.f	Wed Sep 19 14:07:40 2018 -0500
++++ b/GRID/grid_setup.f	Thu Aug 30 10:06:44 2018 -0500
 @@ -6,6 +6,10 @@
        use inputparmod
        use inputstrmod
@@ -538,7 +538,7 @@ diff -r d244a10db46e GRID/grid_setup.f
        inquire(file='input.temp',exist=lexist)
 diff -r d244a10db46e GRID/grid_volume.f
 --- a/GRID/grid_volume.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/GRID/grid_volume.f	Wed Sep 19 14:07:40 2018 -0500
++++ b/GRID/grid_volume.f	Thu Aug 30 10:06:44 2018 -0500
 @@ -23,6 +23,7 @@
         t = 1d0
        endif
@@ -557,7 +557,7 @@ diff -r d244a10db46e GRID/grid_volume.f
        enddo
 diff -r d244a10db46e Makefile
 --- a/Makefile	Mon Feb 20 16:32:09 2017 -0700
-+++ b/Makefile	Wed Sep 19 14:07:40 2018 -0500
++++ b/Makefile	Thu Aug 30 10:06:44 2018 -0500
 @@ -26,14 +26,14 @@
    miscmod.o ionsmod.o ffxsmod.o bfxsmod.o bbxsmod.o \
    inputparmod.o timestepmod.o groupmod.o gridmod.o gasmod.o inputstrmod.o \
@@ -578,7 +578,7 @@ diff -r d244a10db46e Makefile
  
 diff -r d244a10db46e SOURCE/boundary_source.f90
 --- a/SOURCE/boundary_source.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/SOURCE/boundary_source.f90	Wed Sep 19 14:07:40 2018 -0500
++++ b/SOURCE/boundary_source.f90	Thu Aug 30 10:06:44 2018 -0500
 @@ -36,6 +36,7 @@
    dyac(l) = grd_yacos(l) - grd_yacos(l+1)
    ym(l) = sqrt(1d0-0.25*(grd_yarr(l+1)+grd_yarr(l))**2)
@@ -597,7 +597,7 @@ diff -r d244a10db46e SOURCE/boundary_source.f90
  ! vim: fdm=marker
 diff -r d244a10db46e SOURCE/initial_particles.f90
 --- a/SOURCE/initial_particles.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/SOURCE/initial_particles.f90	Wed Sep 19 14:07:40 2018 -0500
++++ b/SOURCE/initial_particles.f90	Thu Aug 30 10:06:44 2018 -0500
 @@ -27,6 +27,7 @@
    real*8 :: r1
    real*8 :: tradinv
@@ -620,7 +620,7 @@ diff -r d244a10db46e SOURCE/initial_particles.f90
  !
 diff -r d244a10db46e SOURCE/sourceenergy.f90
 --- a/SOURCE/sourceenergy.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/SOURCE/sourceenergy.f90	Wed Sep 19 14:07:40 2018 -0500
++++ b/SOURCE/sourceenergy.f90	Thu Aug 30 10:06:44 2018 -0500
 @@ -58,5 +58,6 @@
       tot_sdecaybeta = 0d0
    endif
@@ -630,7 +630,7 @@ diff -r d244a10db46e SOURCE/sourceenergy.f90
  ! vim: fdm=marker
 diff -r d244a10db46e SOURCE/sourceenergy_misc.f
 --- a/SOURCE/sourceenergy_misc.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/SOURCE/sourceenergy_misc.f	Wed Sep 19 14:07:40 2018 -0500
++++ b/SOURCE/sourceenergy_misc.f	Thu Aug 30 10:06:44 2018 -0500
 @@ -25,6 +25,7 @@
  c
  c-- gamma deposition is energy source
@@ -641,7 +641,7 @@ diff -r d244a10db46e SOURCE/sourceenergy_misc.f
        if(grd_ivoid>0) grd_eamp(grd_ncell) = 0d0
 diff -r d244a10db46e SOURCE/sourcenumbers.f90
 --- a/SOURCE/sourcenumbers.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/SOURCE/sourcenumbers.f90	Wed Sep 19 14:07:40 2018 -0500
++++ b/SOURCE/sourcenumbers.f90	Thu Aug 30 10:06:44 2018 -0500
 @@ -130,6 +130,7 @@
       src_nnonth = src_nnonth + nvolex
    enddo
@@ -652,7 +652,7 @@ diff -r d244a10db46e SOURCE/sourcenumbers.f90
  
 diff -r d244a10db46e TRANSPORT1/diffusion11.f90
 --- a/TRANSPORT1/diffusion11.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/TRANSPORT1/diffusion11.f90	Wed Sep 19 14:07:40 2018 -0500
++++ b/TRANSPORT1/diffusion11.f90	Thu Aug 30 10:06:44 2018 -0500
 @@ -1,6 +1,6 @@
  !This file is part of SuperNu.  SuperNu is released under the terms of the GNU GPLv3, see COPYING.
  !Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
@@ -1058,7 +1058,7 @@ diff -r d244a10db46e TRANSPORT1/diffusion11.f90
  ! vim: fdm=marker
 diff -r d244a10db46e TRANSPORT1/transport11.f90
 --- a/TRANSPORT1/transport11.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/TRANSPORT1/transport11.f90	Wed Sep 19 14:07:40 2018 -0500
++++ b/TRANSPORT1/transport11.f90	Thu Aug 30 10:06:44 2018 -0500
 @@ -1,6 +1,6 @@
  !This file is part of SuperNu.  SuperNu is released under the terms of the GNU GPLv3, see COPYING.
  !Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
@@ -1530,7 +1530,7 @@ diff -r d244a10db46e TRANSPORT1/transport11.f90
  ! vim: fdm=marker
 diff -r d244a10db46e TRANSPORT1/transport11_gamgrey.f90
 --- a/TRANSPORT1/transport11_gamgrey.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/TRANSPORT1/transport11_gamgrey.f90	Wed Sep 19 14:07:40 2018 -0500
++++ b/TRANSPORT1/transport11_gamgrey.f90	Thu Aug 30 10:06:44 2018 -0500
 @@ -1,6 +1,6 @@
  !This file is part of SuperNu.  SuperNu is released under the terms of the GNU GPLv3, see COPYING.
  !Copyright (c) 2013-2017 Ryan T. Wollaeger and Daniel R. van Rossum.  All rights reserved.
@@ -1712,7 +1712,7 @@ diff -r d244a10db46e TRANSPORT1/transport11_gamgrey.f90
  ! vim: fdm=marker
 diff -r d244a10db46e dealloc_all.f
 --- a/dealloc_all.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/dealloc_all.f	Wed Sep 19 14:07:40 2018 -0500
++++ b/dealloc_all.f	Thu Aug 30 10:06:44 2018 -0500
 @@ -13,6 +13,10 @@
        use sourcemod
        use randommod
@@ -1737,7 +1737,7 @@ diff -r d244a10db46e dealloc_all.f
        call grid_dealloc
 diff -r d244a10db46e gridmod.f
 --- a/gridmod.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/gridmod.f	Wed Sep 19 14:07:40 2018 -0500
++++ b/gridmod.f	Thu Aug 30 10:06:44 2018 -0500
 @@ -21,6 +21,16 @@
        real*8,allocatable :: grd_xarr(:)  !(nx+1), left cell edge values
        real*8,allocatable :: grd_yarr(:)  !(ny+1), left cell edge values
@@ -1890,7 +1890,7 @@ diff -r d244a10db46e gridmod.f
  c vim: fdm=marker
 diff -r d244a10db46e groupmod.f
 --- a/groupmod.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/groupmod.f	Wed Sep 19 14:07:40 2018 -0500
++++ b/groupmod.f	Thu Aug 30 10:06:44 2018 -0500
 @@ -134,7 +134,11 @@
        dx = x*abs(grp_wlinv(ig+1) - grp_wlinv(ig))
        x = x*.5d0*(grp_wlinv(ig+1) + grp_wlinv(ig))
@@ -1919,7 +1919,7 @@ diff -r d244a10db46e groupmod.f
        end subroutine specintv
 diff -r d244a10db46e inputparmod.f
 --- a/inputparmod.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/inputparmod.f	Wed Sep 19 14:07:40 2018 -0500
++++ b/inputparmod.f	Thu Aug 30 10:06:44 2018 -0500
 @@ -23,6 +23,16 @@
        integer :: in_grd_igeom = 0 !geometry: 1=sph, 2=cyl, 3=car, 11=1Dsph
        integer :: in_ndim(3) = [1, 1, 1]  !number of x-direction cells
@@ -1998,7 +1998,7 @@ diff -r d244a10db46e inputparmod.f
  c
 diff -r d244a10db46e inputstrmod.f
 --- a/inputstrmod.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/inputstrmod.f	Wed Sep 19 14:07:40 2018 -0500
++++ b/inputstrmod.f	Thu Aug 30 10:06:44 2018 -0500
 @@ -20,6 +20,12 @@
        real*8,allocatable :: str_temp(:,:,:) !(nx,ny,nz)
        real*8,allocatable :: str_ye(:,:,:) !(nx,ny,nz)
@@ -2224,7 +2224,7 @@ diff -r d244a10db46e inputstrmod.f
        enddo!}}}
 diff -r d244a10db46e ionsmod.f
 --- a/ionsmod.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/ionsmod.f	Wed Sep 19 14:07:40 2018 -0500
++++ b/ionsmod.f	Thu Aug 30 10:06:44 2018 -0500
 @@ -144,12 +144,31 @@
        end subroutine ions_dealloc
  c
@@ -2453,7 +2453,7 @@ diff -r d244a10db46e ionsmod.f
           ion_el(iz)%i(ii)%glev(ilc) = gsum
 diff -r d244a10db46e mpimod_ser.f
 --- a/mpimod_ser.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/mpimod_ser.f	Wed Sep 19 14:07:40 2018 -0500
++++ b/mpimod_ser.f	Thu Aug 30 10:06:44 2018 -0500
 @@ -71,7 +71,223 @@
        subroutine allreduce_gammaenergy
        end subroutine allreduce_gammaenergy
@@ -2689,7 +2689,7 @@ diff -r d244a10db46e mpimod_ser.f
  c
 diff -r d244a10db46e particle_advance.f90
 --- a/particle_advance.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/particle_advance.f90	Wed Sep 19 14:07:40 2018 -0500
++++ b/particle_advance.f90	Thu Aug 30 10:06:44 2018 -0500
 @@ -4,6 +4,10 @@
  subroutine particle_advance
  
@@ -3106,7 +3106,7 @@ diff -r d244a10db46e particle_advance.f90
             wl = wl/labfact
 diff -r d244a10db46e particle_advance_gamgrey.f90
 --- a/particle_advance_gamgrey.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/particle_advance_gamgrey.f90	Wed Sep 19 14:07:40 2018 -0500
++++ b/particle_advance_gamgrey.f90	Thu Aug 30 10:06:44 2018 -0500
 @@ -36,9 +36,13 @@
    real*8,pointer :: x,y,z,mu,om,e,e0
    real*8 :: eta, xi
@@ -3384,7 +3384,7 @@ diff -r d244a10db46e particle_advance_gamgrey.f90
  !-- tally outbound luminosity        
 diff -r d244a10db46e particlemod.f90
 --- a/particlemod.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/particlemod.f90	Wed Sep 19 14:07:40 2018 -0500
++++ b/particlemod.f90	Thu Aug 30 10:06:44 2018 -0500
 @@ -16,6 +16,10 @@
       real*8 :: dist          !particle travel distance
       character(4) :: stat    !particle status: live, cens, flux, dead
@@ -3398,7 +3398,7 @@ diff -r d244a10db46e particlemod.f90
       integer :: ipart, istep !particle number and transport step number
 diff -r d244a10db46e supernu.f90
 --- a/supernu.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/supernu.f90	Wed Sep 19 14:07:40 2018 -0500
++++ b/supernu.f90	Thu Aug 30 10:06:44 2018 -0500
 @@ -24,7 +24,10 @@
    use ffxsmod, only:ffxs_read_data
    use timingmod
@@ -3496,7 +3496,7 @@ diff -r d244a10db46e supernu.f90
       call counters_cycle(impi,it<=0)
 diff -r d244a10db46e timestepmod.f90
 --- a/timestepmod.f90	Mon Feb 20 16:32:09 2017 -0700
-+++ b/timestepmod.f90	Wed Sep 19 14:07:40 2018 -0500
++++ b/timestepmod.f90	Thu Aug 30 10:06:44 2018 -0500
 @@ -13,6 +13,10 @@
    real*8,allocatable :: tsp_tpreset(:)  !store preset time steps from input.tsp_time
    real*8 :: tsp_tcenter,tsp_tfirst,tsp_tlast
@@ -3591,7 +3591,7 @@ diff -r d244a10db46e timestepmod.f90
      tsp_tarr(tsp_it+1) = tsp_t1
 diff -r d244a10db46e totalsmod.f
 --- a/totalsmod.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/totalsmod.f	Wed Sep 19 14:07:40 2018 -0500
++++ b/totalsmod.f	Thu Aug 30 10:06:44 2018 -0500
 @@ -63,8 +63,12 @@
  * Check that all particle energy (weight) is accounted for from
  * conservation in comoving quantities.
@@ -3609,7 +3609,7 @@ diff -r d244a10db46e totalsmod.f
  c
 diff -r d244a10db46e transportmod.f
 --- a/transportmod.f	Mon Feb 20 16:32:09 2017 -0700
-+++ b/transportmod.f	Wed Sep 19 14:07:40 2018 -0500
++++ b/transportmod.f	Thu Aug 30 10:06:44 2018 -0500
 @@ -202,11 +202,21 @@
  c
  c-- abstract interfaces

@@ -63,8 +63,12 @@ c     -----------------------!{{{
 * Check that all particle energy (weight) is accounted for from
 * conservation in comoving quantities.
 ************************************************************************
-      tot_eerror = (tot_eext-tot_evelo-tot_eout-tot_erad-tot_emat)/
-     &  tot_eext
+      if( tot_eext .eq. 0d0 ) then
+        tot_eerror = 0d0
+      else
+        tot_eerror = (tot_eext-tot_evelo-tot_eout-tot_erad-tot_emat)/
+     &     tot_eext
+      endif
 c!}}}
       end subroutine totals_error
 c

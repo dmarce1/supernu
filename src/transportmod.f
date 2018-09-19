@@ -202,11 +202,21 @@ c
 c
 c-- abstract interfaces
       abstract interface
-      subroutine direction2lab_(x0,y0,z0,mu0,om0)!{{{
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     LSU MODIFICATION
+c     Old code
+c      subroutine direction2lab_(x0,y0,z0,mu0,om0)!{{{
 c     -------------------------------------------
-      real*8,intent(in) :: x0,y0,z0
+c      real*8,intent(in) :: x0,y0,z0
+c      real*8,intent(inout) :: mu0,om0
+c      end subroutine direction2lab_
+c     New code
+      subroutine direction2lab_(vx0,vy0,vz0,mu0,om0)!{{{
+c     -------------------------------------------
+      real*8,intent(in) :: vx0,vy0,vz0
       real*8,intent(inout) :: mu0,om0
       end subroutine direction2lab_
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
       pure subroutine advection_(pretrans,ptcl,ptcl2)
 c     -----------------------------------------------
@@ -322,44 +332,134 @@ c-- set procedure pointers
 c
 c
 c
-      subroutine direction2lab1(x0,y0,z0,mu0,om0)
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c     LSU MODIFICATION
+c      subroutine direction2lab1(x0,y0,z0,mu0,om0)
+c     -------------------------------------------
+c      implicit none
+c      real*8,intent(in) :: x0,y0,z0
+c      real*8,intent(inout) :: mu0,om0
+c      real*8 :: cmffact,mu,dummy
+c
+c      dummy = y0
+c      dummy = z0
+c      dummy = om0
+c
+c      cmffact = 1d0+mu0*x0*cinv
+c      mu = (mu0+x0*cinv)/cmffact
+c      mu = min(mu,1d0)
+c      mu = max(mu,-1d0)
+c      mu0 = mu
+c      end subroutine direction2lab1
+c
+c
+c      subroutine direction2lab2(x0,y0,z0,mu0,om0)
+c     -------------------------------------------
+c      implicit none
+c      real*8,intent(in) :: x0,y0,z0
+c      real*8,intent(inout) :: mu0,om0
+c      real*8 :: cmffact,gm,mu,om,dummy
+c
+c      dummy = z0
+c
+c      cmffact = 1d0+(mu0*y0+sqrt(1d0-mu0**2)*cos(om0)*x0)*cinv
+c      gm = 1d0/sqrt(1d0-(x0**2+y0**2)*cinv**2)
+!-- om
+c      om = atan2(sqrt(1d0-mu0**2)*sin(om0),
+c     &     sqrt(1d0-mu0**2)*cos(om0)+(gm*x0*cinv) *
+c     &     (1d0+gm*(cmffact-1d0)/(gm+1d0)))
+c      if(om<0d0) om=om+pc_pi2
+!-- mu
+c      mu = (mu0+(gm*y0*cinv)*(1d0+gm*(cmffact-1d0)/(1d0+gm))) /
+c     &     (gm*cmffact)
+c      mu = min(mu,1d0)
+c      mu = max(mu,-1d0)
+c      mu0 = mu
+c      om0 = om
+c      end subroutine direction2lab2
+c
+c
+c      subroutine direction2lab3(x0,y0,z0,mu0,om0)
+c     -------------------------------------------
+c      implicit none
+c      real*8,intent(in) :: x0,y0,z0
+c      real*8,intent(inout) :: mu0,om0
+c      real*8 :: cmffact,mu1,mu2,mu,om
+c
+c      mu2 = sqrt(1d0-mu0**2)
+c      mu1 = mu2*cos(om0)
+c      mu2 = mu2*sin(om0)
+c      cmffact = 1d0+(mu0*z0+mu1*x0+mu2*y0)*cinv
+!-- mu
+c      mu = (mu0+z0*cinv)/cmffact
+!-- om
+c      om = atan2(mu2+y0*cinv,mu1+x0*cinv)
+c      if(om<0d0) om = om+pc_pi2
+!-- in bounds
+c      mu = min(mu,1d0)
+c      mu = max(mu,-1d0)
+c      mu0 = mu
+c      om0 = om
+c      end subroutine direction2lab3
+
+      pure subroutine direction2lab11(vx0,mu0)
 c     -------------------------------------------
       implicit none
-      real*8,intent(in) :: x0,y0,z0
-      real*8,intent(inout) :: mu0,om0
-      real*8 :: cmffact,mu,dummy
+      real*8,intent(in) :: vx0
+      real*8,intent(inout) :: mu0
+      real*8 :: cmffact,mu
 c
-      dummy = y0
-      dummy = z0
-      dummy = om0
-c
-      cmffact = 1d0+mu0*x0*cinv
-      mu = (mu0+x0*cinv)/cmffact
+      cmffact = 1d0+(mu0*vx0)*cinv
+      mu = (mu0+vx0*cinv)/cmffact
       mu = min(mu,1d0)
       mu = max(mu,-1d0)
       mu0 = mu
+      end subroutine direction2lab11
+c
+      pure subroutine direction2lab1(vx0,vy0,vz0,mu0,om0)
+c     -------------------------------------------
+      use gridmod
+      implicit none
+      real*8,intent(in) :: vx0,vy0,vz0
+      real*8,intent(inout) :: mu0,om0
+      real*8 :: cmffact,mu,sin0,om
+c
+c
+      if( grd_igeom .eq. 11 ) then
+        call direction2lab11(vx0,mu0)
+        om0 = 0d0
+      else
+        sin0 = sqrt(1d0 - mu0*mu0)
+        cmffact = 1d0+(mu0*vx0+sin0*(cos(om0)*vy0+sin(om0)*vz0))*cinv
+        mu = (mu0+vx0*cinv)/cmffact
+        mu = min(mu,1d0)
+        mu = max(mu,-1d0)
+        om = atan2(sin0*sin(om0)+vz0*cinv,
+     &     sin0*cos(om0)+vy0*cinv)
+        if(om<0d0) om=om+pc_pi2
+        mu0 = mu
+        om0 = om
+      endif
+
       end subroutine direction2lab1
 c
 c
-      subroutine direction2lab2(x0,y0,z0,mu0,om0)
+      pure subroutine direction2lab2(vx0,vy0,vz0,mu0,om0)
 c     -------------------------------------------
       implicit none
-      real*8,intent(in) :: x0,y0,z0
+      real*8,intent(in) :: vx0,vy0,vz0
       real*8,intent(inout) :: mu0,om0
-      real*8 :: cmffact,gm,mu,om,dummy
+      real*8 :: cmffact,mu,om
+      real*8 :: sin0
 c
-      dummy = z0
-c
-      cmffact = 1d0+(mu0*y0+sqrt(1d0-mu0**2)*cos(om0)*x0)*cinv
-      gm = 1d0/sqrt(1d0-(x0**2+y0**2)*cinv**2)
-!-- om
-      om = atan2(sqrt(1d0-mu0**2)*sin(om0),
-     &     sqrt(1d0-mu0**2)*cos(om0)+(gm*x0*cinv) *
-     &     (1d0+gm*(cmffact-1d0)/(gm+1d0)))
+      sin0 = sqrt(1d0-mu0*mu0)
+      cmffact = 1d0+(mu0*vy0+sin0*(cos(om0)*vx0+sin(om0)*vz0))*cinv
+! -- om
+      om = atan2(sin0*sin(om0)+vz0*cinv,
+     &     sin0*cos(om0)+vx0*cinv)
       if(om<0d0) om=om+pc_pi2
 !-- mu
-      mu = (mu0+(gm*y0*cinv)*(1d0+gm*(cmffact-1d0)/(1d0+gm))) /
-     &     (gm*cmffact)
+      mu = (mu0+vy0*cinv) / cmffact
       mu = min(mu,1d0)
       mu = max(mu,-1d0)
       mu0 = mu
@@ -367,21 +467,21 @@ c
       end subroutine direction2lab2
 c
 c
-      subroutine direction2lab3(x0,y0,z0,mu0,om0)
+      pure subroutine direction2lab3(vx0,vy0,vz0,mu0,om0)
 c     -------------------------------------------
       implicit none
-      real*8,intent(in) :: x0,y0,z0
+      real*8,intent(in) :: vx0,vy0,vz0
       real*8,intent(inout) :: mu0,om0
       real*8 :: cmffact,mu1,mu2,mu,om
 c
       mu2 = sqrt(1d0-mu0**2)
       mu1 = mu2*cos(om0)
       mu2 = mu2*sin(om0)
-      cmffact = 1d0+(mu0*z0+mu1*x0+mu2*y0)*cinv
+      cmffact = 1d0+(mu0*vz0+mu1*vx0+mu2*vy0)*cinv
 !-- mu
-      mu = (mu0+z0*cinv)/cmffact
+      mu = (mu0+vz0*cinv)/cmffact
 !-- om
-      om = atan2(mu2+y0*cinv,mu1+x0*cinv)
+      om = atan2(mu2+vy0*cinv,mu1+vx0*cinv)
       if(om<0d0) om = om+pc_pi2
 !-- in bounds
       mu = min(mu,1d0)
